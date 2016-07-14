@@ -1,6 +1,7 @@
 package goapi
 
 import (
+	"errors"
 	"net/http"
 	"testing"
 
@@ -90,10 +91,13 @@ func TestUseNodes(t *testing.T) {
 	}
 }
 
-type mockResponseWriter struct{}
+type mockResponseWriter struct {
+	header http.Header
+	code   int
+}
 
 func (m *mockResponseWriter) Header() (h http.Header) {
-	return http.Header{}
+	return m.header
 }
 func (m *mockResponseWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
@@ -101,7 +105,9 @@ func (m *mockResponseWriter) Write(p []byte) (n int, err error) {
 func (m *mockResponseWriter) WriteString(s string) (n int, err error) {
 	return len(s), nil
 }
-func (m *mockResponseWriter) WriteHeader(int) {}
+func (m *mockResponseWriter) WriteHeader(i int) {
+	m.code = i
+}
 
 func TestServer(t *testing.T) {
 	s := New()
@@ -116,4 +122,64 @@ func TestServer(t *testing.T) {
 	s.ServeHTTP(w, req)
 
 	assert.Equal(t, true, serverd)
+}
+
+type (
+	statusError struct {
+		Code int
+		Err  error
+	}
+)
+
+func (se statusError) Error() string {
+	return se.Err.Error()
+}
+
+func (se statusError) Status() int {
+	return se.Code
+}
+
+func TestMiddlewareError(t *testing.T) {
+	s := New()
+
+	s.GET("/x", func(w http.ResponseWriter, req *http.Request) {})
+	s.Use("/x", 0, func(req *http.Request) Error {
+		return statusError{http.StatusBadRequest, errors.New("Bad request")}
+	})
+
+	w := new(mockResponseWriter)
+	w.header = http.Header{}
+	req, _ := http.NewRequest("GET", "/x", nil)
+	s.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.code)
+}
+
+func TestGlobalMiddlewareError(t *testing.T) {
+	s := New()
+
+	s.GET("/x", func(w http.ResponseWriter, req *http.Request) {})
+	s.Use("", 0, func(req *http.Request) Error {
+		return statusError{http.StatusBadRequest, errors.New("Bad request")}
+	})
+
+	w := new(mockResponseWriter)
+	w.header = http.Header{}
+	req, _ := http.NewRequest("GET", "/x", nil)
+	s.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.code)
+}
+
+func TestNotFound(t *testing.T) {
+	s := New()
+
+	s.GET("/x", func(w http.ResponseWriter, req *http.Request) {})
+
+	w := new(mockResponseWriter)
+	w.header = http.Header{}
+	req, _ := http.NewRequest("GET", "/y", nil)
+	s.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.code)
 }

@@ -89,3 +89,31 @@ func TestUseNodes(t *testing.T) {
 		}
 	}
 }
+
+type mockResponseWriter struct{}
+
+func (m *mockResponseWriter) Header() (h http.Header) {
+	return http.Header{}
+}
+func (m *mockResponseWriter) Write(p []byte) (n int, err error) {
+	return len(p), nil
+}
+func (m *mockResponseWriter) WriteString(s string) (n int, err error) {
+	return len(s), nil
+}
+func (m *mockResponseWriter) WriteHeader(int) {}
+
+func TestServer(t *testing.T) {
+	s := New()
+
+	serverd := false
+	s.GET("/:param", func(w http.ResponseWriter, r *http.Request) {
+		serverd = true
+	})
+
+	w := new(mockResponseWriter)
+	req, _ := http.NewRequest("GET", "/x", nil)
+	s.ServeHTTP(w, req)
+
+	assert.Equal(t, true, serverd)
+}

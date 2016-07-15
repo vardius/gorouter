@@ -12,11 +12,7 @@ type (
 		priority int
 		handler  MiddlewareFunc
 	}
-	Error interface {
-		error
-		Status() int
-	}
-	MiddlewareFunc func(*http.Request) Error
+	MiddlewareFunc func(*http.Request, Params) Error
 )
 
 func (m middlewares) Len() int           { return len(m) }

@@ -8,93 +8,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPOST(t *testing.T) {
-	s := New()
-	s.POST("/", func(w http.ResponseWriter, req *http.Request) {})
-
-	assert.NotNil(t, s.routes[POST])
-}
-
-func TestGET(t *testing.T) {
-	s := New()
-	s.GET("/", func(w http.ResponseWriter, req *http.Request) {})
-
-	assert.NotNil(t, s.routes[GET])
-}
-
-func TestPUT(t *testing.T) {
-	s := New()
-	s.PUT("/", func(w http.ResponseWriter, req *http.Request) {})
-
-	assert.NotNil(t, s.routes[PUT])
-}
-
-func TestDELETE(t *testing.T) {
-	s := New()
-	s.DELETE("/", func(w http.ResponseWriter, req *http.Request) {})
-
-	assert.NotNil(t, s.routes[DELETE])
-}
-
-func TestPATCH(t *testing.T) {
-	s := New()
-	s.PATCH("/", func(w http.ResponseWriter, req *http.Request) {})
-
-	assert.NotNil(t, s.routes[PATCH])
-}
-
-func TestOPTIONS(t *testing.T) {
-	s := New()
-	s.OPTIONS("/", func(w http.ResponseWriter, req *http.Request) {})
-
-	assert.NotNil(t, s.routes[OPTIONS])
-}
-
-func TestUseGlobal(t *testing.T) {
-	s := New()
-	s.Use("", 0, func(req *http.Request) Error { return nil })
-
-	assert.NotEqual(t, 0, len(s.middleware))
-}
-
-func TestUseRoot(t *testing.T) {
-	s := New()
-	s.OPTIONS("/", func(w http.ResponseWriter, req *http.Request) {})
-	s.PATCH("/", func(w http.ResponseWriter, req *http.Request) {})
-	s.DELETE("/", func(w http.ResponseWriter, req *http.Request) {})
-	s.PUT("/", func(w http.ResponseWriter, req *http.Request) {})
-	s.GET("/", func(w http.ResponseWriter, req *http.Request) {})
-
-	s.Use("/", 0, func(req *http.Request) Error { return nil })
-
-	for _, r := range s.routes {
-		assert.NotEqual(t, 0, len(r.middleware))
+type (
+	statusError struct {
+		code int
+		err  error
 	}
-}
-
-func TestUseNodes(t *testing.T) {
-	s := New()
-	s.OPTIONS("/x", func(w http.ResponseWriter, req *http.Request) {})
-	s.PATCH("/x", func(w http.ResponseWriter, req *http.Request) {})
-	s.DELETE("/x", func(w http.ResponseWriter, req *http.Request) {})
-	s.PUT("/x", func(w http.ResponseWriter, req *http.Request) {})
-	s.GET("/x", func(w http.ResponseWriter, req *http.Request) {})
-
-	s.Use("/x", 0, func(req *http.Request) Error { return nil })
-
-	for _, root := range s.routes {
-		assert.Equal(t, 0, len(root.middleware))
-		node := root.nodes["x"]
-		if assert.NotNil(t, node) {
-			assert.NotEqual(t, 0, len(node.middleware))
-		}
+	mockResponseWriter struct {
+		header http.Header
+		code   int
 	}
-}
+)
 
-type mockResponseWriter struct {
-	header http.Header
-	code   int
-}
+func mockHandler(_ http.ResponseWriter, _ *http.Request, _ Params) {}
+func mockMiddleware(_ *http.Request, _ Params) Error               { return nil }
 
 func (m *mockResponseWriter) Header() (h http.Header) {
 	return m.header
@@ -109,12 +35,135 @@ func (m *mockResponseWriter) WriteHeader(i int) {
 	m.code = i
 }
 
+func (se statusError) Error() string {
+	return se.err.Error()
+}
+
+func (se statusError) Status() int {
+	return se.code
+}
+
+func TestPOST(t *testing.T) {
+	var (
+		s *Server     = New()
+		h HandlerFunc = mockHandler
+	)
+	s.POST("/", h)
+
+	assert.NotNil(t, s.routes[POST])
+}
+
+func TestGET(t *testing.T) {
+	var (
+		s *Server     = New()
+		h HandlerFunc = mockHandler
+	)
+	s.GET("/", h)
+
+	assert.NotNil(t, s.routes[GET])
+}
+
+func TestPUT(t *testing.T) {
+	var (
+		s *Server     = New()
+		h HandlerFunc = mockHandler
+	)
+	s.PUT("/", h)
+
+	assert.NotNil(t, s.routes[PUT])
+}
+
+func TestDELETE(t *testing.T) {
+	var (
+		s *Server     = New()
+		h HandlerFunc = mockHandler
+	)
+	s.DELETE("/", h)
+
+	assert.NotNil(t, s.routes[DELETE])
+}
+
+func TestPATCH(t *testing.T) {
+	var (
+		s *Server     = New()
+		h HandlerFunc = mockHandler
+	)
+	s.PATCH("/", h)
+
+	assert.NotNil(t, s.routes[PATCH])
+}
+
+func TestOPTIONS(t *testing.T) {
+	var (
+		s *Server     = New()
+		h HandlerFunc = mockHandler
+	)
+	s.OPTIONS("/", h)
+
+	assert.NotNil(t, s.routes[OPTIONS])
+}
+
+func TestUseGlobal(t *testing.T) {
+	var (
+		s  *Server        = New()
+		mh MiddlewareFunc = mockMiddleware
+	)
+	s.Use("", 0, mh)
+
+	assert.NotEqual(t, 0, len(s.middleware))
+}
+
+func TestUseRoot(t *testing.T) {
+	var (
+		s  *Server        = New()
+		h  HandlerFunc    = mockHandler
+		mh MiddlewareFunc = mockMiddleware
+	)
+	s.OPTIONS("/", h)
+	s.PATCH("/", h)
+	s.DELETE("/", h)
+	s.PUT("/", h)
+	s.GET("/", h)
+
+	s.Use("/", 0, mh)
+
+	for _, r := range s.routes {
+		assert.NotEqual(t, 0, len(r.middleware))
+	}
+}
+
+func TestUseNodes(t *testing.T) {
+	var (
+		s  *Server        = New()
+		h  HandlerFunc    = mockHandler
+		mh MiddlewareFunc = mockMiddleware
+	)
+	s.OPTIONS("/x", h)
+	s.PATCH("/x", h)
+	s.DELETE("/x", h)
+	s.PUT("/x", h)
+	s.GET("/x", h)
+
+	s.Use("/x", 0, mh)
+
+	for _, root := range s.routes {
+		assert.Equal(t, 0, len(root.middleware))
+		node := root.nodes["x"]
+		if assert.NotNil(t, node) {
+			assert.NotEqual(t, 0, len(node.middleware))
+		}
+	}
+}
+
 func TestServer(t *testing.T) {
 	s := New()
 
 	serverd := false
-	s.GET("/:param", func(w http.ResponseWriter, r *http.Request) {
+	s.GET("/:param", func(w http.ResponseWriter, r *http.Request, params Params) {
 		serverd = true
+		if assert.NotNil(t, params["param"]) {
+			assert.Equal(t, "x", params["param"])
+		}
 	})
 
 	w := new(mockResponseWriter)
@@ -124,26 +173,13 @@ func TestServer(t *testing.T) {
 	assert.Equal(t, true, serverd)
 }
 
-type (
-	statusError struct {
-		Code int
-		Err  error
-	}
-)
-
-func (se statusError) Error() string {
-	return se.Err.Error()
-}
-
-func (se statusError) Status() int {
-	return se.Code
-}
-
 func TestMiddlewareError(t *testing.T) {
-	s := New()
-
-	s.GET("/x", func(w http.ResponseWriter, req *http.Request) {})
-	s.Use("/x", 0, func(req *http.Request) Error {
+	var (
+		s *Server     = New()
+		h HandlerFunc = mockHandler
+	)
+	s.GET("/x", h)
+	s.Use("/x", 0, func(req *http.Request, _ Params) Error {
 		return statusError{http.StatusBadRequest, errors.New("Bad request")}
 	})
 
@@ -156,10 +192,13 @@ func TestMiddlewareError(t *testing.T) {
 }
 
 func TestGlobalMiddlewareError(t *testing.T) {
-	s := New()
+	var (
+		s *Server     = New()
+		h HandlerFunc = mockHandler
+	)
 
-	s.GET("/x", func(w http.ResponseWriter, req *http.Request) {})
-	s.Use("", 0, func(req *http.Request) Error {
+	s.GET("/x", h)
+	s.Use("", 0, func(req *http.Request, _ Params) Error {
 		return statusError{http.StatusBadRequest, errors.New("Bad request")}
 	})
 
@@ -172,9 +211,12 @@ func TestGlobalMiddlewareError(t *testing.T) {
 }
 
 func TestNotFound(t *testing.T) {
-	s := New()
+	var (
+		s *Server     = New()
+		h HandlerFunc = mockHandler
+	)
 
-	s.GET("/x", func(w http.ResponseWriter, req *http.Request) {})
+	s.GET("/x", h)
 
 	w := new(mockResponseWriter)
 	w.header = http.Header{}

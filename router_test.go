@@ -1,7 +1,6 @@
 package goapi
 
 import (
-	"net/http"
 	"strings"
 	"testing"
 
@@ -9,96 +8,123 @@ import (
 )
 
 func TestGetRootRoute(t *testing.T) {
-	r := newRoute("/")
+	r := newRoute(nil, "/")
 	paths := strings.Split(strings.Trim("/", "/"), "/")
-	r.addRoute(paths, func(w http.ResponseWriter, req *http.Request) {})
+	r.addRoute(paths, mockHandler)
 
-	r.getRoute(paths)
-
-	assert.Nil(t, r.getRoute([]string{""}))
-	assert.Nil(t, r.getRoute([]string{"x"}))
-	assert.Nil(t, r.getRoute([]string{"", "x"}))
-	assert.Nil(t, r.getRoute([]string{"x", "y"}))
-	assert.NotNil(t, r.getRoute([]string{}))
+	var node *route
+	node, _ = r.getRoute([]string{""})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"x"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"", "x"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"x", "y"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{})
+	assert.NotNil(t, node)
 }
 
 func TestGetStrictRoute(t *testing.T) {
-	r := newRoute("/")
+	r := newRoute(nil, "/")
 	paths := strings.Split(strings.Trim("/x", "/"), "/")
-	r.addRoute(paths, func(w http.ResponseWriter, req *http.Request) {})
+	r.addRoute(paths, mockHandler)
 
-	r.getRoute(paths)
-
-	assert.Nil(t, r.getRoute([]string{}))
-	assert.Nil(t, r.getRoute([]string{""}))
-	assert.Nil(t, r.getRoute([]string{"", "x"}))
-	assert.Nil(t, r.getRoute([]string{"x", "y"}))
-	assert.NotNil(t, r.getRoute([]string{"x"}))
+	var node *route
+	node, _ = r.getRoute([]string{})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{""})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"", "x"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"x", "y"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"x"})
+	assert.NotNil(t, node)
 }
 
 func TestGetParamRoute(t *testing.T) {
-	r := newRoute("/")
+	r := newRoute(nil, "/")
 	paths := strings.Split(strings.Trim("/:x", "/"), "/")
-	r.addRoute(paths, func(w http.ResponseWriter, req *http.Request) {})
+	r.addRoute(paths, mockHandler)
 
-	r.getRoute(paths)
-
-	assert.Nil(t, r.getRoute([]string{}))
-	assert.Nil(t, r.getRoute([]string{""}))
-	assert.Nil(t, r.getRoute([]string{"", "x"}))
-	assert.Nil(t, r.getRoute([]string{"x", "y"}))
-	assert.NotNil(t, r.getRoute([]string{"x"}))
-	assert.NotNil(t, r.getRoute([]string{"y"}))
+	var node *route
+	var params Params
+	node, _ = r.getRoute([]string{})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{""})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"", "x"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"x", "y"})
+	assert.Nil(t, node)
+	node, params = r.getRoute([]string{"x"})
+	assert.NotNil(t, node)
+	if assert.NotNil(t, params["x"]) {
+		assert.Equal(t, "x", params["x"])
+	}
+	node, params = r.getRoute([]string{"y"})
+	if assert.NotNil(t, params["x"]) {
+		assert.Equal(t, "y", params["x"])
+	}
+	assert.NotNil(t, node)
 }
 
 func TestGetRegexRoute(t *testing.T) {
-	r := newRoute("/")
+	r := newRoute(nil, "/")
 	paths := strings.Split(strings.Trim("/:x:r([a-z]+)go", "/"), "/")
-	r.addRoute(paths, func(w http.ResponseWriter, req *http.Request) {})
+	r.addRoute(paths, mockHandler)
 
-	r.getRoute(paths)
-
-	assert.Nil(t, r.getRoute([]string{}))
-	assert.Nil(t, r.getRoute([]string{""}))
-	assert.Nil(t, r.getRoute([]string{"", "x"}))
-	assert.Nil(t, r.getRoute([]string{"x", "y"}))
-	assert.Nil(t, r.getRoute([]string{"x"}))
-	assert.Nil(t, r.getRoute([]string{"y"}))
-	assert.Nil(t, r.getRoute([]string{"rego", "y"}))
-	assert.NotNil(t, r.getRoute([]string{"rego"}))
+	var node *route
+	node, _ = r.getRoute([]string{})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{""})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"", "x"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"x", "y"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"x"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"y"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"rego", "y"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"rego"})
+	assert.NotNil(t, node)
 }
 
 func TestAddRootRoute(t *testing.T) {
-	r := newRoute("/")
+	r := newRoute(nil, "/")
 	paths := strings.Split(strings.Trim("/", "/"), "/")
-	r.addRoute(paths, func(w http.ResponseWriter, req *http.Request) {})
+	r.addRoute(paths, mockHandler)
 
 	assert.Equal(t, true, r.isEndPoint)
 	assert.Equal(t, tree{}, r.nodes)
 }
 
 func TestAddEmptyRootRoute(t *testing.T) {
-	r := newRoute("")
+	r := newRoute(nil, "")
 	paths := strings.Split(strings.Trim("/", "/"), "/")
-	r.addRoute(paths, func(w http.ResponseWriter, req *http.Request) {})
+	r.addRoute(paths, mockHandler)
 
 	assert.Equal(t, true, r.isEndPoint)
 	assert.Equal(t, tree{}, r.nodes)
 }
 
 func TestAddEmptyRootRouteTwo(t *testing.T) {
-	r := newRoute("")
+	r := newRoute(nil, "")
 	paths := strings.Split(strings.Trim("", "/"), "/")
-	r.addRoute(paths, func(w http.ResponseWriter, req *http.Request) {})
+	r.addRoute(paths, mockHandler)
 
 	assert.Equal(t, true, r.isEndPoint)
 	assert.Equal(t, tree{}, r.nodes)
 }
 
 func TestAddRoute(t *testing.T) {
-	r := newRoute("/")
+	r := newRoute(nil, "/")
 	paths := strings.Split(strings.Trim("/example", "/"), "/")
-	r.addRoute(paths, func(w http.ResponseWriter, req *http.Request) {})
+	r.addRoute(paths, mockHandler)
 
 	assert.Equal(t, false, r.isEndPoint)
 	if assert.NotNil(t, r.nodes["example"]) {
@@ -109,9 +135,9 @@ func TestAddRoute(t *testing.T) {
 }
 
 func TestAddParamRoute(t *testing.T) {
-	r := newRoute("/")
+	r := newRoute(nil, "/")
 	paths := strings.Split(strings.Trim("/:example", "/"), "/")
-	r.addRoute(paths, func(w http.ResponseWriter, req *http.Request) {})
+	r.addRoute(paths, mockHandler)
 
 	assert.Equal(t, false, r.isEndPoint)
 	if assert.NotNil(t, r.nodes[":example"]) {
@@ -122,9 +148,9 @@ func TestAddParamRoute(t *testing.T) {
 }
 
 func TestAddRegexpRoute(t *testing.T) {
-	r := newRoute("/")
+	r := newRoute(nil, "/")
 	paths := strings.Split(strings.Trim("/:example:r([a-z]+)go", "/"), "/")
-	r.addRoute(paths, func(w http.ResponseWriter, req *http.Request) {})
+	r.addRoute(paths, mockHandler)
 
 	assert.Equal(t, false, r.isEndPoint)
 

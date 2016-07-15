@@ -12,6 +12,13 @@ func TestGetRootRoute(t *testing.T) {
 	paths := strings.Split(strings.Trim("/", "/"), "/")
 	r.addRoute(paths, mockHandler)
 
+	assert.Equal(t, "/", r.Path())
+	assert.Equal(t, "", r.Regexp())
+	assert.Equal(t, true, r.IsRoot())
+	assert.Nil(t, r.Parent())
+	assert.NotNil(t, r.Nodes())
+	assert.Equal(t, true, r.IsEndPoint())
+
 	var node *route
 	node, _ = r.getRoute([]string{""})
 	assert.Nil(t, node)
@@ -49,7 +56,7 @@ func TestGetParamRoute(t *testing.T) {
 	r.addRoute(paths, mockHandler)
 
 	var node *route
-	var params Params
+	var params parameters
 	node, _ = r.getRoute([]string{})
 	assert.Nil(t, node)
 	node, _ = r.getRoute([]string{""})

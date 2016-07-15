@@ -13,8 +13,8 @@ type (
 	}
 )
 
-func mockHandler(_ http.ResponseWriter, _ *http.Request, _ Params) {}
-func mockMiddleware(_ *http.Request, _ Params) Error {
+func mockHandler(_ http.ResponseWriter, _ *http.Request, _ *Context) {}
+func mockMiddleware(_ *http.Request, _ *Context) Error {
 	return nil
 }
 func (m *mockResponseWriter) Header() (h http.Header) {

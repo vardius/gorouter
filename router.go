@@ -7,30 +7,65 @@ import (
 )
 
 type (
-	Params map[string]string
-	tree   map[string]*route
-	route  struct {
+	tree       map[string]*route
+	parameters map[string]string
+	route      struct {
 		path       string
+		regexp     *regexp.Regexp
 		root       *route
 		nodes      tree
-		nodesMu    sync.RWMutex
-		handler    HandlerFunc
 		middleware middlewares
-		regexp     *regexp.Regexp
+		handler    HandlerFunc
 		isEndPoint bool
+		nodesMu    sync.RWMutex
+	}
+	Route interface {
+		Path() string
+		Regexp() string
+		IsRoot() bool
+		Parent() Route
+		Nodes() map[string]Route
+		IsEndPoint() bool
 	}
 )
 
-func (r *route) getRoute(paths []string) (*route, Params) {
+func (r *route) Path() string {
+	return r.path
+}
+
+func (r *route) Regexp() string {
+	if r.regexp == nil {
+		return ""
+	}
+	return r.regexp.String()
+}
+
+func (r *route) Parent() Route {
+	return r.root
+}
+
+func (r *route) IsRoot() bool {
+	return r.root == nil
+}
+
+func (r *route) Nodes() map[string]Route {
+	newMap := make(map[string]Route)
+	for path, route := range r.nodes {
+		newMap[path] = route
+	}
+	return newMap
+}
+
+func (r *route) IsEndPoint() bool {
+	return r.isEndPoint
+}
+
+func (r *route) getRoute(paths []string) (*route, parameters) {
 	if len(paths) > 0 && paths[0] != "" {
 		r.nodesMu.RLock()
 		defer r.nodesMu.RUnlock()
 		if route := r.nodes[paths[0]]; route != nil {
-			node, params := route.getRoute(paths[1:])
-			if len(route.path) > 0 && route.path[:1] == ":" {
-				params[strings.Split(route.path, ":")[1]] = paths[0]
-			}
-			return node, params
+			return route.getRoute(paths[1:])
 		} else {
 			for path, route := range r.nodes {
 				if len(path) > 0 && path[:1] == ":" {
@@ -43,9 +78,9 @@ func (r *route) getRoute(paths []string) (*route, Params) {
 			}
 		}
 	} else if len(paths) == 0 && r.isEndPoint {
-		return r, make(Params)
+		return r, make(parameters)
 	}
-	return nil, make(Params)
+	return nil, make(parameters)
 }
 
 func (r *route) addRoute(paths []string, f HandlerFunc) {
@@ -76,10 +111,6 @@ func (r *route) setRegexp(exp string) {
 	if err == nil {
 		r.regexp = reg
 	}
-}
-
-func (r *route) isRoot() bool {
-	return r.root == nil
 }
 
 func newRoute(root *route, path string) *route {

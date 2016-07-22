@@ -11,6 +11,7 @@ type (
 		routes     tree
 		middleware middlewares
 		routesMu   sync.RWMutex
+		notFound   http.Handler
 	}
 	HandlerFunc func(http.ResponseWriter, *http.Request, *Context)
 	Server      interface {
@@ -22,6 +23,7 @@ type (
 		OPTIONS(path string, f HandlerFunc)
 		Use(path string, priority int, f MiddlewareFunc)
 		ServeHTTP(http.ResponseWriter, *http.Request)
+		NotFound(http.Handler)
 		Routes() map[string]Route
 	}
 )
@@ -85,6 +87,10 @@ func (s *server) Use(path string, priority int, f MiddlewareFunc) {
 	}
 }
 
+func (s *server) NotFound(notFound http.Handler) {
+	s.notFound = notFound
+}
+
 func (s *server) Routes() map[string]Route {
 	newMap := make(map[string]Route)
 	for path, route := range s.routes {
@@ -124,7 +130,11 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	//handle options method here
 
-	http.NotFound(w, req)
+	if s.notFound != nil {
+		s.notFound.ServeHTTP(w, req)
+	} else {
+		http.NotFound(w, req)
+	}
 }
 
 func New() Server {

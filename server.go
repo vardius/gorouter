@@ -69,29 +69,7 @@ func (s *server) OPTIONS(path string, f HandlerFunc) {
 }
 
 func (s *server) Use(path string, priority int, f MiddlewareFunc) {
-	m := &middleware{
-		path:     path,
-		priority: priority,
-		handler:  f,
-	}
-	if path == "" {
-		s.middleware = append(s.middleware, m)
-		sortByPriority(s.middleware)
-	} else if path == "/" {
-		for _, r := range s.routes {
-			r.middleware = append(r.middleware, m)
-			sortByPriority(r.middleware)
-		}
-	} else {
-		paths := strings.Split(strings.Trim(path, "/"), "/")
-		for _, r := range s.routes {
-			route, _ := r.getRoute(paths)
-			if route != nil {
-				route.middleware = append(route.middleware, m)
-				sortByPriority(route.middleware)
-			}
-		}
-	}
+	s.addMiddleware(path, priority, f)
 }
 
 func (s *server) NotFound(notFound http.Handler) {
@@ -100,6 +78,10 @@ func (s *server) NotFound(notFound http.Handler) {
 
 func (s *server) NotAllowed(notAllowed http.Handler) {
 	s.notAllowed = notAllowed
+}
+
+func (s *server) OnPanic(onPanic PanicHandlerFunc) {
+	s.onPanic = onPanic
 }
 
 func (s *server) ServeFiles(path string, strip bool) {
@@ -190,6 +172,38 @@ func (s *server) addRoute(method, path string, f HandlerFunc) {
 	r.addRoute(paths, f)
 }
 
+func (s *server) addMiddleware(path string, priority int, f MiddlewareFunc) {
+	m := &middleware{
+		path:     path,
+		priority: priority,
+		handler:  f,
+	}
+	if path == "" {
+		s.middleware = append(s.middleware, m)
+		sortByPriority(s.middleware)
+	} else if path == "/" {
+		for _, r := range s.routes {
+			r.middleware = append(r.middleware, m)
+			sortByPriority(r.middleware)
+		}
+	} else {
+		paths := strings.Split(strings.Trim(path, "/"), "/")
+		for _, r := range s.routes {
+			route, _ := r.getRoute(paths)
+			if route != nil {
+				route.middleware = append(route.middleware, m)
+				sortByPriority(route.middleware)
+			}
+		}
+	}
+}
+
+func (s *server) recv(w http.ResponseWriter, req *http.Request) {
+	if rcv := recover(); rcv != nil {
+		s.onPanic(w, req, rcv)
+	}
+}
+
 func (s *server) allowed(req *http.Request) (allow string) {
 	path := req.URL.Path
 	if path == "*" {
@@ -230,12 +244,6 @@ func (s *server) allowed(req *http.Request) (allow string) {
 	return
 }
 
-func (s *server) recv(w http.ResponseWriter, req *http.Request) {
-	if rcv := recover(); rcv != nil {
-		s.onPanic(w, req, rcv)
-	}
-}
-
 func (s *server) serveFiles(w http.ResponseWriter, req *http.Request) {
 	fp := req.URL.Path
 	//Return a 404 if the file doesn't exist
@@ -251,7 +259,7 @@ func (s *server) serveFiles(w http.ResponseWriter, req *http.Request) {
 		s.serveNotFound(w, req)
 		return
 	}
-	s.fileServer(w, req)
+	s.fileServer.ServeHTTP(w, req)
 }
 
 func (s *server) serveNotFound(w http.ResponseWriter, req *http.Request) {

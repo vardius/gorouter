@@ -2,19 +2,15 @@ package goapi
 
 import (
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 )
 
 type (
-	server struct {
-		routes     tree
-		middleware middlewares
-		routesMu   sync.RWMutex
-		notFound   http.Handler
-	}
-	HandlerFunc func(http.ResponseWriter, *http.Request, *Context)
-	Server      interface {
+	HandlerFunc      func(http.ResponseWriter, *http.Request, *Context)
+	PanicHandlerFunc func(http.ResponseWriter, *http.Request, interface{})
+	Server           interface {
 		POST(path string, f HandlerFunc)
 		GET(path string, f HandlerFunc)
 		PUT(path string, f HandlerFunc)
@@ -24,7 +20,18 @@ type (
 		Use(path string, priority int, f MiddlewareFunc)
 		ServeHTTP(http.ResponseWriter, *http.Request)
 		NotFound(http.Handler)
+		NotAllowed(http.Handler)
+		OnPanic(PanicHandlerFunc)
 		Routes() map[string]Route
+	}
+	server struct {
+		routes     tree
+		middleware middlewares
+		routesMu   sync.RWMutex
+		fileServer http.Handler
+		notFound   http.Handler
+		notAllowed http.Handler
+		onPanic    PanicHandlerFunc
 	}
 )
 
@@ -91,19 +98,29 @@ func (s *server) NotFound(notFound http.Handler) {
 	s.notFound = notFound
 }
 
-func (s *server) Routes() map[string]Route {
-	newMap := make(map[string]Route)
-	for path, route := range s.routes {
-		newMap[path] = route
+func (s *server) NotAllowed(notAllowed http.Handler) {
+	s.notAllowed = notAllowed
+}
+
+func (s *server) ServeFiles(path string, strip bool) {
+	if path == "" {
+		panic("goapi.ServeFiles: empty path!")
 	}
-	return newMap
+	handler := http.FileServer(http.Dir(path))
+	if strip {
+		handler = http.StripPrefix("/"+path+"/", handler)
+	}
+	s.fileServer = handler
 }
 
 func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	//deffer recover panic here
+	if s.onPanic != nil {
+		defer s.recv(w, req)
+	}
 
 	s.routesMu.RLock()
 	defer s.routesMu.RUnlock()
+
 	if r := s.routes[req.Method]; r != nil {
 		ctx, err := fromRequest(r, req)
 		if err == nil {
@@ -128,19 +145,35 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	//handle options method here
-
-	if s.notFound != nil {
-		s.notFound.ServeHTTP(w, req)
+	//Handle OPTIONS
+	if req.Method == OPTIONS {
+		if allow := s.allowed(req); len(allow) > 0 {
+			w.Header().Set("Allow", allow)
+			return
+		}
+	} else if req.Method == GET && s.fileServer != nil {
+		//Handle file serve
+		s.serveFiles(w, req)
+		return
 	} else {
-		http.NotFound(w, req)
+		//Handle 405
+		if allow := s.allowed(req); len(allow) > 0 {
+			w.Header().Set("Allow", allow)
+			s.serveNotAllowed(w, req)
+			return
+		}
 	}
+
+	//Handle 404
+	s.serveNotFound(w, req)
 }
 
-func New() Server {
-	return &server{
-		routes: make(tree),
+func (s *server) Routes() map[string]Route {
+	newMap := make(map[string]Route)
+	for path, route := range s.routes {
+		newMap[path] = route
 	}
+	return newMap
 }
 
 func (s *server) addRoute(method, path string, f HandlerFunc) {
@@ -155,4 +188,93 @@ func (s *server) addRoute(method, path string, f HandlerFunc) {
 		s.routes[method] = r
 	}
 	r.addRoute(paths, f)
+}
+
+func (s *server) allowed(req *http.Request) (allow string) {
+	path := req.URL.Path
+	if path == "*" {
+		for method := range s.routes {
+			if method == "OPTIONS" {
+				continue
+			}
+			if len(allow) == 0 {
+				allow = method
+			} else {
+				allow += ", " + method
+			}
+		}
+	} else {
+		for method, root := range s.routes {
+			if method == req.Method || method == "OPTIONS" {
+				continue
+			}
+
+			var paths []string
+			if path = strings.Trim(path, "/"); path != "" {
+				paths = strings.Split(path, "/")
+			}
+
+			r, _ := root.getRoute(paths)
+			if r != nil {
+				if len(allow) == 0 {
+					allow = method
+				} else {
+					allow += ", " + method
+				}
+			}
+		}
+	}
+	if len(allow) > 0 {
+		allow += ", OPTIONS"
+	}
+	return
+}
+
+func (s *server) recv(w http.ResponseWriter, req *http.Request) {
+	if rcv := recover(); rcv != nil {
+		s.onPanic(w, req, rcv)
+	}
+}
+
+func (s *server) serveFiles(w http.ResponseWriter, req *http.Request) {
+	fp := req.URL.Path
+	//Return a 404 if the file doesn't exist
+	info, err := os.Stat(fp)
+	if err != nil {
+		if os.IsNotExist(err) {
+			s.serveNotFound(w, req)
+			return
+		}
+	}
+	//Return a 404 if the request is for a directory
+	if info.IsDir() {
+		s.serveNotFound(w, req)
+		return
+	}
+	s.fileServer(w, req)
+}
+
+func (s *server) serveNotFound(w http.ResponseWriter, req *http.Request) {
+	if s.notFound != nil {
+		s.notFound.ServeHTTP(w, req)
+	} else {
+		http.NotFound(w, req)
+	}
+}
+
+func (s *server) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
+	if s.notAllowed != nil {
+		s.notAllowed.ServeHTTP(w, req)
+	} else {
+		http.Error(w,
+			http.StatusText(http.StatusMethodNotAllowed),
+			http.StatusMethodNotAllowed,
+		)
+	}
+}
+
+func New() Server {
+	return &server{
+		routes: make(tree),
+	}
 }

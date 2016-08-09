@@ -263,7 +263,7 @@ func TestServerNotAllowed(t *testing.T) {
 	assert.Equal(t, http.StatusMethodNotAllowed, w.code)
 }
 
-func TestServerOptions() {
+func TestServerOptions(t *testing.T) {
 	var (
 		s *server     = New().(*server)
 		h HandlerFunc = mockHandler

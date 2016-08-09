@@ -13,7 +13,9 @@ type (
 	}
 )
 
-func mockHandler(_ http.ResponseWriter, _ *http.Request, _ *Context) {}
+func mockHttpHandler(_ http.ResponseWriter, _ *http.Request)                 {}
+func mockPanicHandler(_ http.ResponseWriter, _ *http.Request, _ interface{}) {}
+func mockHandler(_ http.ResponseWriter, _ *http.Request, _ *Context)         {}
 func mockMiddleware(_ *http.Request, _ *Context) Error {
 	return nil
 }

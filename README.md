@@ -2,7 +2,7 @@ Vardius - goapi
 ================
 [![Build Status](https://travis-ci.org/Vardius/goapi.svg?branch=master)](https://travis-ci.org/Vardius/goapi) [![](https://godoc.org/github.com/vardius/goapi?status.svg)](http://godoc.org/github.com/vardius/goapi) [![Coverage Status](https://coveralls.io/repos/github/Vardius/goapi/badge.svg?branch=master)](https://coveralls.io/github/Vardius/goapi?branch=master)
 
-The fastest Go API micro framwework, HTTP request router, multiplexer, mux.
+The fastest Go Server/API micro framwework, HTTP request router, multiplexer, mux.
 
 ABOUT
 ==================================================

@@ -132,6 +132,39 @@ func TestUseNodes(t *testing.T) {
 	}
 }
 
+func TestNotFound(t *testing.T) {
+	var (
+		s *server          = New().(*server)
+		h http.HandlerFunc = mockHttpHandler
+	)
+	s.NotFound(h)
+	assert.NotNil(t, s.notFound)
+}
+
+func TestNotAllowed(t *testing.T) {
+	var (
+		s *server          = New().(*server)
+		h http.HandlerFunc = mockHttpHandler
+	)
+	s.NotAllowed(h)
+	assert.NotNil(t, s.notAllowed)
+}
+
+func TestOnPanic(t *testing.T) {
+	var (
+		s *server          = New().(*server)
+		h PanicHandlerFunc = mockPanicHandler
+	)
+	s.OnPanic(h)
+	assert.NotNil(t, s.onPanic)
+}
+
+func TestServerFiles(t *testing.T) {
+	var s *server = New().(*server)
+	s.ServeFiles("static", true)
+	assert.NotNil(t, s.fileServer)
+}
+
 func TestServer(t *testing.T) {
 	s := New().(*server)
 
@@ -148,6 +181,25 @@ func TestServer(t *testing.T) {
 	s.ServeHTTP(w, req)
 
 	assert.Equal(t, true, serverd)
+}
+
+func TestServerPanic(t *testing.T) {
+	s := New().(*server)
+
+	paniced := false
+	s.OnPanic(func(_ http.ResponseWriter, _ *http.Request, _ interface{}) {
+		paniced = true
+	})
+
+	s.GET("/:param", func(_ http.ResponseWriter, _ *http.Request, _ *Context) {
+		panic("test panic recover")
+	})
+
+	w := new(mockResponseWriter)
+	req, _ := http.NewRequest("GET", "/x", nil)
+	s.ServeHTTP(w, req)
+
+	assert.Equal(t, true, paniced)
 }
 
 func TestMiddlewareError(t *testing.T) {
@@ -168,6 +220,38 @@ func TestMiddlewareError(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.code)
 }
 
+func TestServerNotFound(t *testing.T) {
+	var (
+		s *server     = New().(*server)
+		h HandlerFunc = mockHandler
+	)
+
+	s.GET("/x", h)
+
+	w := new(mockResponseWriter)
+	w.header = http.Header{}
+	req, _ := http.NewRequest("GET", "/y", nil)
+	s.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.code)
+}
+
+func TestServerNotAllowed(t *testing.T) {
+	var (
+		s *server     = New().(*server)
+		h HandlerFunc = mockHandler
+	)
+
+	s.GET("/x", h)
+
+	w := new(mockResponseWriter)
+	w.header = http.Header{}
+	req, _ := http.NewRequest("POST", "/x", nil)
+	s.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, w.code)
+}
+
 func TestGlobalMiddlewareError(t *testing.T) {
 	var (
 		s *server     = New().(*server)
@@ -185,20 +269,4 @@ func TestGlobalMiddlewareError(t *testing.T) {
 	s.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.code)
-}
-
-func TestNotFound(t *testing.T) {
-	var (
-		s *server     = New().(*server)
-		h HandlerFunc = mockHandler
-	)
-
-	s.GET("/x", h)
-
-	w := new(mockResponseWriter)
-	w.header = http.Header{}
-	req, _ := http.NewRequest("GET", "/y", nil)
-	s.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusNotFound, w.code)
 }

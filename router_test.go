@@ -101,6 +101,38 @@ func TestGetRegexRoute(t *testing.T) {
 	assert.NotNil(t, node)
 }
 
+func TestGetNestedRegexRoute(t *testing.T) {
+	r := newRoute(nil, "/")
+	paths := strings.Split(strings.Trim("/:x:r([a-z]+)go/:y:r([a-z]+)go", "/"), "/")
+	r.addRoute(paths, mockHandler)
+
+	var node *route
+	node, _ = r.getRoute([]string{})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{""})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"", "x"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"", "x", "y"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"x", "y"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"x", "y", "z"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"x"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"y"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"rego"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"rego", "y"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"rego", "y", "rego"})
+	assert.Nil(t, node)
+	node, _ = r.getRoute([]string{"rego", "rego"})
+	assert.NotNil(t, node)
+}
+
 func TestAddRootRoute(t *testing.T) {
 	r := newRoute(nil, "/")
 	paths := strings.Split(strings.Trim("/", "/"), "/")

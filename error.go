@@ -1,4 +1,4 @@
-package goapi
+package goserver
 
 type (
 	Error interface {

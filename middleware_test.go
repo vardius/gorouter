@@ -1,4 +1,4 @@
-package goapi
+package goserver
 
 import (
 	"testing"

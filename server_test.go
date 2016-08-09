@@ -2,6 +2,7 @@ package goapi
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -165,6 +166,17 @@ func TestServerFiles(t *testing.T) {
 	assert.NotNil(t, s.fileServer)
 }
 
+func TestServerFilesError(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
+
+	var s *server = New().(*server)
+	s.ServeFiles("", true)
+}
+
 func TestServer(t *testing.T) {
 	s := New().(*server)
 
@@ -269,4 +281,21 @@ func TestGlobalMiddlewareError(t *testing.T) {
 	s.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.code)
+}
+
+func ExampleServerOptions() {
+	var (
+		s *server     = New().(*server)
+		h HandlerFunc = mockHandler
+	)
+	s.GET("/x", h)
+	s.POST("/x", h)
+
+	w := new(mockResponseWriter)
+	w.header = http.Header{}
+	req, _ := http.NewRequest("OPTIONS", "/x", nil)
+	s.ServeHTTP(w, req)
+
+	fmt.Println(w.Header().Get("Allow"))
+	// Output: GET, POST, OPTIONS
 }

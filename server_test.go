@@ -2,7 +2,6 @@ package goserver
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"testing"
 
@@ -264,6 +263,21 @@ func TestServerNotAllowed(t *testing.T) {
 	assert.Equal(t, http.StatusMethodNotAllowed, w.code)
 }
 
+func TestServerOptions() {
+	var (
+		s *server     = New().(*server)
+		h HandlerFunc = mockHandler
+	)
+	s.GET("/x", h)
+	s.POST("/x", h)
+
+	w := new(mockResponseWriter)
+	w.header = http.Header{}
+	req, _ := http.NewRequest("OPTIONS", "/x", nil)
+	s.ServeHTTP(w, req)
+	assert.NotEmpty(t, w.Header().Get("Allow"))
+}
+
 func TestGlobalMiddlewareError(t *testing.T) {
 	var (
 		s *server     = New().(*server)
@@ -281,21 +295,4 @@ func TestGlobalMiddlewareError(t *testing.T) {
 	s.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.code)
-}
-
-func ExampleServerOptions() {
-	var (
-		s *server     = New().(*server)
-		h HandlerFunc = mockHandler
-	)
-	s.GET("/x", h)
-	s.POST("/x", h)
-
-	w := new(mockResponseWriter)
-	w.header = http.Header{}
-	req, _ := http.NewRequest("OPTIONS", "/x", nil)
-	s.ServeHTTP(w, req)
-
-	fmt.Println(w.Header().Get("Allow"))
-	// Output: GET, POST, OPTIONS
 }

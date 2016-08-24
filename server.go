@@ -19,6 +19,7 @@ type (
 		OPTIONS(path string, f HandlerFunc)
 		Use(path string, priority int, f MiddlewareFunc)
 		ServeHTTP(http.ResponseWriter, *http.Request)
+		ServeFiles(path string, strip bool)
 		NotFound(http.Handler)
 		NotAllowed(http.Handler)
 		OnPanic(PanicHandlerFunc)

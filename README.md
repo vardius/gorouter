@@ -119,6 +119,57 @@ func main() {
 ```
 
 ## Basic Authentication
+###Using middleware
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+
+    "github.com/vardius/goserver"
+)
+
+type (
+	statusError struct {
+		code int
+		err  error
+	}
+)
+
+func BasicAuth(r *http.Request, c *Context) Error {
+	requiredUser := "gordon"
+	requiredPassword := "secret!"
+	
+	// Get the Basic Authentication credentials
+	user, password, hasAuth := r.BasicAuth()
+	
+	if hasAuth && user == requiredUser && password == requiredPassword {
+		return nil;
+	} else {		
+		return statusError{http.StatusUnauthorized, errors.New(http.StatusUnauthorized)}
+	}
+}
+
+func Index(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
+	fmt.Fprint(w, "Not protected!\n")
+}
+
+func Protected(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
+	fmt.Fprint(w, "Protected!\n")
+}
+
+func main() {
+    server = goserver.New()
+	server.GET("/", Index)	
+	server.GET("/protected", Protected)
+	server.Use("/protected", 0, BasicAuth)	
+
+	log.Fatal(http.ListenAndServe(":8080", server))
+}
+```
+###Not using middleware
 ```go
 package main
 
@@ -160,7 +211,7 @@ func main() {
 
     server = goserver.New()
 	server.GET("/", Index)
-	server.GET("/protected/", BasicAuth(Protected, user, pass))
+	server.GET("/protected", BasicAuth(Protected, user, pass))
 
 	log.Fatal(http.ListenAndServe(":8080", server))
 }

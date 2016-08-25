@@ -12,7 +12,7 @@ type (
 		priority int
 		handler  MiddlewareFunc
 	}
-	MiddlewareFunc func(*http.Request, *Context) Error
+	MiddlewareFunc func(http.ResponseWriter, *http.Request, *Context) Error
 )
 
 func (m middlewares) Len() int           { return len(m) }

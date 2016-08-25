@@ -219,7 +219,7 @@ func TestMiddlewareError(t *testing.T) {
 		h HandlerFunc = mockHandler
 	)
 	s.GET("/x", h)
-	s.Use("/x", 0, func(req *http.Request, _ *Context) Error {
+	s.Use("/x", 0, func(_ http.ResponseWriter, req *http.Request, _ *Context) Error {
 		return statusError{http.StatusBadRequest, errors.New("Bad request")}
 	})
 
@@ -285,7 +285,7 @@ func TestGlobalMiddlewareError(t *testing.T) {
 	)
 
 	s.GET("/x", h)
-	s.Use("", 0, func(req *http.Request, _ *Context) Error {
+	s.Use("", 0, func(_ http.ResponseWriter, req *http.Request, _ *Context) Error {
 		return statusError{http.StatusBadRequest, errors.New("Bad request")}
 	})
 

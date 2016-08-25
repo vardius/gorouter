@@ -138,7 +138,7 @@ type (
 	}
 )
 
-func BasicAuth(r *http.Request, c *Context) Error {
+func BasicAuth(w http.ResponseWriter, r *http.Request, c *Context) Error {
 	requiredUser := "gordon"
 	requiredPassword := "secret!"
 	
@@ -147,7 +147,8 @@ func BasicAuth(r *http.Request, c *Context) Error {
 	
 	if hasAuth && user == requiredUser && password == requiredPassword {
 		return nil;
-	} else {		
+	} else {
+		w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
 		return statusError{http.StatusUnauthorized, errors.New(http.StatusUnauthorized)}
 	}
 }

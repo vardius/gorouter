@@ -110,13 +110,13 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			route := ctx.Route.(*route)
 			if route.handler != nil {
 				for _, m := range s.middleware {
-					if err := m.handler(req, ctx); err != nil {
+					if err := m.handler(w, req, ctx); err != nil {
 						http.Error(w, err.Error(), err.Status())
 						return
 					}
 				}
 				for _, m := range route.middleware {
-					if err := m.handler(req, ctx); err != nil {
+					if err := m.handler(w, req, ctx); err != nil {
 						http.Error(w, err.Error(), err.Status())
 						return
 					}

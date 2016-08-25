@@ -119,7 +119,7 @@ func main() {
 ```
 
 ## Basic Authentication
-###Using middleware
+###Useing middleware
 ```go
 package main
 
@@ -169,7 +169,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", server))
 }
 ```
-###Not using middleware
+###Not useing middleware
 ```go
 package main
 

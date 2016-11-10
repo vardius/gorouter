@@ -17,4 +17,4 @@ script:
   - go test -v -cover -race -coverprofile=coverage.out
   - $HOME/gopath/bin/gover
 after_script:
-  - goveralls -coverprofile=coverage.out -service=travis-ci -repotoken='SRBCsblTmbxSlR6cR6APELIJUWMlN47CA'
+  - goveralls -coverprofile=coverage.out -service=travis-ci -repotoken='bsHdBuZzGBcn0jGddzJVciJHVAd0fjvNH'

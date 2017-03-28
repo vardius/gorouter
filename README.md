@@ -20,8 +20,7 @@ HOW TO USE
 
 [GoDoc](http://godoc.org/github.com/vardius/goserver)
 -------
-
-##Basic example
+## Basic example
 ```go
 package main
 
@@ -49,8 +48,7 @@ func main() {
     log.Fatal(http.ListenAndServe(":8080", router))
 }
 ```
-
-##Serve files
+## Serve files
 ```go
 package main
 
@@ -82,7 +80,6 @@ func main() {
     log.Fatal(http.ListenAndServe(":8080", router))
 }
 ```
-
 ## Multi-domain / Sub-domains
 ```go
 // We need an object that implements the http.Handler interface.
@@ -117,9 +114,8 @@ func main() {
 	log.Fatal(http.ListenAndServe(":12345", hs))
 }
 ```
-
 ## Basic Authentication
-###Useing middleware
+### Useing middleware
 ```go
 package main
 
@@ -170,7 +166,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", server))
 }
 ```
-###Not useing middleware
+### Not useing middleware
 ```go
 package main
 

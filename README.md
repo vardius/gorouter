@@ -45,7 +45,37 @@ func main() {
     server.GET("/", Index)
     server.GET("/hello/:name", Hello)
 
-    log.Fatal(http.ListenAndServe(":8080", router))
+    log.Fatal(http.ListenAndServe(":8080", server))
+}
+```
+## HTTP2 example
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+    "net/http"
+	
+    "golang.org/x/net/http2"
+    "github.com/vardius/goserver"
+)
+
+func Index(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
+    fmt.Fprint(w, "Welcome!\n")
+}
+
+func Hello(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
+    fmt.Fprintf(w, "hello, %s!\n", c.Params["name"])
+}
+
+func main() {
+    server = goserver.New()
+    server.GET("/", Index)
+    server.GET("/hello/:name", Hello)
+
+    http2.ConfigureServer(server, &http2.Server{})
+    log.Fatal(server.ListenAndServeTLS("server.crt", "server.key"))
 }
 ```
 ## Serve files
@@ -77,7 +107,7 @@ func main() {
 	//second parameter decide if prefix should be striped
     server.ServeFiles("static", false)
 
-    log.Fatal(http.ListenAndServe(":8080", router))
+    log.Fatal(http.ListenAndServe(":8080", server))
 }
 ```
 ## Multi-domain / Sub-domains

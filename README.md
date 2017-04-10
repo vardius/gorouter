@@ -41,7 +41,7 @@ func Hello(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
 }
 
 func main() {
-    server = goserver.New()
+    server := goserver.New()
     server.GET("/", Index)
     server.GET("/hello/:name", Hello)
 
@@ -70,7 +70,7 @@ func Hello(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
 }
 
 func main() {
-    server = goserver.New()
+    server := goserver.New()
     server.GET("/", Index)
     server.GET("/hello/:name", Hello)
 
@@ -99,7 +99,7 @@ func Hello(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
 }
 
 func main() {
-    server = goserver.New()
+    server := goserver.New()
     server.GET("/", Index)
     server.GET("/hello/:name", Hello)
 	//If route not found and the request method equals Get
@@ -131,7 +131,7 @@ func (hs HostSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	// Initialize a server as usual
-    server = goserver.New()
+        server := goserver.New()
 	server.GET("/", Index)
 	server.GET("/hello/:name", Hello)
 
@@ -154,7 +154,7 @@ import (
 	"log"
 	"net/http"
 
-    "github.com/vardius/goserver"
+        "github.com/vardius/goserver"
 )
 
 type (
@@ -188,7 +188,7 @@ func Protected(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
 }
 
 func main() {
-    server = goserver.New()
+	server := goserver.New()
 	server.GET("/", Index)	
 	server.GET("/protected", Protected)
 	server.Use("/protected", 0, BasicAuth)	
@@ -205,7 +205,7 @@ import (
 	"log"
 	"net/http"
 
-    "github.com/vardius/goserver"
+        "github.com/vardius/goserver"
 )
 
 func BasicAuth(h goserver.HandlerFunc, requiredUser, requiredPassword string) goserver.HandlerFunc {
@@ -236,7 +236,7 @@ func main() {
 	user := "gordon"
 	pass := "secret!"
 
-    server = goserver.New()
+	server := goserver.New()
 	server.GET("/", Index)
 	server.GET("/protected", BasicAuth(Protected, user, pass))
 

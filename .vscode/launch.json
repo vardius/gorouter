@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Remote debug in Docker",
+            "type": "go",
+            "request": "launch",
+            "mode": "remote",
+            "program": "${workspaceRoot}",
+            "env": {},
+            "args": [],
+            "remotePath": "/go/src/app",
+            "port": 2345,
+            "host": "192.168.99.100",
+			"showLog": true
+        }
+    ]
+}

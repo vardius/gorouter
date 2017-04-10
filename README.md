@@ -1,6 +1,6 @@
 Vardius - goserver
 ================
-[![Build Status](https://travis-ci.org/Vardius/goserver.svg?branch=master)](https://travis-ci.org/Vardius/goserver) [![](https://godoc.org/github.com/vardius/goserver?status.svg)](http://godoc.org/github.com/vardius/goserver) [![Coverage Status](https://coveralls.io/repos/github/Vardius/goserver/badge.svg?branch=master)](https://coveralls.io/github/Vardius/goserver?branch=master)
+[![Build Status](https://travis-ci.org/vardius/goserver.svg?branch=master)](https://travis-ci.org/vardius/goserver) [![](https://godoc.org/github.com/vardius/goserver?status.svg)](http://godoc.org/github.com/vardius/goserver) [![Coverage Status](https://coveralls.io/repos/github/Vardius/goserver/badge.svg?branch=master)](https://coveralls.io/github/vardius/goserver?branch=master)
 
 The fastest Go Server/API micro framwework, HTTP request router, multiplexer, mux.
 
@@ -131,7 +131,7 @@ func (hs HostSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	// Initialize a server as usual
-        server := goserver.New()
+    server := goserver.New()
 	server.GET("/", Index)
 	server.GET("/hello/:name", Hello)
 
@@ -154,7 +154,7 @@ import (
 	"log"
 	"net/http"
 
-        "github.com/vardius/goserver"
+    "github.com/vardius/goserver"
 )
 
 type (
@@ -205,7 +205,7 @@ import (
 	"log"
 	"net/http"
 
-        "github.com/vardius/goserver"
+    "github.com/vardius/goserver"
 )
 
 func BasicAuth(h goserver.HandlerFunc, requiredUser, requiredPassword string) goserver.HandlerFunc {

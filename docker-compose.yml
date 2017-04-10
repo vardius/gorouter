@@ -1,0 +1,18 @@
+version: '3'
+services:
+  app:
+    build: ./
+    ports:
+     - "2345:2345"
+    volumes:
+      - .:/go/src/github.com/vardius/goserver
+    networks:
+      - front-tier
+      - back-tier
+    working_dir: /go/src/github.com/vardius/goserver
+    command: dlv test --headless --listen=:2345 --log
+networks:
+  front-tier:
+    driver: bridge
+  back-tier:
+    driver: bridge

@@ -281,9 +281,6 @@ func (s *server) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// Make sure the Router conforms with the http.Handler interface
-// var _ http.Handler = New()
-
 func New() Server {
 	return &server{
 		routes: make(tree),

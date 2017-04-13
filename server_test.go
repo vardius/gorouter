@@ -8,6 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestInterface(t *testing.T) {
+	var _ http.Handler = New()
+}
+
 func TestPOST(t *testing.T) {
 	var (
 		s *server          = New().(*server)

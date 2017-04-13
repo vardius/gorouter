@@ -32,12 +32,13 @@ import (
     "github.com/vardius/goserver"
 )
 
-func Index(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
+func Index(w http.ResponseWriter, r *http.Request) {
     fmt.Fprint(w, "Welcome!\n")
 }
 
-func Hello(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
-    fmt.Fprintf(w, "hello, %s!\n", c.Params["name"])
+func Hello(w http.ResponseWriter, r *http.Request) {
+	params, _ := goserver.ParametersFromContext(r.Context())
+    fmt.Fprintf(w, "hello, %s!\n", params["name"])
 }
 
 func main() {
@@ -61,12 +62,13 @@ import (
     "github.com/vardius/goserver"
 )
 
-func Index(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
+func Index(w http.ResponseWriter, r *http.Request) {
     fmt.Fprint(w, "Welcome!\n")
 }
 
-func Hello(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
-    fmt.Fprintf(w, "hello, %s!\n", c.Params["name"])
+func Hello(w http.ResponseWriter, r *http.Request) {
+	params, _ := goserver.ParametersFromContext(r.Context())
+    fmt.Fprintf(w, "hello, %s!\n", params["name"])
 }
 
 func main() {
@@ -90,12 +92,13 @@ import (
     "github.com/vardius/goserver"
 )
 
-func Index(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
+func Index(w http.ResponseWriter, r *http.Request) {
     fmt.Fprint(w, "Welcome!\n")
 }
 
-func Hello(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
-    fmt.Fprintf(w, "hello, %s!\n", c.Params["name"])
+func Hello(w http.ResponseWriter, r *http.Request) {
+	params, _ := goserver.ParametersFromContext(r.Context())
+    fmt.Fprintf(w, "hello, %s!\n", params["name"])
 }
 
 func main() {
@@ -164,7 +167,7 @@ type (
 	}
 )
 
-func BasicAuth(w http.ResponseWriter, r *http.Request, c *Context) Error {
+func BasicAuth(w http.ResponseWriter, r *http.Request) Error {
 	requiredUser := "gordon"
 	requiredPassword := "secret!"
 	
@@ -179,11 +182,11 @@ func BasicAuth(w http.ResponseWriter, r *http.Request, c *Context) Error {
 	}
 }
 
-func Index(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
+func Index(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Not protected!\n")
 }
 
-func Protected(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
+func Protected(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Protected!\n")
 }
 
@@ -208,14 +211,14 @@ import (
     "github.com/vardius/goserver"
 )
 
-func BasicAuth(h goserver.HandlerFunc, requiredUser, requiredPassword string) goserver.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
+func BasicAuth(h http.Handler, requiredUser, requiredPassword string) http.Handler {
+	return func(w http.ResponseWriter, r *http.Request) {
 		// Get the Basic Authentication credentials
 		user, password, hasAuth := r.BasicAuth()
 
 		if hasAuth && user == requiredUser && password == requiredPassword {
 			// Delegate request to the given handle
-			h(w, r, c)
+			h(w, r)
 		} else {
 			// Request Basic Authentication otherwise
 			w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
@@ -224,11 +227,11 @@ func BasicAuth(h goserver.HandlerFunc, requiredUser, requiredPassword string) go
 	}
 }
 
-func Index(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
+func Index(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Not protected!\n")
 }
 
-func Protected(w http.ResponseWriter, r *http.Request, c *goserver.Context) {
+func Protected(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Protected!\n")
 }
 

@@ -1,5 +1,11 @@
 #!/bin/sh
 
+go get -u github.com/golang/dep/...
+dep init
+dep ensure -update
+
+# dep ensure github.com/pkg/errors@^0.8.0
+
 go get -u -v github.com/derekparker/delve/cmd/dlv
 go get -u -v github.com/stretchr/testify/assert
 

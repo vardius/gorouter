@@ -1,6 +1,7 @@
 package goserver
 
 import (
+	"net/http"
 	"regexp"
 	"strings"
 	"sync"
@@ -15,7 +16,7 @@ type (
 		root       *route
 		nodes      tree
 		middleware middlewares
-		handler    HandlerFunc
+		handler    http.HandlerFunc
 		isEndPoint bool
 		nodesMu    sync.RWMutex
 	}
@@ -83,7 +84,16 @@ func (r *route) getRoute(paths []string) (*route, parameters) {
 	return nil, make(parameters)
 }
 
-func (r *route) addRoute(paths []string, f HandlerFunc) {
+func (r *route) getRouteFromRequest(req *http.Request) (*route, parameters) {
+	var paths []string
+	if path := strings.Trim(req.URL.Path, "/"); path != "" {
+		paths = strings.Split(path, "/")
+	}
+
+	return r.getRoute(paths)
+}
+
+func (r *route) addRoute(paths []string, f http.HandlerFunc) {
 	if len(paths) > 0 && paths[0] != "" {
 		r.nodesMu.Lock()
 		defer r.nodesMu.Unlock()
@@ -96,7 +106,7 @@ func (r *route) addRoute(paths []string, f HandlerFunc) {
 	}
 }
 
-func (r *route) setEndPoint(f HandlerFunc) {
+func (r *route) setEndPoint(f http.HandlerFunc) {
 	if len(r.path) > 0 && r.path[:1] == ":" {
 		if parts := strings.Split(r.path, ":"); len(parts) == 3 {
 			r.setRegexp(parts[2])

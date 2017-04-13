@@ -1,26 +1,19 @@
 package goserver
 
 import (
-	"errors"
+	"context"
 	"net/http"
-	"strings"
 )
 
-type Context struct {
-	Params map[string]string
-	Route  Route
+type key int
+
+const paramsKey key = 0
+
+func newContextFromRequest(req *http.Request, params parameters) context.Context {
+	return context.WithValue(req.Context(), paramsKey, params)
 }
 
-func fromRequest(r *route, req *http.Request) (*Context, error) {
-	var paths []string
-	if path := strings.Trim(req.URL.Path, "/"); path != "" {
-		paths = strings.Split(path, "/")
-	}
-
-	route, params := r.getRoute(paths)
-	if route != nil {
-		return &Context{params, route}, nil
-	}
-
-	return nil, errors.New("goapi: error while creating context")
+func ParametersFromContext(ctx context.Context) (parameters, bool) {
+	params, ok := ctx.Value(paramsKey).(parameters)
+	return params, ok
 }

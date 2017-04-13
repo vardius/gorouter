@@ -8,15 +8,14 @@ import (
 )
 
 type (
-	HandlerFunc      func(http.ResponseWriter, *http.Request, *Context)
 	PanicHandlerFunc func(http.ResponseWriter, *http.Request, interface{})
 	Server           interface {
-		POST(path string, f HandlerFunc)
-		GET(path string, f HandlerFunc)
-		PUT(path string, f HandlerFunc)
-		DELETE(path string, f HandlerFunc)
-		PATCH(path string, f HandlerFunc)
-		OPTIONS(path string, f HandlerFunc)
+		POST(path string, f http.HandlerFunc)
+		GET(path string, f http.HandlerFunc)
+		PUT(path string, f http.HandlerFunc)
+		DELETE(path string, f http.HandlerFunc)
+		PATCH(path string, f http.HandlerFunc)
+		OPTIONS(path string, f http.HandlerFunc)
 		Use(path string, priority int, f MiddlewareFunc)
 		ServeHTTP(http.ResponseWriter, *http.Request)
 		ServeFiles(path string, strip bool)
@@ -45,27 +44,27 @@ const (
 	OPTIONS = "OPTIONS"
 )
 
-func (s *server) POST(path string, f HandlerFunc) {
+func (s *server) POST(path string, f http.HandlerFunc) {
 	s.addRoute(POST, path, f)
 }
 
-func (s *server) GET(path string, f HandlerFunc) {
+func (s *server) GET(path string, f http.HandlerFunc) {
 	s.addRoute(GET, path, f)
 }
 
-func (s *server) PUT(path string, f HandlerFunc) {
+func (s *server) PUT(path string, f http.HandlerFunc) {
 	s.addRoute(PUT, path, f)
 }
 
-func (s *server) DELETE(path string, f HandlerFunc) {
+func (s *server) DELETE(path string, f http.HandlerFunc) {
 	s.addRoute(DELETE, path, f)
 }
 
-func (s *server) PATCH(path string, f HandlerFunc) {
+func (s *server) PATCH(path string, f http.HandlerFunc) {
 	s.addRoute(PATCH, path, f)
 }
 
-func (s *server) OPTIONS(path string, f HandlerFunc) {
+func (s *server) OPTIONS(path string, f http.HandlerFunc) {
 	s.addRoute(OPTIONS, path, f)
 }
 
@@ -105,24 +104,24 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	defer s.routesMu.RUnlock()
 
 	if r := s.routes[req.Method]; r != nil {
-		ctx, err := fromRequest(r, req)
-		if err == nil {
-			route := ctx.Route.(*route)
+		route, params := r.getRouteFromRequest(req)
+		if route != nil {
 			if route.handler != nil {
+				req = req.WithContext(newContextFromRequest(req, params))
 				for _, m := range s.middleware {
-					if err := m.handler(w, req, ctx); err != nil {
+					if err := m.handler(w, req); err != nil {
 						http.Error(w, err.Error(), err.Status())
 						return
 					}
 				}
 				for _, m := range route.middleware {
-					if err := m.handler(w, req, ctx); err != nil {
+					if err := m.handler(w, req); err != nil {
 						http.Error(w, err.Error(), err.Status())
 						return
 					}
 				}
 
-				route.handler(w, req, ctx)
+				route.handler(w, req)
 				return
 			}
 		}
@@ -159,7 +158,7 @@ func (s *server) Routes() map[string]Route {
 	return newMap
 }
 
-func (s *server) addRoute(method, path string, f HandlerFunc) {
+func (s *server) addRoute(method, path string, f http.HandlerFunc) {
 	paths := strings.Split(strings.Trim(path, "/"), "/")
 
 	s.routesMu.Lock()
@@ -281,6 +280,9 @@ func (s *server) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
 		)
 	}
 }
+
+// Make sure the Router conforms with the http.Handler interface
+// var _ http.Handler = New()
 
 func New() Server {
 	return &server{

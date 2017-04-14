@@ -271,7 +271,7 @@ type (
 	}
 )
 
-func recoverfunc(next http.Handler) http.Handler {
+func recover(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if rcv := recover(); rcv != nil {

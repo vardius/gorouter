@@ -9,11 +9,11 @@ type key int
 
 const paramsKey key = 0
 
-func newContextFromRequest(req *http.Request, params parameters) context.Context {
+func newContextFromRequest(req *http.Request, params Params) context.Context {
 	return context.WithValue(req.Context(), paramsKey, params)
 }
 
-func ParametersFromContext(ctx context.Context) (parameters, bool) {
-	params, ok := ctx.Value(paramsKey).(parameters)
+func ParamsFromContext(ctx context.Context) (Params, bool) {
+	params, ok := ctx.Value(paramsKey).(Params)
 	return params, ok
 }

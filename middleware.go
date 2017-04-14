@@ -1,24 +1,24 @@
 package goserver
 
-import (
-	"net/http"
-	"sort"
-)
+import "net/http"
 
 type (
-	middlewares []*middleware
-	middleware  struct {
-		path     string
-		priority int
-		handler  MiddlewareFunc
-	}
-	MiddlewareFunc func(http.ResponseWriter, *http.Request) Error
+	MiddlewareFunc func(http.Handler) http.Handler
+	middlewares    []MiddlewareFunc
 )
 
-func (m middlewares) Len() int           { return len(m) }
-func (m middlewares) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }
-func (m middlewares) Less(i, j int) bool { return m[i].priority < m[j].priority }
+func (m middlewares) handle(h http.Handler) http.Handler {
+	if h == nil {
+		h = http.DefaultServeMux
+	}
 
-func sortByPriority(m middlewares) {
-	sort.Sort(middlewares(m))
+	for i := range m {
+		h = m[len(m)-1-i](h)
+	}
+
+	return h
+}
+
+func (m middlewares) handleFunc(f http.HandlerFunc) http.Handler {
+	return m.handle(f)
 }

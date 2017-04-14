@@ -8,14 +8,13 @@ import (
 )
 
 type (
-	tree       map[string]*route
-	parameters map[string]string
-	route      struct {
+	tree   map[string]*route
+	Params map[string]string
+	route  struct {
 		path       string
 		regexp     *regexp.Regexp
 		root       *route
 		nodes      tree
-		middleware middlewares
 		handler    http.HandlerFunc
 		isEndPoint bool
 		nodesMu    sync.RWMutex
@@ -61,7 +60,7 @@ func (r *route) IsEndPoint() bool {
 	return r.isEndPoint
 }
 
-func (r *route) getRoute(paths []string) (*route, parameters) {
+func (r *route) getRoute(paths []string) (*route, Params) {
 	if len(paths) > 0 && paths[0] != "" {
 		r.nodesMu.RLock()
 		defer r.nodesMu.RUnlock()
@@ -79,12 +78,12 @@ func (r *route) getRoute(paths []string) (*route, parameters) {
 			}
 		}
 	} else if len(paths) == 0 && r.isEndPoint {
-		return r, make(parameters)
+		return r, make(Params)
 	}
-	return nil, make(parameters)
+	return nil, make(Params)
 }
 
-func (r *route) getRouteFromRequest(req *http.Request) (*route, parameters) {
+func (r *route) getRouteFromRequest(req *http.Request) (*route, Params) {
 	var paths []string
 	if path := strings.Trim(req.URL.Path, "/"); path != "" {
 		paths = strings.Split(path, "/")

@@ -37,7 +37,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func Hello(w http.ResponseWriter, r *http.Request) {
-	params, _ := goserver.ParametersFromContext(r.Context())
+	params, _ := goserver.ParamsFromContext(r.Context())
     fmt.Fprintf(w, "hello, %s!\n", params["name"])
 }
 
@@ -67,7 +67,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func Hello(w http.ResponseWriter, r *http.Request) {
-	params, _ := goserver.ParametersFromContext(r.Context())
+    params, _ := goserver.ParamsFromContext(r.Context())
     fmt.Fprintf(w, "hello, %s!\n", params["name"])
 }
 
@@ -97,7 +97,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func Hello(w http.ResponseWriter, r *http.Request) {
-	params, _ := goserver.ParametersFromContext(r.Context())
+    params, _ := goserver.ParamsFromContext(r.Context())
     fmt.Fprintf(w, "hello, %s!\n", params["name"])
 }
 
@@ -134,7 +134,7 @@ func (hs HostSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	// Initialize a server as usual
-    server := goserver.New()
+	server := goserver.New()
 	server.GET("/", Index)
 	server.GET("/hello/:name", Hello)
 
@@ -167,7 +167,8 @@ type (
 	}
 )
 
-func BasicAuth(w http.ResponseWriter, r *http.Request) Error {
+func BasicAuth(h http.Handler) Error {
+		fn := func(w http.ResponseWriter, r *http.Request) {
 	requiredUser := "gordon"
 	requiredPassword := "secret!"
 	
@@ -178,8 +179,15 @@ func BasicAuth(w http.ResponseWriter, r *http.Request) Error {
 		return nil;
 	} else {
 		w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
-		return statusError{http.StatusUnauthorized, errors.New(http.StatusUnauthorized)}
+		http.Error(w,
+			http.StatusText(http.StatusUnauthorized),
+			http.StatusUnauthorized,
+		)
 	}
+			next.ServeHTTP(w, r)
+		}
+
+		return http.HandlerFunc(fn)
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -191,10 +199,9 @@ func Protected(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	server := goserver.New()
+	server := goserver.New(BasicAuth)
 	server.GET("/", Index)	
 	server.GET("/protected", Protected)
-	server.Use("/protected", 0, BasicAuth)	
 
 	log.Fatal(http.ListenAndServe(":8080", server))
 }
@@ -215,7 +222,6 @@ func BasicAuth(h http.Handler, requiredUser, requiredPassword string) http.Handl
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Get the Basic Authentication credentials
 		user, password, hasAuth := r.BasicAuth()
-
 		if hasAuth && user == requiredUser && password == requiredPassword {
 			// Delegate request to the given handle
 			h(w, r)
@@ -242,6 +248,55 @@ func main() {
 	server := goserver.New()
 	server.GET("/", Index)
 	server.GET("/protected", BasicAuth(Protected, user, pass))
+
+	log.Fatal(http.ListenAndServe(":8080", server))
+}
+```
+## Handle errors
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+
+    "github.com/vardius/goserver"
+)
+
+type (
+	statusError struct {
+		code int
+		err  error
+	}
+)
+
+func recoverfunc(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if rcv := recover(); rcv != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+		}()
+
+		next.ServeHTTP(w, r)
+	}
+
+	return http.HandlerFunc(fn)
+}
+
+func Index(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "Ok!\n")
+}
+
+func WithError(w http.ResponseWriter, r *http.Request) {
+	panic("panic recover")
+}
+
+func main() {
+	server := goserver.New(recoverfunc)
+	server.GET("/", Index)	
+	server.GET("/panic", WithError)
 
 	log.Fatal(http.ListenAndServe(":8080", server))
 }

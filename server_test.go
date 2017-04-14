@@ -1,7 +1,6 @@
 package goserver
 
 import (
-	"errors"
 	"net/http"
 	"testing"
 
@@ -19,9 +18,9 @@ func TestPOST(t *testing.T) {
 	)
 	s.POST("/", h)
 
-	assert.NotNil(t, s.routes[POST])
+	assert.NotNil(t, s.routes[post])
 	rmap := s.Routes()
-	assert.NotNil(t, rmap[POST])
+	assert.NotNil(t, rmap[post])
 }
 
 func TestGET(t *testing.T) {
@@ -31,9 +30,9 @@ func TestGET(t *testing.T) {
 	)
 	s.GET("/", h)
 
-	assert.NotNil(t, s.routes[GET])
+	assert.NotNil(t, s.routes[get])
 	rmap := s.Routes()
-	assert.NotNil(t, rmap[GET])
+	assert.NotNil(t, rmap[get])
 }
 
 func TestPUT(t *testing.T) {
@@ -43,9 +42,9 @@ func TestPUT(t *testing.T) {
 	)
 	s.PUT("/", h)
 
-	assert.NotNil(t, s.routes[PUT])
+	assert.NotNil(t, s.routes[put])
 	rmap := s.Routes()
-	assert.NotNil(t, rmap[PUT])
+	assert.NotNil(t, rmap[put])
 }
 
 func TestDELETE(t *testing.T) {
@@ -55,9 +54,9 @@ func TestDELETE(t *testing.T) {
 	)
 	s.DELETE("/", h)
 
-	assert.NotNil(t, s.routes[DELETE])
+	assert.NotNil(t, s.routes[delete])
 	rmap := s.Routes()
-	assert.NotNil(t, rmap[DELETE])
+	assert.NotNil(t, rmap[delete])
 }
 
 func TestPATCH(t *testing.T) {
@@ -67,9 +66,9 @@ func TestPATCH(t *testing.T) {
 	)
 	s.PATCH("/", h)
 
-	assert.NotNil(t, s.routes[PATCH])
+	assert.NotNil(t, s.routes[patch])
 	rmap := s.Routes()
-	assert.NotNil(t, rmap[PATCH])
+	assert.NotNil(t, rmap[patch])
 }
 
 func TestOPTIONS(t *testing.T) {
@@ -79,61 +78,9 @@ func TestOPTIONS(t *testing.T) {
 	)
 	s.OPTIONS("/", h)
 
-	assert.NotNil(t, s.routes[OPTIONS])
+	assert.NotNil(t, s.routes[options])
 	rmap := s.Routes()
-	assert.NotNil(t, rmap[OPTIONS])
-}
-
-func TestUseGlobal(t *testing.T) {
-	var (
-		s  *server        = New().(*server)
-		mh MiddlewareFunc = mockMiddleware
-	)
-	s.Use("", 0, mh)
-
-	assert.NotEqual(t, 0, len(s.middleware))
-}
-
-func TestUseRoot(t *testing.T) {
-	var (
-		s  *server          = New().(*server)
-		h  http.HandlerFunc = mockHandler
-		mh MiddlewareFunc   = mockMiddleware
-	)
-	s.OPTIONS("/", h)
-	s.PATCH("/", h)
-	s.DELETE("/", h)
-	s.PUT("/", h)
-	s.GET("/", h)
-
-	s.Use("/", 0, mh)
-
-	for _, r := range s.routes {
-		assert.NotEqual(t, 0, len(r.middleware))
-	}
-}
-
-func TestUseNodes(t *testing.T) {
-	var (
-		s  *server          = New().(*server)
-		h  http.HandlerFunc = mockHandler
-		mh MiddlewareFunc   = mockMiddleware
-	)
-	s.OPTIONS("/x", h)
-	s.PATCH("/x", h)
-	s.DELETE("/x", h)
-	s.PUT("/x", h)
-	s.GET("/x", h)
-
-	s.Use("/x", 0, mh)
-
-	for _, root := range s.routes {
-		assert.Equal(t, 0, len(root.middleware))
-		node := root.nodes["x"]
-		if assert.NotNil(t, node) {
-			assert.NotEqual(t, 0, len(node.middleware))
-		}
-	}
+	assert.NotNil(t, rmap[options])
 }
 
 func TestNotFound(t *testing.T) {
@@ -152,15 +99,6 @@ func TestNotAllowed(t *testing.T) {
 	)
 	s.NotAllowed(h)
 	assert.NotNil(t, s.notAllowed)
-}
-
-func TestOnPanic(t *testing.T) {
-	var (
-		s *server          = New().(*server)
-		h PanicHandlerFunc = mockPanicHandler
-	)
-	s.OnPanic(h)
-	assert.NotNil(t, s.onPanic)
 }
 
 func TestServerFiles(t *testing.T) {
@@ -186,7 +124,7 @@ func TestServer(t *testing.T) {
 	serverd := false
 	s.GET("/:param", func(w http.ResponseWriter, r *http.Request) {
 		serverd = true
-		params, _ := ParametersFromContext(r.Context())
+		params, _ := ParamsFromContext(r.Context())
 		if assert.NotNil(t, params["param"]) {
 			assert.Equal(t, "x", params["param"])
 		}
@@ -200,12 +138,22 @@ func TestServer(t *testing.T) {
 }
 
 func TestServerPanic(t *testing.T) {
-	s := New().(*server)
-
 	paniced := false
-	s.OnPanic(func(_ http.ResponseWriter, _ *http.Request, _ interface{}) {
-		paniced = true
-	})
+	panicMiddleware := func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				if rcv := recover(); rcv != nil {
+					paniced = true
+				}
+			}()
+
+			next.ServeHTTP(w, r)
+		}
+
+		return http.HandlerFunc(fn)
+	}
+
+	s := New(panicMiddleware).(*server)
 
 	s.GET("/:param", func(_ http.ResponseWriter, _ *http.Request) {
 		panic("test panic recover")
@@ -216,24 +164,6 @@ func TestServerPanic(t *testing.T) {
 	s.ServeHTTP(w, req)
 
 	assert.Equal(t, true, paniced)
-}
-
-func TestMiddlewareError(t *testing.T) {
-	var (
-		s *server          = New().(*server)
-		h http.HandlerFunc = mockHandler
-	)
-	s.GET("/x", h)
-	s.Use("/x", 0, func(_ http.ResponseWriter, req *http.Request) Error {
-		return statusError{http.StatusBadRequest, errors.New("Bad request")}
-	})
-
-	w := new(mockResponseWriter)
-	w.header = http.Header{}
-	req, _ := http.NewRequest("GET", "/x", nil)
-	s.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusBadRequest, w.code)
 }
 
 func TestServerNotFound(t *testing.T) {
@@ -281,23 +211,4 @@ func TestServerOptions(t *testing.T) {
 	req, _ := http.NewRequest("OPTIONS", "/x", nil)
 	s.ServeHTTP(w, req)
 	assert.NotEmpty(t, w.Header().Get("Allow"))
-}
-
-func TestGlobalMiddlewareError(t *testing.T) {
-	var (
-		s *server          = New().(*server)
-		h http.HandlerFunc = mockHandler
-	)
-
-	s.GET("/x", h)
-	s.Use("", 0, func(_ http.ResponseWriter, req *http.Request) Error {
-		return statusError{http.StatusBadRequest, errors.New("Bad request")}
-	})
-
-	w := new(mockResponseWriter)
-	w.header = http.Header{}
-	req, _ := http.NewRequest("GET", "/x", nil)
-	s.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusBadRequest, w.code)
 }

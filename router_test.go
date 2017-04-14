@@ -56,7 +56,7 @@ func TestGetParamRoute(t *testing.T) {
 	r.addRoute(paths, mockHandler)
 
 	var node *route
-	var params parameters
+	var params Params
 	node, _ = r.getRoute([]string{})
 	assert.Nil(t, node)
 	node, _ = r.getRoute([]string{""})

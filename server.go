@@ -8,20 +8,17 @@ import (
 )
 
 type (
-	PanicHandlerFunc func(http.ResponseWriter, *http.Request, interface{})
-	Server           interface {
+	Server interface {
 		POST(path string, f http.HandlerFunc)
 		GET(path string, f http.HandlerFunc)
 		PUT(path string, f http.HandlerFunc)
 		DELETE(path string, f http.HandlerFunc)
 		PATCH(path string, f http.HandlerFunc)
 		OPTIONS(path string, f http.HandlerFunc)
-		Use(path string, priority int, f MiddlewareFunc)
 		ServeHTTP(http.ResponseWriter, *http.Request)
 		ServeFiles(path string, strip bool)
 		NotFound(http.Handler)
 		NotAllowed(http.Handler)
-		OnPanic(PanicHandlerFunc)
 		Routes() map[string]Route
 	}
 	server struct {
@@ -31,45 +28,40 @@ type (
 		fileServer http.Handler
 		notFound   http.Handler
 		notAllowed http.Handler
-		onPanic    PanicHandlerFunc
 	}
 )
 
 const (
-	GET     = "GET"
-	POST    = "POST"
-	PUT     = "PUT"
-	DELETE  = "DELETE"
-	PATCH   = "PATCH"
-	OPTIONS = "OPTIONS"
+	get     = "GET"
+	post    = "POST"
+	put     = "PUT"
+	delete  = "DELETE"
+	patch   = "PATCH"
+	options = "OPTIONS"
 )
 
 func (s *server) POST(path string, f http.HandlerFunc) {
-	s.addRoute(POST, path, f)
+	s.addRoute(post, path, f)
 }
 
 func (s *server) GET(path string, f http.HandlerFunc) {
-	s.addRoute(GET, path, f)
+	s.addRoute(get, path, f)
 }
 
 func (s *server) PUT(path string, f http.HandlerFunc) {
-	s.addRoute(PUT, path, f)
+	s.addRoute(put, path, f)
 }
 
 func (s *server) DELETE(path string, f http.HandlerFunc) {
-	s.addRoute(DELETE, path, f)
+	s.addRoute(delete, path, f)
 }
 
 func (s *server) PATCH(path string, f http.HandlerFunc) {
-	s.addRoute(PATCH, path, f)
+	s.addRoute(patch, path, f)
 }
 
 func (s *server) OPTIONS(path string, f http.HandlerFunc) {
-	s.addRoute(OPTIONS, path, f)
-}
-
-func (s *server) Use(path string, priority int, f MiddlewareFunc) {
-	s.addMiddleware(path, priority, f)
+	s.addRoute(options, path, f)
 }
 
 func (s *server) NotFound(notFound http.Handler) {
@@ -78,10 +70,6 @@ func (s *server) NotFound(notFound http.Handler) {
 
 func (s *server) NotAllowed(notAllowed http.Handler) {
 	s.notAllowed = notAllowed
-}
-
-func (s *server) OnPanic(onPanic PanicHandlerFunc) {
-	s.onPanic = onPanic
 }
 
 func (s *server) ServeFiles(path string, strip bool) {
@@ -96,10 +84,6 @@ func (s *server) ServeFiles(path string, strip bool) {
 }
 
 func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if s.onPanic != nil {
-		defer s.recv(w, req)
-	}
-
 	s.routesMu.RLock()
 	defer s.routesMu.RUnlock()
 
@@ -107,33 +91,21 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		route, params := r.getRouteFromRequest(req)
 		if route != nil {
 			if route.handler != nil {
+				h := s.middleware.handleFunc(route.handler)
 				req = req.WithContext(newContextFromRequest(req, params))
-				for _, m := range s.middleware {
-					if err := m.handler(w, req); err != nil {
-						http.Error(w, err.Error(), err.Status())
-						return
-					}
-				}
-				for _, m := range route.middleware {
-					if err := m.handler(w, req); err != nil {
-						http.Error(w, err.Error(), err.Status())
-						return
-					}
-				}
-
-				route.handler(w, req)
+				h.ServeHTTP(w, req)
 				return
 			}
 		}
 	}
 
 	//Handle OPTIONS
-	if req.Method == OPTIONS {
+	if req.Method == options {
 		if allow := s.allowed(req); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			return
 		}
-	} else if req.Method == GET && s.fileServer != nil {
+	} else if req.Method == get && s.fileServer != nil {
 		//Handle file serve
 		s.serveFiles(w, req)
 		return
@@ -170,38 +142,6 @@ func (s *server) addRoute(method, path string, f http.HandlerFunc) {
 		s.routes[method] = r
 	}
 	r.addRoute(paths, f)
-}
-
-func (s *server) addMiddleware(path string, priority int, f MiddlewareFunc) {
-	m := &middleware{
-		path:     path,
-		priority: priority,
-		handler:  f,
-	}
-	if path == "" {
-		s.middleware = append(s.middleware, m)
-		sortByPriority(s.middleware)
-	} else if path == "/" {
-		for _, r := range s.routes {
-			r.middleware = append(r.middleware, m)
-			sortByPriority(r.middleware)
-		}
-	} else {
-		paths := strings.Split(strings.Trim(path, "/"), "/")
-		for _, r := range s.routes {
-			route, _ := r.getRoute(paths)
-			if route != nil {
-				route.middleware = append(route.middleware, m)
-				sortByPriority(route.middleware)
-			}
-		}
-	}
-}
-
-func (s *server) recv(w http.ResponseWriter, req *http.Request) {
-	if rcv := recover(); rcv != nil {
-		s.onPanic(w, req, rcv)
-	}
 }
 
 func (s *server) allowed(req *http.Request) (allow string) {
@@ -250,7 +190,7 @@ func (s *server) serveFiles(w http.ResponseWriter, req *http.Request) {
 	info, err := os.Stat(fp)
 	if err != nil {
 		if os.IsNotExist(err) {
-			s.serveNotFound(w, req)
+			s.serveNotAllowed(w, req)
 			return
 		}
 	}
@@ -281,8 +221,9 @@ func (s *server) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func New() Server {
+func New(fs ...MiddlewareFunc) Server {
 	return &server{
-		routes: make(tree),
+		routes:     make(tree),
+		middleware: append(middlewares(nil), fs...),
 	}
 }

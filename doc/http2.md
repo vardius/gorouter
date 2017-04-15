@@ -9,7 +9,7 @@ HTTP2
 1. [Pusher](#pusher)
 2. [The Go Blog - HTTP/2 Server Push](https://blog.golang.org/h2push)
 
-## HTTP2
+## Pusher
 ```go
 package main
 

@@ -148,7 +148,7 @@ func (s *server) allowed(req *http.Request) (allow string) {
 	path := req.URL.Path
 	if path == "*" {
 		for method := range s.routes {
-			if method == "OPTIONS" {
+			if method == options {
 				continue
 			}
 			if len(allow) == 0 {
@@ -159,7 +159,7 @@ func (s *server) allowed(req *http.Request) (allow string) {
 		}
 	} else {
 		for method, root := range s.routes {
-			if method == req.Method || method == "OPTIONS" {
+			if method == req.Method || method == options {
 				continue
 			}
 
@@ -224,6 +224,6 @@ func (s *server) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
 func New(fs ...MiddlewareFunc) Server {
 	return &server{
 		routes:     make(tree),
-		middleware: append(middlewares(nil), fs...),
+		middleware: newMiddleware(fs...),
 	}
 }

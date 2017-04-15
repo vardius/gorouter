@@ -22,3 +22,14 @@ func (m middlewares) handle(h http.Handler) http.Handler {
 func (m middlewares) handleFunc(f http.HandlerFunc) http.Handler {
 	return m.handle(f)
 }
+
+func newMiddleware(fs ...MiddlewareFunc) middlewares {
+	ms := make(middlewares, 0, len(fs))
+	for _, f := range fs {
+		if f != nil {
+			ms = append(ms, f)
+		}
+	}
+
+	return ms
+}

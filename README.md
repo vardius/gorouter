@@ -20,7 +20,7 @@ HOW TO USE
 
 [GoDoc](http://godoc.org/github.com/vardius/goserver)
 -------
-* [Usage](doc/usage.md)
+[Usage](doc/usage.md)
 
 License
 -------

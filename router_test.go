@@ -44,9 +44,9 @@ func isNil(value interface{}) bool {
 }
 
 func TestGetRootRoute(t *testing.T) {
-	r := newRoute(nil, "/")
+	r := newRoute(nil, "/", nil)
 	paths := strings.Split(strings.Trim("/", "/"), "/")
-	r.addRoute(paths, mockHandler)
+	r.addRoute(paths, mockHandler, nil)
 
 	equal(t, "/", r.Path())
 	equal(t, "", r.Regexp())
@@ -69,9 +69,9 @@ func TestGetRootRoute(t *testing.T) {
 }
 
 func TestGetStrictRoute(t *testing.T) {
-	r := newRoute(nil, "/")
+	r := newRoute(nil, "/", nil)
 	paths := strings.Split(strings.Trim("/x", "/"), "/")
-	r.addRoute(paths, mockHandler)
+	r.addRoute(paths, mockHandler, nil)
 
 	var node *route
 	node, _ = r.getRoute([]string{})
@@ -87,9 +87,9 @@ func TestGetStrictRoute(t *testing.T) {
 }
 
 func TestGetParamRoute(t *testing.T) {
-	r := newRoute(nil, "/")
+	r := newRoute(nil, "/", nil)
 	paths := strings.Split(strings.Trim("/:x", "/"), "/")
-	r.addRoute(paths, mockHandler)
+	r.addRoute(paths, mockHandler, nil)
 
 	var node *route
 	var params Params
@@ -114,9 +114,9 @@ func TestGetParamRoute(t *testing.T) {
 }
 
 func TestGetRegexRoute(t *testing.T) {
-	r := newRoute(nil, "/")
+	r := newRoute(nil, "/", nil)
 	paths := strings.Split(strings.Trim("/:x:r([a-z]+)go", "/"), "/")
-	r.addRoute(paths, mockHandler)
+	r.addRoute(paths, mockHandler, nil)
 
 	var node *route
 	node, _ = r.getRoute([]string{})
@@ -138,9 +138,9 @@ func TestGetRegexRoute(t *testing.T) {
 }
 
 func TestGetNestedRegexRoute(t *testing.T) {
-	r := newRoute(nil, "/")
+	r := newRoute(nil, "/", nil)
 	paths := strings.Split(strings.Trim("/:x:r([a-z]+)go/:y:r([a-z]+)go", "/"), "/")
-	r.addRoute(paths, mockHandler)
+	r.addRoute(paths, mockHandler, nil)
 
 	var node *route
 	node, _ = r.getRoute([]string{})
@@ -170,9 +170,9 @@ func TestGetNestedRegexRoute(t *testing.T) {
 }
 
 func TestAddRootRoute(t *testing.T) {
-	r := newRoute(nil, "/")
+	r := newRoute(nil, "/", nil)
 	paths := strings.Split(strings.Trim("/", "/"), "/")
-	r.addRoute(paths, mockHandler)
+	r.addRoute(paths, mockHandler, nil)
 
 	equal(t, true, r.isEndPoint)
 
@@ -182,9 +182,9 @@ func TestAddRootRoute(t *testing.T) {
 }
 
 func TestAddEmptyRootRoute(t *testing.T) {
-	r := newRoute(nil, "")
+	r := newRoute(nil, "", nil)
 	paths := strings.Split(strings.Trim("/", "/"), "/")
-	r.addRoute(paths, mockHandler)
+	r.addRoute(paths, mockHandler, nil)
 
 	equal(t, true, r.isEndPoint)
 
@@ -194,9 +194,9 @@ func TestAddEmptyRootRoute(t *testing.T) {
 }
 
 func TestAddEmptyRootRouteTwo(t *testing.T) {
-	r := newRoute(nil, "")
+	r := newRoute(nil, "", nil)
 	paths := strings.Split(strings.Trim("", "/"), "/")
-	r.addRoute(paths, mockHandler)
+	r.addRoute(paths, mockHandler, nil)
 
 	equal(t, true, r.isEndPoint)
 
@@ -206,9 +206,9 @@ func TestAddEmptyRootRouteTwo(t *testing.T) {
 }
 
 func TestAddRoute(t *testing.T) {
-	r := newRoute(nil, "/")
+	r := newRoute(nil, "/", nil)
 	paths := strings.Split(strings.Trim("/example", "/"), "/")
-	r.addRoute(paths, mockHandler)
+	r.addRoute(paths, mockHandler, nil)
 
 	equal(t, false, r.isEndPoint)
 	if notEqual(t, nil, r.nodes["example"]) {
@@ -219,9 +219,9 @@ func TestAddRoute(t *testing.T) {
 }
 
 func TestAddParamRoute(t *testing.T) {
-	r := newRoute(nil, "/")
+	r := newRoute(nil, "/", nil)
 	paths := strings.Split(strings.Trim("/:example", "/"), "/")
-	r.addRoute(paths, mockHandler)
+	r.addRoute(paths, mockHandler, nil)
 
 	equal(t, false, r.isEndPoint)
 	if notEqual(t, nil, r.nodes[":example"]) {
@@ -232,9 +232,9 @@ func TestAddParamRoute(t *testing.T) {
 }
 
 func TestAddRegexpRoute(t *testing.T) {
-	r := newRoute(nil, "/")
+	r := newRoute(nil, "/", nil)
 	paths := strings.Split(strings.Trim("/:example:r([a-z]+)go", "/"), "/")
-	r.addRoute(paths, mockHandler)
+	r.addRoute(paths, mockHandler, nil)
 
 	equal(t, false, r.isEndPoint)
 

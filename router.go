@@ -15,6 +15,7 @@ type (
 		regexp     *regexp.Regexp
 		root       *route
 		nodes      tree
+		middleware middlewares
 		handler    http.HandlerFunc
 		isEndPoint bool
 		nodesMu    sync.RWMutex
@@ -92,14 +93,14 @@ func (r *route) getRouteFromRequest(req *http.Request) (*route, Params) {
 	return r.getRoute(paths)
 }
 
-func (r *route) addRoute(paths []string, f http.HandlerFunc) {
+func (r *route) addRoute(paths []string, f http.HandlerFunc, m middlewares) {
 	if len(paths) > 0 && paths[0] != "" {
 		r.nodesMu.Lock()
 		defer r.nodesMu.Unlock()
 		if r.nodes[paths[0]] == nil {
-			r.nodes[paths[0]] = newRoute(r, paths[0])
+			r.nodes[paths[0]] = newRoute(r, paths[0], m)
 		}
-		r.nodes[paths[0]].addRoute(paths[1:], f)
+		r.nodes[paths[0]].addRoute(paths[1:], f, m)
 	} else {
 		r.setEndPoint(f)
 	}
@@ -122,10 +123,21 @@ func (r *route) setRegexp(exp string) {
 	}
 }
 
-func newRoute(root *route, path string) *route {
+func (r *route) addMiddleware(m middlewares) {
+	r.middleware = append(r.middleware, m...)
+
+	r.nodesMu.Lock()
+	defer r.nodesMu.Unlock()
+	for _, route := range r.nodes {
+		route.addMiddleware(m)
+	}
+}
+
+func newRoute(root *route, path string, m middlewares) *route {
 	return &route{
-		root:  root,
-		path:  path,
-		nodes: make(tree),
+		root:       root,
+		path:       path,
+		nodes:      make(tree),
+		middleware: newMiddleware(m...),
 	}
 }

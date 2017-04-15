@@ -8,6 +8,16 @@ import (
 
 func mockHandler(_ http.ResponseWriter, _ *http.Request) {}
 
+func mockMiddleware(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("middleware"))
+
+		next.ServeHTTP(w, r)
+	}
+
+	return http.HandlerFunc(fn)
+}
+
 func TestInterface(t *testing.T) {
 	var _ http.Handler = New()
 }
@@ -301,5 +311,32 @@ func TestPanicMiddleware(t *testing.T) {
 
 	if paniced != true {
 		t.Error("Panic has not been handled")
+	}
+}
+
+func TestNodeApplyMiddleware(t *testing.T) {
+	s := New().(*server)
+
+	s.GET("/:param", func(w http.ResponseWriter, r *http.Request) {
+		params, ok := ParamsFromContext(r.Context())
+		if !ok {
+			t.Fatal("Error while reading param")
+		}
+
+		w.Write([]byte(params["param"]))
+	})
+
+	s.USE(get, "/:param", mockMiddleware)
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(get, "/x", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.ServeHTTP(w, req)
+
+	if w.Body.String() != "middlewarex" {
+		t.Errorf("Use global middleware error %s", w.Body.String())
 	}
 }

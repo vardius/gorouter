@@ -15,6 +15,7 @@ type (
 		DELETE(path string, f http.HandlerFunc)
 		PATCH(path string, f http.HandlerFunc)
 		OPTIONS(path string, f http.HandlerFunc)
+		USE(method, path string, fs ...MiddlewareFunc)
 		ServeHTTP(http.ResponseWriter, *http.Request)
 		ServeFiles(path string, strip bool)
 		NotFound(http.Handler)
@@ -64,6 +65,10 @@ func (s *server) OPTIONS(path string, f http.HandlerFunc) {
 	s.addRoute(options, path, f)
 }
 
+func (s *server) USE(metjod, path string, fs ...MiddlewareFunc) {
+	s.addMiddleware(metjod, path, fs...)
+}
+
 func (s *server) NotFound(notFound http.Handler) {
 	s.notFound = notFound
 }
@@ -91,7 +96,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		route, params := r.getRouteFromRequest(req)
 		if route != nil {
 			if route.handler != nil {
-				h := s.middleware.handleFunc(route.handler)
+				h := route.middleware.handleFunc(route.handler)
 				req = req.WithContext(newContextFromRequest(req, params))
 				h.ServeHTTP(w, req)
 				return
@@ -130,6 +135,43 @@ func (s *server) Routes() map[string]Route {
 	return newMap
 }
 
+func (s *server) serveFiles(w http.ResponseWriter, req *http.Request) {
+	fp := req.URL.Path
+	//Return a 404 if the file doesn't exist
+	info, err := os.Stat(fp)
+	if err != nil {
+		if os.IsNotExist(err) {
+			s.serveNotFound(w, req)
+			return
+		}
+	}
+	//Return a 404 if the request is for a directory
+	if info.IsDir() {
+		s.serveNotFound(w, req)
+		return
+	}
+	s.fileServer.ServeHTTP(w, req)
+}
+
+func (s *server) serveNotFound(w http.ResponseWriter, req *http.Request) {
+	if s.notFound != nil {
+		s.notFound.ServeHTTP(w, req)
+	} else {
+		http.NotFound(w, req)
+	}
+}
+
+func (s *server) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
+	if s.notAllowed != nil {
+		s.notAllowed.ServeHTTP(w, req)
+	} else {
+		http.Error(w,
+			http.StatusText(http.StatusMethodNotAllowed),
+			http.StatusMethodNotAllowed,
+		)
+	}
+}
+
 func (s *server) addRoute(method, path string, f http.HandlerFunc) {
 	paths := strings.Split(strings.Trim(path, "/"), "/")
 
@@ -138,10 +180,32 @@ func (s *server) addRoute(method, path string, f http.HandlerFunc) {
 
 	var r *route
 	if r = s.routes[method]; r == nil {
-		r = newRoute(nil, "/")
+		r = newRoute(nil, "/", s.middleware)
 		s.routes[method] = r
 	}
-	r.addRoute(paths, f)
+	r.addRoute(paths, f, s.middleware)
+}
+
+func (s *server) addMiddleware(method, path string, fs ...MiddlewareFunc) {
+	m := newMiddleware(fs...)
+	if path == "" || path == "/" {
+		r := s.routes[method]
+		r.middleware = append(r.middleware, m...)
+	} else {
+		paths := strings.Split(strings.Trim(path, "/"), "/")
+		if method == "" {
+			for _, r := range s.routes {
+				route, _ := r.getRoute(paths)
+				if route != nil {
+					route.addMiddleware(m)
+				}
+			}
+		} else {
+			if r := s.routes[method]; r != nil {
+				r.addMiddleware(m)
+			}
+		}
+	}
 }
 
 func (s *server) allowed(req *http.Request) (allow string) {
@@ -182,43 +246,6 @@ func (s *server) allowed(req *http.Request) (allow string) {
 		allow += ", OPTIONS"
 	}
 	return
-}
-
-func (s *server) serveFiles(w http.ResponseWriter, req *http.Request) {
-	fp := req.URL.Path
-	//Return a 404 if the file doesn't exist
-	info, err := os.Stat(fp)
-	if err != nil {
-		if os.IsNotExist(err) {
-			s.serveNotFound(w, req)
-			return
-		}
-	}
-	//Return a 404 if the request is for a directory
-	if info.IsDir() {
-		s.serveNotFound(w, req)
-		return
-	}
-	s.fileServer.ServeHTTP(w, req)
-}
-
-func (s *server) serveNotFound(w http.ResponseWriter, req *http.Request) {
-	if s.notFound != nil {
-		s.notFound.ServeHTTP(w, req)
-	} else {
-		http.NotFound(w, req)
-	}
-}
-
-func (s *server) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
-	if s.notAllowed != nil {
-		s.notAllowed.ServeHTTP(w, req)
-	} else {
-		http.Error(w,
-			http.StatusText(http.StatusMethodNotAllowed),
-			http.StatusMethodNotAllowed,
-		)
-	}
 }
 
 func New(fs ...MiddlewareFunc) Server {

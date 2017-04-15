@@ -190,7 +190,7 @@ func (s *server) serveFiles(w http.ResponseWriter, req *http.Request) {
 	info, err := os.Stat(fp)
 	if err != nil {
 		if os.IsNotExist(err) {
-			s.serveNotAllowed(w, req)
+			s.serveNotFound(w, req)
 			return
 		}
 	}

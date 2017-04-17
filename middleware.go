@@ -23,8 +23,8 @@ func (m middlewares) handleFunc(f http.HandlerFunc) http.Handler {
 	return m.handle(f)
 }
 
-func (m middlewares) append(mf ...middlewareFunc) {
-	m = append(m, mf...)
+func (m middlewares) append(fs ...middlewareFunc) {
+	m = append(m, fs...)
 }
 
 func (m middlewares) merge(n middlewares) {

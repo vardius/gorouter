@@ -5,7 +5,10 @@ import (
 	"net/http"
 )
 
-type key int
+type (
+	key    int
+	Params map[string]string
+)
 
 const paramsKey key = 0
 

@@ -3,8 +3,8 @@ package goserver
 import "net/http"
 
 type (
-	MiddlewareFunc func(http.Handler) http.Handler
-	middlewares    []MiddlewareFunc
+	middlewareFunc func(http.Handler) http.Handler
+	middlewares    []middlewareFunc
 )
 
 func (m middlewares) handle(h http.Handler) http.Handler {
@@ -23,7 +23,15 @@ func (m middlewares) handleFunc(f http.HandlerFunc) http.Handler {
 	return m.handle(f)
 }
 
-func newMiddleware(fs ...MiddlewareFunc) middlewares {
+func (m middlewares) append(mf ...middlewareFunc) {
+	m = append(m, mf...)
+}
+
+func (m middlewares) merge(n middlewares) {
+	m = append(m, n...)
+}
+
+func newMiddleware(fs ...middlewareFunc) middlewares {
 	ms := make(middlewares, 0, len(fs))
 	for _, f := range fs {
 		if f != nil {

@@ -13,7 +13,7 @@ type (
 		route    *route
 		parent   *node
 		children tree
-		nodesMu  sync.RWMutex
+		treeMu   sync.RWMutex
 	}
 	tree map[string]*node
 )
@@ -42,8 +42,8 @@ func (n *node) setRegexp(exp string) {
 
 func (n *node) child(paths []string) (*node, map[string]string) {
 	if len(paths) > 0 && paths[0] != "" {
-		n.nodesMu.RLock()
-		defer n.nodesMu.RUnlock()
+		n.treeMu.RLock()
+		defer n.treeMu.RUnlock()
 		if child := n.children[paths[0]]; child != nil {
 			return child.child(paths[1:])
 		} else {
@@ -58,27 +58,19 @@ func (n *node) child(paths []string) (*node, map[string]string) {
 			}
 		}
 	} else if len(paths) == 0 {
-		return n, make(map[string]string)
+		return n, make(Params)
 	}
 	return nil, make(map[string]string)
 }
 
 func (n *node) addChild(paths []string) *node {
 	if len(paths) > 0 && paths[0] != "" {
-		n.nodesMu.Lock()
-		defer n.nodesMu.Unlock()
+		n.treeMu.Lock()
+		defer n.treeMu.Unlock()
 		if n.children[paths[0]] == nil {
-			child := newNode(n, paths[0])
-			n.children[paths[0]] = child
-			return child
+			n.children[paths[0]] = newNode(n, paths[0])
 		}
 		return n.children[paths[0]].addChild(paths[1:])
-	} else {
-		if len(n.path) > 0 && n.path[:1] == ":" {
-			if parts := strings.Split(n.path, ":"); len(parts) == 3 {
-				n.setRegexp(parts[2])
-			}
-		}
 	}
 
 	return n
@@ -89,12 +81,18 @@ func (n *node) setRoute(r *route) {
 }
 
 func newNode(root *node, path string) *node {
-	return &node{
+	n := &node{
 		path:     path,
+		parent:   root,
 		children: make(tree),
 	}
+	if parts := strings.Split(n.path, ":"); len(parts) == 3 {
+		n.setRegexp(parts[2])
+	}
+
+	return n
 }
 
-func newRootNode(path string) *node {
+func newRoot(path string) *node {
 	return newNode(nil, path)
 }

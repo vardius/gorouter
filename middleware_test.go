@@ -7,15 +7,6 @@ import (
 	"testing"
 )
 
-func mockMiddlewareWithBody(body string) MiddlewareFunc {
-	return func(h http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(body))
-			h.ServeHTTP(w, r)
-		})
-	}
-}
-
 func TestDefaultServeMux(t *testing.T) {
 	m := newMiddleware()
 	if m.handle(nil) != http.DefaultServeMux {

@@ -6,6 +6,15 @@ import (
 	"strings"
 )
 
+const (
+	GET     = "GET"
+	POST    = "POST"
+	PUT     = "PUT"
+	DELETE  = "DELETE"
+	PATCH   = "PATCH"
+	OPTIONS = "OPTIONS"
+)
+
 type (
 	Server interface {
 		POST(path string, f http.HandlerFunc)
@@ -14,7 +23,7 @@ type (
 		DELETE(path string, f http.HandlerFunc)
 		PATCH(path string, f http.HandlerFunc)
 		OPTIONS(path string, f http.HandlerFunc)
-		USE(method, path string, fs ...middlewareFunc)
+		USE(method, path string, fs ...MiddlewareFunc)
 		ServeHTTP(http.ResponseWriter, *http.Request)
 		ServeFiles(path string, strip bool)
 		NotFound(http.Handler)
@@ -22,20 +31,11 @@ type (
 	}
 	server struct {
 		root       *node
-		middleware middlewares
+		middleware middleware
 		fileServer http.Handler
 		notFound   http.Handler
 		notAllowed http.Handler
 	}
-)
-
-const (
-	GET     = "GET"
-	POST    = "POST"
-	PUT     = "PUT"
-	DELETE  = "DELETE"
-	PATCH   = "PATCH"
-	OPTIONS = "OPTIONS"
 )
 
 func (s *server) POST(path string, f http.HandlerFunc) {
@@ -62,7 +62,7 @@ func (s *server) OPTIONS(path string, f http.HandlerFunc) {
 	s.addRoute(OPTIONS, path, f)
 }
 
-func (s *server) USE(method, path string, fs ...middlewareFunc) {
+func (s *server) USE(method, path string, fs ...MiddlewareFunc) {
 	s.addMiddleware(method, path, fs...)
 }
 
@@ -166,7 +166,17 @@ func (s *server) addRoute(method, path string, f http.HandlerFunc) {
 	n.setRoute(r)
 }
 
-func (s *server) addMiddleware(method, path string, fs ...middlewareFunc) {
+func (s *server) addMiddleware(method, path string, fs ...MiddlewareFunc) {
+	type recFunc func(recFunc, *node, []string, middleware)
+	c := func(c recFunc, n *node, paths []string, m middleware) {
+		if n.route != nil {
+			n.route.addMiddleware(m)
+			for _, node := range n.children {
+				c(c, node, paths[1:], m)
+			}
+		}
+	}
+
 	var paths []string
 	if path := strings.Trim(path, "/"); path != "" {
 		paths = strings.Split(path, "/")
@@ -174,12 +184,12 @@ func (s *server) addMiddleware(method, path string, fs ...middlewareFunc) {
 
 	if method == "" {
 		for _, node := range s.root.children {
-			addMiddleware(node, paths, fs)
+			c(c, node, paths, fs)
 		}
 	} else {
 		paths = append([]string{method}, paths...)
 		node, _ := s.root.child(paths)
-		addMiddleware(node, paths, fs)
+		c(c, node, paths, fs)
 	}
 }
 
@@ -191,11 +201,15 @@ func (s *server) getRouteFromRequest(req *http.Request) (*route, Params) {
 
 	paths = append([]string{req.Method}, paths...)
 	node, params := s.root.child(paths)
+	if node != nil {
+		return node.route, params
+	}
 
-	return node.route, params
+	return nil, params
 }
 
-func (s *server) allowed(req *http.Request) (allow string) {
+func (s *server) allowed(req *http.Request) string {
+	var allow string
 	path := req.URL.Path
 	if path == "*" {
 		for method := range s.root.children {
@@ -219,8 +233,8 @@ func (s *server) allowed(req *http.Request) (allow string) {
 				paths = strings.Split(path, "/")
 			}
 
-			r, _ := root.child(paths)
-			if r != nil {
+			n, _ := root.child(paths)
+			if n != nil && n.route != nil {
 				if len(allow) == 0 {
 					allow = method
 				} else {
@@ -232,21 +246,12 @@ func (s *server) allowed(req *http.Request) (allow string) {
 	if len(allow) > 0 {
 		allow += ", OPTIONS"
 	}
-	return
+	return allow
 }
 
-func addMiddleware(n *node, paths []string, m middlewares) {
-	if n.route != nil {
-		n.route.addMiddleware(m)
-		for _, node := range n.children {
-			addMiddleware(node, paths[1:], m)
-		}
-	}
-}
-
-func New(fs ...middlewareFunc) Server {
+func New(fs ...MiddlewareFunc) Server {
 	return &server{
-		root:       newRootNode(""),
-		middleware: append(middlewares(nil), fs...),
+		root:       newRoot(""),
+		middleware: newMiddleware(fs...),
 	}
 }

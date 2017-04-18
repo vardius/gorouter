@@ -3,11 +3,11 @@ package goserver
 import "net/http"
 
 type (
-	middlewareFunc func(http.Handler) http.Handler
-	middlewares    []middlewareFunc
+	MiddlewareFunc func(http.Handler) http.Handler
+	middleware     []MiddlewareFunc
 )
 
-func (m middlewares) handle(h http.Handler) http.Handler {
+func (m middleware) handle(h http.Handler) http.Handler {
 	if h == nil {
 		h = http.DefaultServeMux
 	}
@@ -19,20 +19,20 @@ func (m middlewares) handle(h http.Handler) http.Handler {
 	return h
 }
 
-func (m middlewares) handleFunc(f http.HandlerFunc) http.Handler {
+func (m middleware) handleFunc(f http.HandlerFunc) http.Handler {
 	return m.handle(f)
 }
 
-func (m middlewares) append(fs ...middlewareFunc) {
-	m = append(m, fs...)
+func (m middleware) append(fs ...MiddlewareFunc) middleware {
+	return append(m, fs...)
 }
 
-func (m middlewares) merge(n middlewares) {
-	m = append(m, n...)
+func (m middleware) merge(n middleware) middleware {
+	return append(m, n...)
 }
 
-func newMiddleware(fs ...middlewareFunc) middlewares {
-	ms := make(middlewares, 0, len(fs))
+func newMiddleware(fs ...MiddlewareFunc) middleware {
+	ms := make(middleware, 0, len(fs))
 	for _, f := range fs {
 		if f != nil {
 			ms = append(ms, f)

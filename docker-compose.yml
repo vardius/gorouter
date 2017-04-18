@@ -2,18 +2,8 @@ version: '3'
 services:
   app:
     image: golang:latest
-    ports:
-     - "2345:2345"
     volumes:
       - .:/go/src/github.com/vardius/goserver
-    networks:
-      - front-tier
-      - back-tier
     working_dir: /go/src/github.com/vardius/goserver
     command: bash ./cmd.sh
     privileged: true
-networks:
-  front-tier:
-    driver: bridge
-  back-tier:
-    driver: bridge

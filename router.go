@@ -6,7 +6,7 @@ import (
 
 type (
 	route struct {
-		middleware  middlewares
+		middleware  middleware
 		handlerFunc http.HandlerFunc
 	}
 )
@@ -18,13 +18,13 @@ func (r *route) handler() http.Handler {
 	return nil
 }
 
-func (r *route) addMiddleware(m middlewares) {
-	r.middleware.merge(m)
+func (r *route) addMiddleware(m middleware) {
+	r.middleware = r.middleware.merge(m)
 }
 
 func newRoute(h http.HandlerFunc) *route {
 	return &route{
 		handlerFunc: h,
-		middleware:  middlewares(nil),
+		middleware:  newMiddleware(),
 	}
 }

@@ -17,6 +17,7 @@ func benchmarkStrictCall(t int, b *testing.B) {
 	s := New().(*server)
 	s.GET(path, func(_ http.ResponseWriter, _ *http.Request) {})
 
+	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, path, nil)
 	if err != nil {
 		b.Fatal(err)
@@ -24,7 +25,6 @@ func benchmarkStrictCall(t int, b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		w := httptest.NewRecorder()
 		s.ServeHTTP(w, req)
 	}
 }
@@ -48,6 +48,7 @@ func benchmarkRegexpCall(t int, b *testing.B) {
 	s := New().(*server)
 	s.GET(path, func(_ http.ResponseWriter, _ *http.Request) {})
 
+	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, rpath, nil)
 	if err != nil {
 		b.Fatal(err)
@@ -55,7 +56,6 @@ func benchmarkRegexpCall(t int, b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		w := httptest.NewRecorder()
 		s.ServeHTTP(w, req)
 	}
 }
@@ -77,6 +77,7 @@ func benchmarkStrictParallel(t int, b *testing.B) {
 	s := New().(*server)
 	s.GET(path, func(_ http.ResponseWriter, _ *http.Request) {})
 
+	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, path, nil)
 	if err != nil {
 		b.Fatal(err)
@@ -87,7 +88,6 @@ func benchmarkStrictParallel(t int, b *testing.B) {
 		var buf bytes.Buffer
 		for pb.Next() {
 			buf.Reset()
-			w := httptest.NewRecorder()
 			s.ServeHTTP(w, req)
 		}
 	})
@@ -112,6 +112,7 @@ func benchmarkRegexpParallel(t int, b *testing.B) {
 	s := New().(*server)
 	s.GET(path, func(_ http.ResponseWriter, _ *http.Request) {})
 
+	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, rpath, nil)
 	if err != nil {
 		b.Fatal(err)
@@ -122,7 +123,6 @@ func benchmarkRegexpParallel(t int, b *testing.B) {
 		var buf bytes.Buffer
 		for pb.Next() {
 			buf.Reset()
-			w := httptest.NewRecorder()
 			s.ServeHTTP(w, req)
 		}
 	})

@@ -36,37 +36,6 @@ func BenchmarkStrict5(b *testing.B)   { benchmarkStrictCall(5, b) }
 func BenchmarkStrict10(b *testing.B)  { benchmarkStrictCall(10, b) }
 func BenchmarkStrict100(b *testing.B) { benchmarkStrictCall(100, b) }
 
-func benchmarkRegexpCall(t int, b *testing.B) {
-	var path, rpath string
-	part := "/:x:r([a-z]+)go"
-	rpart := "/rxgo"
-	for i := 0; i < t; i++ {
-		path += part
-		rpath += rpart
-	}
-
-	s := New().(*server)
-	s.GET(path, func(_ http.ResponseWriter, _ *http.Request) {})
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, rpath, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		s.ServeHTTP(w, req)
-	}
-}
-
-func BenchmarkRegexp1(b *testing.B)   { benchmarkRegexpCall(1, b) }
-func BenchmarkRegexp2(b *testing.B)   { benchmarkRegexpCall(2, b) }
-func BenchmarkRegexp3(b *testing.B)   { benchmarkRegexpCall(3, b) }
-func BenchmarkRegexp5(b *testing.B)   { benchmarkRegexpCall(5, b) }
-func BenchmarkRegexp10(b *testing.B)  { benchmarkRegexpCall(10, b) }
-func BenchmarkRegexp100(b *testing.B) { benchmarkRegexpCall(100, b) }
-
 func benchmarkStrictParallel(t int, b *testing.B) {
 	var path string
 	part := "/x"
@@ -99,6 +68,37 @@ func BenchmarkStrictParallel3(b *testing.B)   { benchmarkStrictParallel(3, b) }
 func BenchmarkStrictParallel5(b *testing.B)   { benchmarkStrictParallel(5, b) }
 func BenchmarkStrictParallel10(b *testing.B)  { benchmarkStrictParallel(10, b) }
 func BenchmarkStrictParallel100(b *testing.B) { benchmarkStrictParallel(100, b) }
+
+func benchmarkRegexpCall(t int, b *testing.B) {
+	var path, rpath string
+	part := "/:x:r([a-z]+)go"
+	rpart := "/rxgo"
+	for i := 0; i < t; i++ {
+		path += part
+		rpath += rpart
+	}
+
+	s := New().(*server)
+	s.GET(path, func(_ http.ResponseWriter, _ *http.Request) {})
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(GET, rpath, nil)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		s.ServeHTTP(w, req)
+	}
+}
+
+func BenchmarkRegexp1(b *testing.B)   { benchmarkRegexpCall(1, b) }
+func BenchmarkRegexp2(b *testing.B)   { benchmarkRegexpCall(2, b) }
+func BenchmarkRegexp3(b *testing.B)   { benchmarkRegexpCall(3, b) }
+func BenchmarkRegexp5(b *testing.B)   { benchmarkRegexpCall(5, b) }
+func BenchmarkRegexp10(b *testing.B)  { benchmarkRegexpCall(10, b) }
+func BenchmarkRegexp100(b *testing.B) { benchmarkRegexpCall(100, b) }
 
 func benchmarkRegexpParallel(t int, b *testing.B) {
 	var path, rpath string

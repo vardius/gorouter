@@ -11,7 +11,7 @@ BenchmarkStrict1-4             	 2000000	       923 ns/op
 ```
 means that the loop ran 2000000 times at a speed of 923 ns per loop.
 
-The benchmarks are located in file [benchmark.go](benchmark.go).
+The benchmarks are located in file [benchmark_test.go](benchmark_test.go).
 ```
 $ go test -bench=. -cpu=4
 BenchmarkStrict1-4             	 2000000	       923 ns/op

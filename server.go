@@ -4,7 +4,16 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
+)
+
+// HTTP methods constants
+const (
+	GET     = "GET"
+	POST    = "POST"
+	PUT     = "PUT"
+	DELETE  = "DELETE"
+	PATCH   = "PATCH"
+	OPTIONS = "OPTIONS"
 )
 
 type (
@@ -20,53 +29,42 @@ type (
 		ServeFiles(path string, strip bool)
 		NotFound(http.Handler)
 		NotAllowed(http.Handler)
-		Routes() map[string]Route
 	}
 	server struct {
-		routes     tree
-		middleware middlewares
-		routesMu   sync.RWMutex
+		root       *node
+		middleware middleware
 		fileServer http.Handler
 		notFound   http.Handler
 		notAllowed http.Handler
 	}
 )
 
-const (
-	get     = "GET"
-	post    = "POST"
-	put     = "PUT"
-	delete  = "DELETE"
-	patch   = "PATCH"
-	options = "OPTIONS"
-)
-
 func (s *server) POST(path string, f http.HandlerFunc) {
-	s.addRoute(post, path, f)
+	s.addRoute(POST, path, f)
 }
 
 func (s *server) GET(path string, f http.HandlerFunc) {
-	s.addRoute(get, path, f)
+	s.addRoute(GET, path, f)
 }
 
 func (s *server) PUT(path string, f http.HandlerFunc) {
-	s.addRoute(put, path, f)
+	s.addRoute(PUT, path, f)
 }
 
 func (s *server) DELETE(path string, f http.HandlerFunc) {
-	s.addRoute(delete, path, f)
+	s.addRoute(DELETE, path, f)
 }
 
 func (s *server) PATCH(path string, f http.HandlerFunc) {
-	s.addRoute(patch, path, f)
+	s.addRoute(PATCH, path, f)
 }
 
 func (s *server) OPTIONS(path string, f http.HandlerFunc) {
-	s.addRoute(options, path, f)
+	s.addRoute(OPTIONS, path, f)
 }
 
-func (s *server) USE(metjod, path string, fs ...MiddlewareFunc) {
-	s.addMiddleware(metjod, path, fs...)
+func (s *server) USE(method, path string, fs ...MiddlewareFunc) {
+	s.addMiddleware(method, path, fs...)
 }
 
 func (s *server) NotFound(notFound http.Handler) {
@@ -89,28 +87,22 @@ func (s *server) ServeFiles(path string, strip bool) {
 }
 
 func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	s.routesMu.RLock()
-	defer s.routesMu.RUnlock()
-
-	if r := s.routes[req.Method]; r != nil {
-		route, params := r.getRouteFromRequest(req)
-		if route != nil {
-			if route.handler != nil {
-				h := route.middleware.handleFunc(route.handler)
-				req = req.WithContext(newContextFromRequest(req, params))
-				h.ServeHTTP(w, req)
-				return
-			}
+	route, params := s.getRouteFromRequest(req)
+	if route != nil {
+		if h := route.handler(); h != nil {
+			req = req.WithContext(newContextFromRequest(req, params))
+			h.ServeHTTP(w, req)
+			return
 		}
 	}
 
 	//Handle OPTIONS
-	if req.Method == options {
+	if req.Method == OPTIONS {
 		if allow := s.allowed(req); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			return
 		}
-	} else if req.Method == get && s.fileServer != nil {
+	} else if req.Method == GET && s.fileServer != nil {
 		//Handle file serve
 		s.serveFiles(w, req)
 		return
@@ -125,32 +117,6 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	//Handle 404
 	s.serveNotFound(w, req)
-}
-
-func (s *server) Routes() map[string]Route {
-	newMap := make(map[string]Route)
-	for path, route := range s.routes {
-		newMap[path] = route
-	}
-	return newMap
-}
-
-func (s *server) serveFiles(w http.ResponseWriter, req *http.Request) {
-	fp := req.URL.Path
-	//Return a 404 if the file doesn't exist
-	info, err := os.Stat(fp)
-	if err != nil {
-		if os.IsNotExist(err) {
-			s.serveNotFound(w, req)
-			return
-		}
-	}
-	//Return a 404 if the request is for a directory
-	if info.IsDir() {
-		s.serveNotFound(w, req)
-		return
-	}
-	s.fileServer.ServeHTTP(w, req)
 }
 
 func (s *server) serveNotFound(w http.ResponseWriter, req *http.Request) {
@@ -172,47 +138,83 @@ func (s *server) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (s *server) serveFiles(w http.ResponseWriter, req *http.Request) {
+	fp := req.URL.Path
+	//Return a 404 if the file doesn't exist
+	info, err := os.Stat(fp)
+	if err != nil {
+		if os.IsNotExist(err) {
+			s.serveNotFound(w, req)
+			return
+		}
+	}
+	//Return a 404 if the request is for a directory
+	if info.IsDir() {
+		s.serveNotFound(w, req)
+		return
+	}
+	s.fileServer.ServeHTTP(w, req)
+}
+
 func (s *server) addRoute(method, path string, f http.HandlerFunc) {
 	paths := strings.Split(strings.Trim(path, "/"), "/")
+	paths = append([]string{method}, paths...)
 
-	s.routesMu.Lock()
-	defer s.routesMu.Unlock()
+	r := newRoute(f)
+	r.addMiddleware(s.middleware)
 
-	var r *route
-	if r = s.routes[method]; r == nil {
-		r = newRoute(nil, "/", s.middleware)
-		s.routes[method] = r
-	}
-	r.addRoute(paths, f, s.middleware)
+	n := s.root.addChild(paths)
+	n.setRoute(r)
 }
 
 func (s *server) addMiddleware(method, path string, fs ...MiddlewareFunc) {
-	m := newMiddleware(fs...)
-	if path == "" || path == "/" {
-		r := s.routes[method]
-		r.middleware = append(r.middleware, m...)
-	} else {
-		paths := strings.Split(strings.Trim(path, "/"), "/")
-		if method == "" {
-			for _, r := range s.routes {
-				route, _ := r.getRoute(paths)
-				if route != nil {
-					route.addMiddleware(m)
-				}
-			}
-		} else {
-			if r := s.routes[method]; r != nil {
-				r.addMiddleware(m)
+	type recFunc func(recFunc, *node, []string, middleware)
+	c := func(c recFunc, n *node, paths []string, m middleware) {
+		if n.route != nil {
+			n.route.addMiddleware(m)
+			for _, node := range n.children {
+				c(c, node, paths[1:], m)
 			}
 		}
 	}
+
+	var paths []string
+	if path := strings.Trim(path, "/"); path != "" {
+		paths = strings.Split(path, "/")
+	}
+
+	if method == "" {
+		for _, node := range s.root.children {
+			c(c, node, paths, fs)
+		}
+	} else {
+		paths = append([]string{method}, paths...)
+		node, _ := s.root.child(paths)
+		c(c, node, paths, fs)
+	}
 }
 
-func (s *server) allowed(req *http.Request) (allow string) {
+func (s *server) getRouteFromRequest(req *http.Request) (*route, Params) {
+	var paths []string
+	if path := strings.Trim(req.URL.Path, "/"); path != "" {
+		paths = strings.Split(path, "/")
+	}
+
+	paths = append([]string{req.Method}, paths...)
+	node, params := s.root.child(paths)
+	if node != nil {
+		return node.route, params
+	}
+
+	return nil, params
+}
+
+func (s *server) allowed(req *http.Request) string {
+	var allow string
 	path := req.URL.Path
 	if path == "*" {
-		for method := range s.routes {
-			if method == options {
+		for method := range s.root.children {
+			if method == OPTIONS {
 				continue
 			}
 			if len(allow) == 0 {
@@ -222,8 +224,8 @@ func (s *server) allowed(req *http.Request) (allow string) {
 			}
 		}
 	} else {
-		for method, root := range s.routes {
-			if method == req.Method || method == options {
+		for method, root := range s.root.children {
+			if method == req.Method || method == OPTIONS {
 				continue
 			}
 
@@ -232,8 +234,8 @@ func (s *server) allowed(req *http.Request) (allow string) {
 				paths = strings.Split(path, "/")
 			}
 
-			r, _ := root.getRoute(paths)
-			if r != nil {
+			n, _ := root.child(paths)
+			if n != nil && n.route != nil {
 				if len(allow) == 0 {
 					allow = method
 				} else {
@@ -245,12 +247,12 @@ func (s *server) allowed(req *http.Request) (allow string) {
 	if len(allow) > 0 {
 		allow += ", OPTIONS"
 	}
-	return
+	return allow
 }
 
 func New(fs ...MiddlewareFunc) Server {
 	return &server{
-		routes:     make(tree),
+		root:       newRoot(""),
 		middleware: newMiddleware(fs...),
 	}
 }

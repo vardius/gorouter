@@ -4,10 +4,10 @@ import "net/http"
 
 type (
 	MiddlewareFunc func(http.Handler) http.Handler
-	middlewares    []MiddlewareFunc
+	middleware     []MiddlewareFunc
 )
 
-func (m middlewares) handle(h http.Handler) http.Handler {
+func (m middleware) handle(h http.Handler) http.Handler {
 	if h == nil {
 		h = http.DefaultServeMux
 	}
@@ -19,12 +19,20 @@ func (m middlewares) handle(h http.Handler) http.Handler {
 	return h
 }
 
-func (m middlewares) handleFunc(f http.HandlerFunc) http.Handler {
+func (m middleware) handleFunc(f http.HandlerFunc) http.Handler {
 	return m.handle(f)
 }
 
-func newMiddleware(fs ...MiddlewareFunc) middlewares {
-	ms := make(middlewares, 0, len(fs))
+func (m middleware) append(fs ...MiddlewareFunc) middleware {
+	return append(m, fs...)
+}
+
+func (m middleware) merge(n middleware) middleware {
+	return append(m, n...)
+}
+
+func newMiddleware(fs ...MiddlewareFunc) middleware {
+	ms := make(middleware, 0, len(fs))
 	for _, f := range fs {
 		if f != nil {
 			ms = append(ms, f)

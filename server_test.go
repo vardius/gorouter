@@ -6,108 +6,66 @@ import (
 	"testing"
 )
 
-func mockHandler(_ http.ResponseWriter, _ *http.Request) {}
-
-func mockMiddleware(next http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("middleware"))
-
-		next.ServeHTTP(w, r)
-	}
-
-	return http.HandlerFunc(fn)
-}
-
 func TestInterface(t *testing.T) {
 	var _ http.Handler = New()
 }
 
 func TestPOST(t *testing.T) {
-	s := New(nil).(*server)
+	s := New().(*server)
 
 	s.POST("/", mockHandler)
 
-	if s.routes[post] == nil {
-		t.Error("Route not found")
-	}
-
-	rmap := s.Routes()
-	if rmap[post] == nil {
+	if s.root.children[POST] == nil {
 		t.Error("Route not found")
 	}
 }
 
 func TestGET(t *testing.T) {
-	s := New(nil).(*server)
+	s := New().(*server)
 
 	s.GET("/", mockHandler)
 
-	if s.routes[get] == nil {
-		t.Error("Route not found")
-	}
-
-	rmap := s.Routes()
-	if rmap[get] == nil {
+	if s.root.children[GET] == nil {
 		t.Error("Route not found")
 	}
 }
 
 func TestPUT(t *testing.T) {
-	s := New(nil).(*server)
+	s := New().(*server)
 
 	s.PUT("/", mockHandler)
 
-	if s.routes[put] == nil {
-		t.Error("Route not found")
-	}
-
-	rmap := s.Routes()
-	if rmap[put] == nil {
+	if s.root.children[PUT] == nil {
 		t.Error("Route not found")
 	}
 }
 
 func TestDELETE(t *testing.T) {
-	s := New(nil).(*server)
+	s := New().(*server)
 
 	s.DELETE("/", mockHandler)
 
-	if s.routes[delete] == nil {
-		t.Error("Route not found")
-	}
-
-	rmap := s.Routes()
-	if rmap[delete] == nil {
+	if s.root.children[DELETE] == nil {
 		t.Error("Route not found")
 	}
 }
 
 func TestPATCH(t *testing.T) {
-	s := New(nil).(*server)
+	s := New().(*server)
 
 	s.PATCH("/", mockHandler)
 
-	if s.routes[patch] == nil {
-		t.Error("Route not found")
-	}
-
-	rmap := s.Routes()
-	if rmap[patch] == nil {
+	if s.root.children[PATCH] == nil {
 		t.Error("Route not found")
 	}
 }
 
 func TestOPTIONS(t *testing.T) {
-	s := New(nil).(*server)
+	s := New().(*server)
 
 	s.OPTIONS("/", mockHandler)
 
-	if s.routes[options] == nil {
-		t.Error("Route not found")
-	}
-
-	rmap := s.Routes()
-	if rmap[options] == nil {
+	if s.root.children[OPTIONS] == nil {
 		t.Error("Route not found")
 	}
 
@@ -115,7 +73,7 @@ func TestOPTIONS(t *testing.T) {
 	s.POST("/x", mockHandler)
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(options, "/x", nil)
+	req, err := http.NewRequest(OPTIONS, "/x", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,17 +81,17 @@ func TestOPTIONS(t *testing.T) {
 	s.ServeHTTP(w, req)
 
 	if w.Header().Get("Allow") == "" {
-		t.Error("Options doesnt work")
+		t.Error("Allow header should not be empty")
 	}
 }
 
 func TestNotFound(t *testing.T) {
-	s := New(nil).(*server)
+	s := New().(*server)
 
 	s.GET("/x", mockHandler)
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(post, "/y", nil)
+	req, err := http.NewRequest(POST, "/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +99,7 @@ func TestNotFound(t *testing.T) {
 	s.ServeHTTP(w, req)
 
 	if w.Code != http.StatusNotFound {
-		t.Error("NotFound doesnt work")
+		t.Errorf("NotFound error, actual code: %d", w.Code)
 	}
 
 	s.NotFound(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -162,12 +120,12 @@ func TestNotFound(t *testing.T) {
 }
 
 func TestNotAllowed(t *testing.T) {
-	s := New(nil).(*server)
+	s := New().(*server)
 
 	s.GET("/x", mockHandler)
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(post, "/x", nil)
+	req, err := http.NewRequest(POST, "/x", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -195,7 +153,7 @@ func TestNotAllowed(t *testing.T) {
 	}
 
 	w = httptest.NewRecorder()
-	req, err = http.NewRequest(post, "*", nil)
+	req, err = http.NewRequest(POST, "*", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -220,12 +178,12 @@ func TestServer(t *testing.T) {
 		}
 
 		if params["param"] != "x" {
-			t.Error("Wrong params value")
+			t.Errorf("Wrong params value. Expected 'x', actual '%s'", params["param"])
 		}
 	})
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(get, "/x", nil)
+	req, err := http.NewRequest(GET, "/x", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,7 +205,7 @@ func TestServeFiles(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	r, err := http.NewRequest(get, "/favicon.ico", nil)
+	r, err := http.NewRequest(GET, "/favicon.ico", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,14 +218,14 @@ func TestServeFiles(t *testing.T) {
 }
 
 func TestNilMiddleware(t *testing.T) {
-	s := New(nil).(*server)
+	s := New().(*server)
 
 	s.GET("/:param", func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte("test"))
 	})
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(get, "/x", nil)
+	req, err := http.NewRequest(GET, "/x", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -302,7 +260,7 @@ func TestPanicMiddleware(t *testing.T) {
 	})
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(get, "/x", nil)
+	req, err := http.NewRequest(GET, "/x", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -326,10 +284,10 @@ func TestNodeApplyMiddleware(t *testing.T) {
 		w.Write([]byte(params["param"]))
 	})
 
-	s.USE(get, "/:param", mockMiddleware)
+	s.USE(GET, "/:param", mockMiddleware)
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(get, "/x", nil)
+	req, err := http.NewRequest(GET, "/x", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

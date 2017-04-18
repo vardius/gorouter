@@ -46,14 +46,14 @@ func (n *node) child(paths []string) (*node, map[string]string) {
 		defer n.treeMu.RUnlock()
 		if child := n.children[paths[0]]; child != nil {
 			return child.child(paths[1:])
-		} else {
-			for path, child := range n.children {
-				if len(path) > 0 && path[:1] == ":" {
-					if child.regexp == nil || child.regexp.MatchString(paths[0]) {
-						node, params := child.child(paths[1:])
-						params[strings.Split(path, ":")[1]] = paths[0]
-						return node, params
-					}
+		}
+
+		for path, child := range n.children {
+			if len(path) > 0 && path[:1] == ":" {
+				if child.regexp == nil || child.regexp.MatchString(paths[0]) {
+					node, params := child.child(paths[1:])
+					params[strings.Split(path, ":")[1]] = paths[0]
+					return node, params
 				}
 			}
 		}

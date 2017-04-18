@@ -6,7 +6,8 @@ import (
 )
 
 type (
-	key    int
+	key int
+	//Params type returned from request context
 	Params map[string]string
 )
 

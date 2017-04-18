@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// HTTP methods constants
 const (
 	GET     = "GET"
 	POST    = "POST"

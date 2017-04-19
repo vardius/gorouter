@@ -7,7 +7,7 @@ Go Server/API micro framwework, HTTP request router, multiplexer, mux.
 ## Benchmarks
 The output
 ```
-BenchmarkStrict1-4             	 2000000	       923 ns/op
+BenchmarkStrict1-4             	 3000000	       548 ns/op
 ```
 means that the loop ran 2000000 times at a speed of 923 ns per loop.
 Each benchmark name `BenchmarkStrict5-4 ` means that test used a `strict` or `regexp` route path for each node with a nested level `5`. Where `4` stands for CPU number.

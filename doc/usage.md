@@ -47,7 +47,7 @@ A full route definition contain up to three parts:
 3. `http.HandleFunc`, which tells the server to handle matched requests to the router with handler.
 Take the following example:
 ```
-server.GET("/hello/:name:r([a-z]+)go", func Hello(w http.ResponseWriter, r *http.Request) {
+server.GET("/hello/:name:r([a-z]+)go", func (w http.ResponseWriter, r *http.Request) {
     params, _ := goserver.ParamsFromContext(r.Context())
     fmt.Fprintf(w, "hello, %s!\n", params["name"])
 })

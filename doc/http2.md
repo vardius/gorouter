@@ -2,7 +2,7 @@ Vardius - goserver
 ================
 [![Build Status](https://travis-ci.org/vardius/goserver.svg?branch=master)](https://travis-ci.org/vardius/goserver) [![](https://godoc.org/github.com/vardius/goserver?status.svg)](http://godoc.org/github.com/vardius/goserver) [![Coverage Status](https://coveralls.io/repos/github/vardius/goserver/badge.svg?branch=master)](https://coveralls.io/github/vardius/goserver?branch=master)
 
-The fastest Go Server/API micro framwework, HTTP request router, multiplexer, mux.
+Go Server/API micro framwework, HTTP request router, multiplexer, mux.
 
 HTTP2
 ----------------

@@ -3,7 +3,6 @@ package goserver
 import (
 	"regexp"
 	"strings"
-	"sync"
 )
 
 type (
@@ -13,7 +12,6 @@ type (
 		route    *route
 		parent   *node
 		children tree
-		treeMu   sync.RWMutex
 	}
 	tree map[string]*node
 )
@@ -42,8 +40,6 @@ func (n *node) setRegexp(exp string) {
 
 func (n *node) child(paths []string) (*node, map[string]string) {
 	if len(paths) > 0 && paths[0] != "" {
-		n.treeMu.RLock()
-		defer n.treeMu.RUnlock()
 		if child := n.children[paths[0]]; child != nil {
 			return child.child(paths[1:])
 		}
@@ -65,8 +61,6 @@ func (n *node) child(paths []string) (*node, map[string]string) {
 
 func (n *node) addChild(paths []string) *node {
 	if len(paths) > 0 && paths[0] != "" {
-		n.treeMu.Lock()
-		defer n.treeMu.Unlock()
 		if n.children[paths[0]] == nil {
 			n.children[paths[0]] = newNode(n, paths[0])
 		}

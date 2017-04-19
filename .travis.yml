@@ -17,6 +17,8 @@ before_install:
 script:
   - go build
   - go test -v -cover -race -coverprofile=coverage.out
+  - go test -bench=.
+  - go test -bench=. -cpu=2
   - go test -bench=. -cpu=4
   - $HOME/gopath/bin/gover
 after_script:

@@ -46,8 +46,8 @@ A full route definition contain up to three parts:
 2. The URL path route. This is matched against the URL passed to the server, and can contain named wildcard placeholders *(e.g. :placeholders)* to match dynamic parts in the URL.
 3. `http.HandleFunc`, which tells the server to handle matched requests to the router with handler.
 Take the following example:
-```
-server.GET("/hello/:name:r([a-z]+)go", func (w http.ResponseWriter, r *http.Request) {
+```go
+server.GET("/hello/:name:r([a-z]+)go", func(w http.ResponseWriter, r *http.Request) {
     params, _ := goserver.ParamsFromContext(r.Context())
     fmt.Fprintf(w, "hello, %s!\n", params["name"])
 })

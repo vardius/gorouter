@@ -11,8 +11,8 @@ func TestContext(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	params := make(Params)
-	params["test"] = "test"
+	p := Param{"test", "test"}
+	params := Params{p}
 
 	req = req.WithContext(newContextFromRequest(req, params))
 	cParams, ok := ParamsFromContext(req.Context())
@@ -20,7 +20,7 @@ func TestContext(t *testing.T) {
 		t.Fatal("Error while getting context")
 	}
 
-	if params["test"] != cParams["test"] {
+	if params.Value("test") != cParams.Value("test") {
 		t.Error("Request returned invalid context")
 	}
 }

@@ -177,8 +177,8 @@ func TestServer(t *testing.T) {
 			t.Fatal("Error while reading param")
 		}
 
-		if params["param"] != "x" {
-			t.Errorf("Wrong params value. Expected 'x', actual '%s'", params["param"])
+		if params.Value("param") != "x" {
+			t.Errorf("Wrong params value. Expected 'x', actual '%s'", params.Value("param"))
 		}
 	})
 
@@ -281,7 +281,7 @@ func TestNodeApplyMiddleware(t *testing.T) {
 			t.Fatal("Error while reading param")
 		}
 
-		w.Write([]byte(params["param"]))
+		w.Write([]byte(params.Value("param")))
 	})
 
 	s.USE(GET, "/:param", mockMiddleware)

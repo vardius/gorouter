@@ -65,12 +65,12 @@ func TestGetParamNode(t *testing.T) {
 	equal(t, nil, node)
 	node, params = n.child([]string{"x"})
 	notEqual(t, nil, node)
-	if notEqual(t, nil, params["x"]) {
-		equal(t, "x", params["x"])
+	if notEqual(t, nil, params.Value("x")) {
+		equal(t, "x", params.Value("x"))
 	}
 	node, params = n.child([]string{"y"})
-	if notEqual(t, nil, params["x"]) {
-		equal(t, "y", params["x"])
+	if notEqual(t, nil, params.Value("x")) {
+		equal(t, "y", params.Value("x"))
 	}
 	notEqual(t, nil, node)
 }

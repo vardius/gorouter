@@ -32,3 +32,12 @@ func TestRouter(t *testing.T) {
 		t.Errorf("The router doesn't work correctly. Expected 1234, Actual: %s", w.Body.String())
 	}
 }
+
+func TestParams(t *testing.T) {
+	param := Param{"key", "value"}
+	params := Params{param}
+
+	if params[0].Value("key") != "value" {
+		t.Error("Invalid params value")
+	}
+}

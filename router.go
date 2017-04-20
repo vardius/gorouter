@@ -9,13 +9,16 @@ type (
 		middleware  middleware
 		handlerFunc http.HandlerFunc
 	}
+	// Param object to hold request parameter
 	Param struct {
 		Key   string
 		Value string
 	}
+	//Params slice returned from request context
 	Params []Param
 )
 
+//Get Params value by key
 func (p Params) Value(key string) string {
 	for i := range p {
 		if p[i].Key == key {

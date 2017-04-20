@@ -9,7 +9,7 @@ The output
 ```
 BenchmarkStrict1-4             	 3000000	       525 ns/op
 ```
-means that the loop ran 2000000 times at a speed of 923 ns per loop.
+means that the loop ran 3000000 times at a speed of 525 ns per loop. What gives around **3508772 req/sec** !
 Each benchmark name `BenchmarkStrict5-4 ` means that test used a `strict` or `regexp` route path for each node with a nested level `5`. Where `4` stands for CPU number.
 
 The benchmarks are located in file [benchmark_test.go](benchmark_test.go).

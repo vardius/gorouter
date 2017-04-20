@@ -27,7 +27,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 func Hello(w http.ResponseWriter, r *http.Request) {
 	params, _ := goserver.ParamsFromContext(r.Context())
-    fmt.Fprintf(w, "hello, %s!\n", params["name"])
+    fmt.Fprintf(w, "hello, %s!\n", params.Value("name"))
 }
 
 func main() {
@@ -49,7 +49,7 @@ Take the following example:
 ```go
 server.GET("/hello/:name:r([a-z]+)go", func(w http.ResponseWriter, r *http.Request) {
     params, _ := goserver.ParamsFromContext(r.Context())
-    fmt.Fprintf(w, "hello, %s!\n", params["name"])
+    fmt.Fprintf(w, "hello, %s!\n", params.Value("name"))
 })
 ```
 In this case, the route is matched by `/hello/rxxxxxgo` for example, because the `:name` wildcard matches the regular expression wildcard given (`r([a-z]+)go`). However, `/hello/foo` does not match, because "foo" fails the *name* wildcard. When using wildcards, these are returned in the map from request context. The part of the path that the wildcard matched (e.g. *rxxxxxgo*) is used as value.

@@ -37,7 +37,7 @@ func TestParams(t *testing.T) {
 	param := Param{"key", "value"}
 	params := Params{param}
 
-	if params[0].Value("key") != "value" {
+	if params.Value("key") != "value" {
 		t.Error("Invalid params value")
 	}
 }

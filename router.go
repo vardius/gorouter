@@ -18,7 +18,7 @@ type (
 	Params []Param
 )
 
-//Get Params value by key
+//Value of the request parameter by name
 func (p Params) Value(key string) string {
 	for i := range p {
 		if p[i].Key == key {

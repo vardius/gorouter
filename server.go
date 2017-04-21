@@ -90,7 +90,6 @@ func (s *server) ServeFiles(path string, strip bool) {
 func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	route, params := s.getRouteFromRequest(req)
 	if route != nil {
-		route.handlerFunc(w, req)
 		if h := route.handler(); h != nil {
 			req = req.WithContext(newContextFromRequest(req, params))
 			h.ServeHTTP(w, req)

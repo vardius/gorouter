@@ -4,6 +4,31 @@ Vardius - goserver
 
 Go Server/API micro framwework, HTTP request router, multiplexer, mux.
 
+ABOUT
+==================================================
+Contributors:
+
+* [Rafał Lorenz](http://rafallorenz.com)
+
+Want to contribute ? Feel free to send pull requests!
+
+Have problems, bugs, feature ideas?
+We are using the github [issue tracker](https://github.com/vardius/goserver/issues) to manage them.
+
+HOW TO USE
+==================================================
+
+[GoDoc](http://godoc.org/github.com/vardius/goserver)
+-------
+[Usage](doc/usage.md)
+
+License
+-------
+
+This package is released under the MIT license. See the complete license in the package:
+
+[LICENSE](LICENSE.md)
+
 ## Benchmarks
 The output
 ```
@@ -98,28 +123,3 @@ BenchmarkRegexpParallel100-4   	  100000	     22202 ns/op
 | Parse2Params | 10       | 1           | 11           |
 | ParseAll     | 198      | 16          | 292          |
 | StaticAll    | 1097     | 0           | 1578         |
-
-ABOUT
-==================================================
-Contributors:
-
-* [Rafał Lorenz](http://rafallorenz.com)
-
-Want to contribute ? Feel free to send pull requests!
-
-Have problems, bugs, feature ideas?
-We are using the github [issue tracker](https://github.com/vardius/goserver/issues) to manage them.
-
-HOW TO USE
-==================================================
-
-[GoDoc](http://godoc.org/github.com/vardius/goserver)
--------
-[Usage](doc/usage.md)
-
-License
--------
-
-This package is released under the MIT license. See the complete license in the package:
-
-[LICENSE](LICENSE.md)

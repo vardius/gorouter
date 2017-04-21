@@ -49,10 +49,11 @@ func (n *node) child(paths []string) (*node, Params) {
 			if len(path) > 0 && path[:1] == ":" {
 				if child.regexp == nil || child.regexp.MatchString(paths[0]) {
 					node, params := child.child(paths[1:])
-					if node != nil && node.params > 0 {
-						params[node.params-1].Key = strings.Split(path, ":")[1]
-						params[node.params-1].Value = paths[0]
+					if node == nil {
+						continue
 					}
+					params[node.params-1].Key = strings.Split(path, ":")[1]
+					params[node.params-1].Value = paths[0]
 
 					return node, params
 				}

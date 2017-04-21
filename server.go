@@ -34,7 +34,7 @@ type (
 	server struct {
 		root       *node
 		middleware middleware
-		fileServer http.Handler  
+		fileServer http.Handler
 		notFound   http.Handler
 		notAllowed http.Handler
 	}

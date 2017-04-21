@@ -3,6 +3,7 @@ package goserver
 import "net/http"
 
 type (
+	//Middleware function type
 	MiddlewareFunc func(http.Handler) http.Handler
 	middleware     []MiddlewareFunc
 )

@@ -1,3 +1,4 @@
+// Package goserver provide request router with middleware
 package goserver
 
 import (
@@ -17,6 +18,7 @@ const (
 )
 
 type (
+	//Server interface
 	Server interface {
 		POST(path string, f http.HandlerFunc)
 		GET(path string, f http.HandlerFunc)
@@ -33,7 +35,7 @@ type (
 	server struct {
 		root       *node
 		middleware middleware
-		fileServer http.Handler
+		fileServer http.Handler  
 		notFound   http.Handler
 		notAllowed http.Handler
 	}
@@ -250,6 +252,7 @@ func (s *server) allowed(req *http.Request) string {
 	return allow
 }
 
+//Creates new Server instance, return pointer
 func New(fs ...MiddlewareFunc) Server {
 	return &server{
 		root:       newRoot(""),

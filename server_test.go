@@ -196,7 +196,7 @@ func TestServer(t *testing.T) {
 }
 
 func TestServeFiles(t *testing.T) {
-	var s *server = New().(*server)
+	s := New().(*server)
 
 	s.ServeFiles("static", true)
 

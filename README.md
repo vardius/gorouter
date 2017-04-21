@@ -18,10 +18,9 @@ We are using the github [issue tracker](https://github.com/vardius/goserver/issu
 HOW TO USE
 ==================================================
 
-[GoDoc](http://godoc.org/github.com/vardius/goserver)
--------
-[Usage](doc/usage.md)
-[Benchmarks](doc/benchmark.md)
+1. [GoDoc](http://godoc.org/github.com/vardius/goserver)
+2. [Documentation](doc/usage.md)
+3. [Benchmarks](doc/benchmark.md)
 
 License
 -------

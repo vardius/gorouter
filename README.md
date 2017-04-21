@@ -98,6 +98,7 @@ BenchmarkRegexpParallel100-4   	  100000	     22202 ns/op
 | Parse2Params | 10       | 1           | 11           |
 | ParseAll     | 198      | 16          | 292          |
 | StaticAll    | 1097     | 0           | 1578         |
+
 ABOUT
 ==================================================
 Contributors:

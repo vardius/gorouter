@@ -125,6 +125,58 @@ func TestGetRegexNode(t *testing.T) {
 	notEqual(t, nil, node)
 }
 
+func TestGetParamNodeNotRecursive(t *testing.T) {
+	n := newRoot("/")
+	paths := strings.Split(strings.Trim("/:x", "/"), "/")
+	n.addChild(paths)
+
+	var node *node
+	node, _ = n.childNotRecursive([]string{})
+	notEqual(t, nil, node)
+	node, _ = n.childNotRecursive([]string{""})
+	equal(t, nil, node)
+	node, _ = n.childNotRecursive([]string{"", "x"})
+	equal(t, nil, node)
+	node, _ = n.childNotRecursive([]string{"x", "y"})
+	equal(t, nil, node)
+
+	var params Params
+	node, params = n.childNotRecursive([]string{"x"})
+	notEqual(t, nil, node)
+	if notEqual(t, nil, params.Value("x")) {
+		equal(t, "x", params.Value("x"))
+	}
+	node, params = n.childNotRecursive([]string{"y"})
+	notEqual(t, nil, node)
+	if notEqual(t, nil, params.Value("x")) {
+		equal(t, "y", params.Value("x"))
+	}
+}
+
+func TestGetRegexNodeNotRecursive(t *testing.T) {
+	n := newRoot("/")
+	paths := strings.Split(strings.Trim("/:x:r([a-z]+)go", "/"), "/")
+	n.addChild(paths)
+
+	var node *node
+	node, _ = n.childNotRecursive([]string{})
+	notEqual(t, nil, node)
+	node, _ = n.childNotRecursive([]string{""})
+	equal(t, nil, node)
+	node, _ = n.childNotRecursive([]string{"", "x"})
+	equal(t, nil, node)
+	node, _ = n.childNotRecursive([]string{"x", "y"})
+	equal(t, nil, node)
+	node, _ = n.childNotRecursive([]string{"x"})
+	equal(t, nil, node)
+	node, _ = n.childNotRecursive([]string{"y"})
+	equal(t, nil, node)
+	node, _ = n.childNotRecursive([]string{"rego", "y"})
+	equal(t, nil, node)
+	node, _ = n.childNotRecursive([]string{"rego"})
+	notEqual(t, nil, node)
+}
+
 func TestGetNestedRegexNode(t *testing.T) {
 	n := newRoot("/")
 	paths := strings.Split(strings.Trim("/:x:r([a-z]+)go/:y:r([a-z]+)go", "/"), "/")

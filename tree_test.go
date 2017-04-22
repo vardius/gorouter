@@ -30,6 +30,31 @@ func TestGetRootNode(t *testing.T) {
 	notEqual(t, nil, node)
 }
 
+func TestGetRootNodeNotRecursive(t *testing.T) {
+	n := newRoot("/")
+	paths := strings.Split(strings.Trim("/", "/"), "/")
+	n.addChild(paths)
+
+	equal(t, "/", n.path)
+	equal(t, "", n.regexpToString())
+	equal(t, true, n.isRoot())
+	equal(t, nil, n.parent)
+	notEqual(t, nil, n.children)
+	equal(t, true, n.isLeaf())
+
+	var node *node
+	node, _ = n.childNotRecursive([]string{""})
+	equal(t, nil, node)
+	node, _ = n.childNotRecursive([]string{"x"})
+	equal(t, nil, node)
+	node, _ = n.childNotRecursive([]string{"", "x"})
+	equal(t, nil, node)
+	node, _ = n.childNotRecursive([]string{"x", "y"})
+	equal(t, nil, node)
+	node, _ = n.childNotRecursive([]string{})
+	notEqual(t, nil, node)
+}
+
 func TestGetStrictNode(t *testing.T) {
 	n := newRoot("/")
 	paths := strings.Split(strings.Trim("/x", "/"), "/")

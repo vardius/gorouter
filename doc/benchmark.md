@@ -6,6 +6,8 @@ Go Server/API micro framwework, HTTP request router, multiplexer, mux.
 
 Benchmarks
 ----------------
+The biggest competitor is [HttpRouter](https://github.com/julienschmidt/httprouter). However Goserver allows to use *regex* wildcards and handlers implement the `http.Handler` interface type not like `httprouter.Handle`. The request parameters are passed in the **request context**. Goserver also provides [middleware](middleware.md) system and **the performance is comparable**.
+
 The output
 ```
 BenchmarkStrictParallel1-4     	10000000	       173 ns/op

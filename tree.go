@@ -70,16 +70,26 @@ func (n *node) childRecursive(paths []string) (*node, Params) {
 		path := paths[0]
 		for _, child := range n.children {
 			if len(child.path) > 0 && child.path[:1] == ":" {
-				if child.regexp == nil || child.regexp.MatchString(path) {
-					node, params := child.child(paths[1:])
-					if node == nil {
-						continue
-					}
-					params[node.params-1].Key = strings.Split(child.path, ":")[1]
-					params[node.params-1].Value = path
-
-					return node, params
+				if child.regexp != nil && !child.regexp.MatchString(path) {
+					continue
 				}
+				node, params := child.child(paths[1:])
+				if node == nil {
+					continue
+				}
+				if child.regexp != nil && child.regexp.MatchString(path) {
+					for i := 1; i < len(child.path); i++ {
+						if child.path[i] == ':' {
+							params[child.params-1].Key = child.path[1:i]
+							break
+						}
+					}
+				} else {
+					params[child.params-1].Key = child.path[1:]
+				}
+				params[child.params-1].Value = path
+
+				return node, params
 			} else if child.path == path {
 				return child.child(paths[1:])
 			}
@@ -99,16 +109,26 @@ st:
 			path := paths[0]
 			for _, child := range n.children {
 				if len(child.path) > 0 && child.path[:1] == ":" {
+					if child.regexp != nil && !child.regexp.MatchString(path) {
+						continue
+					}
 					if len(params) == 0 {
 						params = make(Params, len(paths))
 					}
-					if child.regexp == nil || child.regexp.MatchString(path) {
-						params[child.params-1].Key = strings.Split(child.path, ":")[1]
-						params[child.params-1].Value = path
-						n = child
-						paths = paths[1:]
-						continue st
+					if child.regexp != nil && child.regexp.MatchString(path) {
+						for i := 1; i < len(child.path); i++ {
+							if child.path[i] == ':' {
+								params[child.params-1].Key = child.path[1:i]
+								break
+							}
+						}
+					} else {
+						params[child.params-1].Key = child.path[1:]
 					}
+					params[child.params-1].Value = path
+					n = child
+					paths = paths[1:]
+					continue st
 				} else if child.path == path {
 					n = child
 					paths = paths[1:]

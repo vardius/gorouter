@@ -11,10 +11,9 @@ type (
 		regexp   *regexp.Regexp
 		route    *route
 		parent   *node
-		children tree
+		children []*node
 		params   uint8
 	}
-	tree map[string]*node
 )
 
 func (n *node) isRoot() bool {
@@ -39,52 +38,96 @@ func (n *node) setRegexp(exp string) {
 	}
 }
 
-func (n *node) child(paths []string) (*node, Params) {
-	if len(paths) > 0 && paths[0] != "" {
-		if child := n.children[paths[0]]; child != nil {
-			return child.child(paths[1:])
-		}
+func (n *node) setRoute(r *route) {
+	n.route = r
+}
 
-		for path, child := range n.children {
-			if len(path) > 0 && path[:1] == ":" {
-				if child.regexp == nil || child.regexp.MatchString(paths[0]) {
+func (n *node) addChild(paths []string) *node {
+	if len(paths) > 0 && paths[0] != "" {
+		var cn *node
+		for _, child := range n.children {
+			if child.path == paths[0] {
+				cn = child
+				break
+			}
+		}
+		if cn == nil {
+			cn = newNode(n, paths[0])
+			n.children = append(n.children, cn)
+		}
+		return cn.addChild(paths[1:])
+	}
+	return n
+}
+
+func (n *node) child(paths []string) (*node, Params) {
+	return n.childRecursive(paths)
+}
+
+//childRecursive returns child node by path using recurency
+func (n *node) childRecursive(paths []string) (*node, Params) {
+	if len(paths) > 0 && paths[0] != "" {
+		path := paths[0]
+		for _, child := range n.children {
+			if len(child.path) > 0 && child.path[:1] == ":" {
+				if child.regexp == nil || child.regexp.MatchString(path) {
 					node, params := child.child(paths[1:])
 					if node == nil {
 						continue
 					}
-					params[node.params-1].Key = strings.Split(path, ":")[1]
-					params[node.params-1].Value = paths[0]
+					params[node.params-1].Key = strings.Split(child.path, ":")[1]
+					params[node.params-1].Value = path
 
 					return node, params
 				}
+			} else if child.path == path {
+				return child.child(paths[1:])
 			}
 		}
 	} else if len(paths) == 0 {
 		return n, make(Params, n.params)
 	}
-	return nil, make(Params, 0)
+	return nil, nil
 }
 
-func (n *node) addChild(paths []string) *node {
-	if len(paths) > 0 && paths[0] != "" {
-		if n.children[paths[0]] == nil {
-			n.children[paths[0]] = newNode(n, paths[0])
+//childNotRecursive returns child node by path not using recurency
+func (n *node) childNotRecursive(paths []string) (*node, Params) {
+	var params Params
+st:
+	for {
+		if len(paths) > 0 && paths[0] != "" {
+			path := paths[0]
+			for _, child := range n.children {
+				if len(child.path) > 0 && child.path[:1] == ":" {
+					if len(params) == 0 {
+						params = make(Params, len(paths))
+					}
+					if child.regexp == nil || child.regexp.MatchString(path) {
+						params[child.params-1].Key = strings.Split(child.path, ":")[1]
+						params[child.params-1].Value = path
+						n = child
+						paths = paths[1:]
+						continue st
+					}
+				} else if child.path == path {
+					n = child
+					paths = paths[1:]
+					continue st
+				}
+			}
+			return nil, nil
+		} else if len(paths) == 0 {
+			return n, params
 		}
-		return n.children[paths[0]].addChild(paths[1:])
+		return nil, nil
 	}
-
-	return n
-}
-
-func (n *node) setRoute(r *route) {
-	n.route = r
 }
 
 func newNode(root *node, path string) *node {
 	n := &node{
 		path:     path,
 		parent:   root,
-		children: make(tree),
+		children: make([]*node, 0),
 	}
 
 	if root != nil {

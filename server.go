@@ -214,19 +214,19 @@ func (s *server) allowed(req *http.Request) string {
 	var allow string
 	path := req.URL.Path
 	if path == "*" {
-		for method := range s.root.children {
-			if method == OPTIONS {
+		for _, n := range s.root.children {
+			if n.path == OPTIONS {
 				continue
 			}
 			if len(allow) == 0 {
-				allow = method
+				allow = n.path
 			} else {
-				allow += ", " + method
+				allow += ", " + n.path
 			}
 		}
 	} else {
-		for method, root := range s.root.children {
-			if method == req.Method || method == OPTIONS {
+		for _, root := range s.root.children {
+			if root.path == req.Method || root.path == OPTIONS {
 				continue
 			}
 
@@ -238,9 +238,9 @@ func (s *server) allowed(req *http.Request) string {
 			n, _ := root.child(paths)
 			if n != nil && n.route != nil {
 				if len(allow) == 0 {
-					allow = method
+					allow = root.path
 				} else {
-					allow += ", " + method
+					allow += ", " + root.path
 				}
 			}
 		}

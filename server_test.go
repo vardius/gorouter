@@ -15,7 +15,15 @@ func TestPOST(t *testing.T) {
 
 	s.POST("/", mockHandler)
 
-	if s.root.children[POST] == nil {
+	var cn *node
+	for _, child := range s.root.children {
+		if child.path == POST {
+			cn = child
+			break
+		}
+	}
+
+	if cn == nil {
 		t.Error("Route not found")
 	}
 }
@@ -25,7 +33,15 @@ func TestGET(t *testing.T) {
 
 	s.GET("/", mockHandler)
 
-	if s.root.children[GET] == nil {
+	var cn *node
+	for _, child := range s.root.children {
+		if child.path == GET {
+			cn = child
+			break
+		}
+	}
+
+	if cn == nil {
 		t.Error("Route not found")
 	}
 }
@@ -35,7 +51,15 @@ func TestPUT(t *testing.T) {
 
 	s.PUT("/", mockHandler)
 
-	if s.root.children[PUT] == nil {
+	var cn *node
+	for _, child := range s.root.children {
+		if child.path == PUT {
+			cn = child
+			break
+		}
+	}
+
+	if cn == nil {
 		t.Error("Route not found")
 	}
 }
@@ -45,7 +69,15 @@ func TestDELETE(t *testing.T) {
 
 	s.DELETE("/", mockHandler)
 
-	if s.root.children[DELETE] == nil {
+	var cn *node
+	for _, child := range s.root.children {
+		if child.path == DELETE {
+			cn = child
+			break
+		}
+	}
+
+	if cn == nil {
 		t.Error("Route not found")
 	}
 }
@@ -55,7 +87,15 @@ func TestPATCH(t *testing.T) {
 
 	s.PATCH("/", mockHandler)
 
-	if s.root.children[PATCH] == nil {
+	var cn *node
+	for _, child := range s.root.children {
+		if child.path == PATCH {
+			cn = child
+			break
+		}
+	}
+
+	if cn == nil {
 		t.Error("Route not found")
 	}
 }
@@ -65,7 +105,15 @@ func TestOPTIONS(t *testing.T) {
 
 	s.OPTIONS("/", mockHandler)
 
-	if s.root.children[OPTIONS] == nil {
+	var cn *node
+	for _, child := range s.root.children {
+		if child.path == OPTIONS {
+			cn = child
+			break
+		}
+	}
+
+	if cn == nil {
 		t.Error("Route not found")
 	}
 

@@ -42,25 +42,31 @@ BenchmarkRegexpParallel10-4    	  500000	      2856 ns/op
 BenchmarkRegexpParallel100-4   	  100000	     22202 ns/op
 ```
 ### [Go HTTP Router Benchmark](https://github.com/julienschmidt/go-http-routing-benchmark)
+#### Memory required only for loading the routing structure for the respective API
+| Router       | Static      | GitHub      | Google+    | Parse      |
+|:-------------|------------:|------------:|-----------:|-----------:|
+| Goserver     | __19592 B__ | __34888 B__ |  2792 B    | 5296 B     |
+| Gorilla Mux  | 670544 B    | 1503424 B   |  71072 B   | 122184 B   |
+| HttpRouter   | 21128 B     | 37464 B     | __2712 B__ | __4976 B__ |
 #### ns/op
 | | **Goserver** | [HttpRouter](https://github.com/julienschmidt/httprouter) | [GorillaMux](https://github.com/gorilla/mux) |
 |:-------------|-------------:|------------:|--------------:|
-| Param        | 1713   | 114   | 3836    |
-| Param5       | 3021   | 458   | 6937    |
-| Param20      | 9395   | 1460  | 10673   |
-| ParamWrite   | 2711   | 128   | 3338    |
-| GithubStatic | 1205   | 45.4  | 15145   |
-| GithubParam  | 2051   | 329   | 9048    |
-| GithubAll    | 339125 | 53880 | 6692893 |
-| GPlusStatic  | 1199   | 25.5  | 2404    |
-| GPlusParam   | 1794   | 212   | 4075    |
-| GPlus2Params | 2271   | 231   | 7407    |
-| GPlusAll     | 17469  | 2247  | 56497   |
-| ParseStatic  | 1257   | 26.2  | 2629    |
-| ParseParam   | 1687   | 190   | 2772    |
-| Parse2Params | 1861   | 185   | 3660    |
-| ParseAll     | 36107  | 2788  | 104968  |
-| StaticAll    | 239387 | 10255 | 1764623 |
+| Param        | 1463   | 114   | 3836    |
+| Param5       | 2649   | 458   | 6937    |
+| Param20      | 6915   | 1460  | 10673   |
+| ParamWrite   | 2400   | 128   | 3338    |
+| GithubStatic | 1207   | 45.4  | 15145   |
+| GithubParam  | 1820   | 329   | 9048    |
+| GithubAll    | 353181 | 53880 | 6692893 |
+| GPlusStatic  | 1059   | 25.5  | 2404    |
+| GPlusParam   | 1321   | 212   | 4075    |
+| GPlus2Params | 1955   | 231   | 7407    |
+| GPlusAll     | 18608  | 2247  | 56497   |
+| ParseStatic  | 1134   | 26.2  | 2629    |
+| ParseParam   | 1401   | 190   | 2772    |
+| Parse2Params | 1651   | 185   | 3660    |
+| ParseAll     | 34511  | 2788  | 104968  |
+| StaticAll    | 187324 | 10255 | 1764623 |
 #### B/op
 | | **Goserver** | [HttpRouter](https://github.com/julienschmidt/httprouter) | [GorillaMux](https://github.com/gorilla/mux) |
 |:-------------|-----------:|------------:|-----------:|
@@ -70,15 +76,15 @@ BenchmarkRegexpParallel100-4   	  100000	     22202 ns/op
 | ParamWrite   | 960        | 32          | 1064       |
 | GithubStatic | 456        | 0           | 736        |
 | GithubParam  | 648        | 96          | 1088       |
-| GithubAll    | 114840     | 13792       | 211840     |
+| GithubAll    | 125688     | 13792       | 211840     |
 | GPlusStatic  | 424        | 0           | 736        |
 | GPlusParam   | 520        | 64          | 1056       |
 | GPlus2Params | 648        | 64          | 1088       |
-| GPlusAll     | 6760       | 640         | 13296      |
+| GPlusAll     | 7272       | 640         | 13296      |
 | ParseStatic  | 456        | 0           | 752        |
 | ParseParam   | 552        | 64          | 1088       |
 | Parse2Params | 648        | 64          | 1088       |
-| ParseAll     | 13072      | 640         | 24864      |
+| ParseAll     | 13680      | 640         | 24864      |
 | StaticAll    | 71224      | 0           | 115648     |
 #### allocs/op
 | | **Goserver** | [HttpRouter](https://github.com/julienschmidt/httprouter) | [GorillaMux](https://github.com/gorilla/mux) |
@@ -89,13 +95,13 @@ BenchmarkRegexpParallel100-4   	  100000	     22202 ns/op
 | ParamWrite   | 10       | 1           | 12           |
 | GithubStatic | 7        | 0           | 10           |
 | GithubParam  | 10       | 1           | 11           |
-| GithubAll    | 1588     | 167         | 2272         |
+| GithubAll    | 1927     | 167         | 2272         |
 | GPlusStatic  | 7        | 0           | 10           |
 | GPlusParam   | 9        | 1           | 11           |
 | GPlus2Params | 10       | 1           | 11           |
-| GPlusAll     | 102      | 11          | 142          |
+| GPlusAll     | 118      | 11          | 142          |
 | ParseStatic  | 7        | 0           | 11           |
 | ParseParam   | 9        | 1           | 12           |
 | Parse2Params | 10       | 1           | 11           |
-| ParseAll     | 198      | 16          | 292          |
+| ParseAll     | 217      | 16          | 292          |
 | StaticAll    | 1097     | 0           | 1578         |

@@ -54,7 +54,6 @@ func TestGetParamNode(t *testing.T) {
 	n.addChild(paths)
 
 	var node *node
-	var params Params
 	node, _ = n.child([]string{})
 	notEqual(t, nil, node)
 	node, _ = n.child([]string{""})
@@ -63,16 +62,18 @@ func TestGetParamNode(t *testing.T) {
 	equal(t, nil, node)
 	node, _ = n.child([]string{"x", "y"})
 	equal(t, nil, node)
+
+	var params Params
 	node, params = n.child([]string{"x"})
 	notEqual(t, nil, node)
 	if notEqual(t, nil, params.Value("x")) {
 		equal(t, "x", params.Value("x"))
 	}
 	node, params = n.child([]string{"y"})
+	notEqual(t, nil, node)
 	if notEqual(t, nil, params.Value("x")) {
 		equal(t, "y", params.Value("x"))
 	}
-	notEqual(t, nil, node)
 }
 
 func TestGetRegexNode(t *testing.T) {
@@ -172,11 +173,19 @@ func TestAddNode(t *testing.T) {
 	paths := strings.Split(strings.Trim("/example", "/"), "/")
 	n.addChild(paths)
 
+	var cn *node
+	for _, child := range n.children {
+		if child.path == "example" {
+			cn = child
+			break
+		}
+	}
+
 	equal(t, false, n.isLeaf())
-	if notEqual(t, nil, n.children["example"]) {
-		equal(t, true, n.children["example"].isLeaf())
-		equal(t, "example", n.children["example"].path)
-		equal(t, nil, n.children["example"].regexp)
+	if notEqual(t, nil, cn) {
+		equal(t, true, cn.isLeaf())
+		equal(t, "example", cn.path)
+		equal(t, nil, cn.regexp)
 	}
 }
 
@@ -185,11 +194,19 @@ func TestAddParamNode(t *testing.T) {
 	paths := strings.Split(strings.Trim("/:example", "/"), "/")
 	n.addChild(paths)
 
+	var cn *node
+	for _, child := range n.children {
+		if child.path == ":example" {
+			cn = child
+			break
+		}
+	}
+
 	equal(t, false, n.isLeaf())
-	if notEqual(t, nil, n.children[":example"]) {
-		equal(t, true, n.children[":example"].isLeaf())
-		equal(t, ":example", n.children[":example"].path)
-		equal(t, nil, n.children[":example"].regexp)
+	if notEqual(t, nil, cn) {
+		equal(t, true, cn.isLeaf())
+		equal(t, ":example", cn.path)
+		equal(t, nil, cn.regexp)
 	}
 }
 
@@ -200,12 +217,19 @@ func TestAddRegexpNode(t *testing.T) {
 
 	equal(t, false, n.isLeaf())
 
-	route := n.children[":example:r([a-z]+)go"]
-	if notEqual(t, nil, route) {
-		equal(t, true, route.isLeaf())
-		equal(t, ":example:r([a-z]+)go", route.path)
-		if notEqual(t, nil, route.regexp) {
-			equal(t, true, route.regexp.MatchString("rego"))
+	var cn *node
+	for _, child := range n.children {
+		if child.path == ":example:r([a-z]+)go" {
+			cn = child
+			break
+		}
+	}
+
+	if notEqual(t, nil, cn) {
+		equal(t, true, cn.isLeaf())
+		equal(t, ":example:r([a-z]+)go", cn.path)
+		if notEqual(t, nil, cn.regexp) {
+			equal(t, true, cn.regexp.MatchString("rego"))
 		}
 	}
 }

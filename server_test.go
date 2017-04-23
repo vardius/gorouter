@@ -100,6 +100,24 @@ func TestPATCH(t *testing.T) {
 	}
 }
 
+func TestHEAD(t *testing.T) {
+	s := New().(*server)
+
+	s.HEAD("/", mockHandler)
+
+	var cn *node
+	for _, child := range s.root.children {
+		if child.path == HEAD {
+			cn = child
+			break
+		}
+	}
+
+	if cn == nil {
+		t.Error("Route not found")
+	}
+}
+
 func TestOPTIONS(t *testing.T) {
 	s := New().(*server)
 

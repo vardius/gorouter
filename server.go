@@ -14,6 +14,7 @@ const (
 	DELETE  = "DELETE"
 	PATCH   = "PATCH"
 	OPTIONS = "OPTIONS"
+	HEAD    = "HEAD"
 )
 
 type (
@@ -25,6 +26,7 @@ type (
 		DELETE(path string, f http.HandlerFunc)
 		PATCH(path string, f http.HandlerFunc)
 		OPTIONS(path string, f http.HandlerFunc)
+		HEAD(path string, f http.HandlerFunc)
 		USE(method, path string, fs ...MiddlewareFunc)
 		ServeHTTP(http.ResponseWriter, *http.Request)
 		ServeFiles(path string, strip bool)
@@ -62,6 +64,10 @@ func (s *server) PATCH(path string, f http.HandlerFunc) {
 
 func (s *server) OPTIONS(path string, f http.HandlerFunc) {
 	s.addRoute(OPTIONS, path, f)
+}
+
+func (s *server) HEAD(path string, f http.HandlerFunc) {
+	s.addRoute(HEAD, path, f)
 }
 
 func (s *server) USE(method, path string, fs ...MiddlewareFunc) {

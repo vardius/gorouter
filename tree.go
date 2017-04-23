@@ -69,6 +69,9 @@ func (n *node) childRecursive(paths []string) (*node, Params) {
 	if len(paths) > 0 && paths[0] != "" {
 		path := paths[0]
 		for _, child := range n.children {
+			if child.path == path {
+				return child.child(paths[1:])
+			}
 			if len(child.path) > 0 && child.path[:1] == ":" {
 				if child.regexp != nil && !child.regexp.MatchString(path) {
 					continue
@@ -88,10 +91,7 @@ func (n *node) childRecursive(paths []string) (*node, Params) {
 					params[child.params-1].Key = child.path[1:]
 				}
 				params[child.params-1].Value = path
-
 				return node, params
-			} else if child.path == path {
-				return child.child(paths[1:])
 			}
 		}
 	} else if len(paths) == 0 {
@@ -108,6 +108,11 @@ st:
 		if len(paths) > 0 && paths[0] != "" {
 			path := paths[0]
 			for _, child := range n.children {
+				if child.path == path {
+					n = child
+					paths = paths[1:]
+					continue st
+				}
 				if len(child.path) > 0 && child.path[:1] == ":" {
 					if child.regexp != nil && !child.regexp.MatchString(path) {
 						continue
@@ -126,10 +131,6 @@ st:
 						params[child.params-1].Key = child.path[1:]
 					}
 					params[child.params-1].Value = path
-					n = child
-					paths = paths[1:]
-					continue st
-				} else if child.path == path {
 					n = child
 					paths = paths[1:]
 					continue st

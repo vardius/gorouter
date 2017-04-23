@@ -66,14 +66,18 @@ func (n *node) child(paths []string) (*node, Params) {
 
 //childRecursive returns child node by path using recurency
 func (n *node) childRecursive(paths []string) (*node, Params) {
-	if len(paths) > 0 && paths[0] != "" {
+	pathsLen := len(paths)
+	if pathsLen == 0 {
+		return n, make(Params, n.params)
+	}
+	if pathsLen > 0 && paths[0] != "" {
 		path := paths[0]
 		for _, child := range n.children {
 			if child.path == path {
 				return child.child(paths[1:])
 			}
-			pl := len(child.path)
-			if pl > 1 && child.path[0] == ':' {
+			pathLen := len(child.path)
+			if pathLen > 1 && child.path[0] == ':' {
 				if child.regexp != nil && !child.regexp.MatchString(path) {
 					continue
 				}
@@ -82,7 +86,7 @@ func (n *node) childRecursive(paths []string) (*node, Params) {
 					continue
 				}
 				if child.regexp != nil && child.regexp.MatchString(path) {
-					for i := 1; i < pl; i++ {
+					for i := 1; i < pathLen; i++ {
 						if child.path[i] == ':' {
 							params[child.params-1].Key = child.path[1:i]
 							break
@@ -95,8 +99,6 @@ func (n *node) childRecursive(paths []string) (*node, Params) {
 				return node, params
 			}
 		}
-	} else if len(paths) == 0 {
-		return n, make(Params, n.params)
 	}
 	return nil, nil
 }
@@ -106,7 +108,11 @@ func (n *node) childNotRecursive(paths []string) (*node, Params) {
 	var params Params
 st:
 	for {
-		if len(paths) > 0 && paths[0] != "" {
+		pathsLen := len(paths)
+		if pathsLen == 0 {
+			return n, params
+		}
+		if pathsLen > 0 && paths[0] != "" {
 			path := paths[0]
 			for _, child := range n.children {
 				if child.path == path {
@@ -114,8 +120,8 @@ st:
 					paths = paths[1:]
 					continue st
 				}
-				pl := len(child.path)
-				if pl > 0 && child.path[0] == ':' {
+				pathLen := len(child.path)
+				if pathLen > 0 && child.path[0] == ':' {
 					if child.regexp != nil && !child.regexp.MatchString(path) {
 						continue
 					}
@@ -123,7 +129,7 @@ st:
 						params = make(Params, len(paths))
 					}
 					if child.regexp != nil && child.regexp.MatchString(path) {
-						for i := 1; i < pl; i++ {
+						for i := 1; i < pathLen; i++ {
 							if child.path[i] == ':' {
 								params[child.params-1].Key = child.path[1:i]
 								break
@@ -139,8 +145,6 @@ st:
 				}
 			}
 			return nil, nil
-		} else if len(paths) == 0 {
-			return n, params
 		}
 		return nil, nil
 	}

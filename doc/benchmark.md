@@ -54,22 +54,22 @@ BenchmarkRegexpParallel100-4   	   50000	     36527 ns/op
 #### ns/op
 | | **Goserver** | [HttpRouter](https://github.com/julienschmidt/httprouter) | [GorillaMux](https://github.com/gorilla/mux) |
 |:-------------|-------------:|------------:|--------------:|
-| Param        | 210          | 114         | 3836    |
-| Param5       | 388          | 458         | 6937    |
-| Param20      | 1046         | 1460        | 10673   |
-| ParamWrite   | 975          | 128         | 3338    |
-| GithubStatic | 190          | 45.4        | 15145   |
-| GithubParam  | 375          | 329         | 9048    |
-| GithubAll    | 82100        | 53880       | 6692893 |
-| GPlusStatic  | 97           | 25.5        | 2404    |
-| GPlusParam   | 203          | 212         | 4075    |
-| GPlus2Params | 426          | 231         | 7407    |
-| GPlusAll     | 3803         | 2247        | 56497   |
-| ParseStatic  | 160          | 26.2        | 2629    |
-| ParseParam   | 240          | 190         | 2772    |
-| Parse2Params | 319          | 185         | 3660    |
-| ParseAll     | 6553         | 2788        | 104968  |
-| StaticAll    | 41316        | 10255       | 1764623 |
+| Param        | 189          | 114         | 3836          |
+| Param5       | 376          | 458         | 6937          |
+| Param20      | 998          | 1460        | 10673         |
+| ParamWrite   | 934          | 128         | 3338          |
+| GithubStatic | 203          | 45.4        | 15145         |
+| GithubParam  | 405          | 329         | 9048          |
+| GithubAll    | 80826        | 53880       | 6692893       |
+| GPlusStatic  | 94           | 25.5        | 2404          |
+| GPlusParam   | 200          | 212         | 4075          |
+| GPlus2Params | 383          | 231         | 7407          |
+| GPlusAll     | 3397         | 2247        | 56497         |
+| ParseStatic  | 162          | 26.2        | 2629          |
+| ParseParam   | 236          | 190         | 2772          |
+| Parse2Params | 305          | 185         | 3660          |
+| ParseAll     | 6517         | 2788        | 104968        |
+| StaticAll    | 44640        | 10255       | 1764623       |
 #### B/op
 | | **Goserver** | [HttpRouter](https://github.com/julienschmidt/httprouter) | [GorillaMux](https://github.com/gorilla/mux) |
 |:-------------|-----------:|------------:|-----------:|

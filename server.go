@@ -196,18 +196,28 @@ func (s *server) addMiddleware(method, path string, fs ...MiddlewareFunc) {
 }
 
 func (s *server) getRouteFromRequest(req *http.Request) (*route, Params) {
-	var paths []string
-	if path := strings.Trim(req.URL.Path, "/"); path != "" {
-		paths = strings.Split(path, "/")
+	for _, node := range s.root.children {
+		if node.path == req.Method {
+			path := req.URL.Path
+			if path != "" && path[0] == '/' {
+				path = path[1:]
+			}
+			pl := len(path)
+			if path != "" && path[pl-1] == '/' {
+				path = path[:pl-1]
+			}
+			var paths []string
+			if path != "" {
+				paths = strings.Split(path, "/")
+			}
+			node, params := node.child(paths)
+			if node != nil {
+				return node.route, params
+			}
+			break
+		}
 	}
-
-	paths = append([]string{req.Method}, paths...)
-	node, params := s.root.child(paths)
-	if node != nil {
-		return node.route, params
-	}
-
-	return nil, params
+	return nil, nil
 }
 
 func (s *server) allowed(req *http.Request) string {

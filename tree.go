@@ -72,7 +72,8 @@ func (n *node) childRecursive(paths []string) (*node, Params) {
 			if child.path == path {
 				return child.child(paths[1:])
 			}
-			if len(child.path) > 0 && child.path[:1] == ":" {
+			pl := len(child.path)
+			if pl > 1 && child.path[0] == ':' {
 				if child.regexp != nil && !child.regexp.MatchString(path) {
 					continue
 				}
@@ -81,7 +82,7 @@ func (n *node) childRecursive(paths []string) (*node, Params) {
 					continue
 				}
 				if child.regexp != nil && child.regexp.MatchString(path) {
-					for i := 1; i < len(child.path); i++ {
+					for i := 1; i < pl; i++ {
 						if child.path[i] == ':' {
 							params[child.params-1].Key = child.path[1:i]
 							break
@@ -113,7 +114,8 @@ st:
 					paths = paths[1:]
 					continue st
 				}
-				if len(child.path) > 0 && child.path[:1] == ":" {
+				pl := len(child.path)
+				if pl > 0 && child.path[0] == ':' {
 					if child.regexp != nil && !child.regexp.MatchString(path) {
 						continue
 					}
@@ -121,7 +123,7 @@ st:
 						params = make(Params, len(paths))
 					}
 					if child.regexp != nil && child.regexp.MatchString(path) {
-						for i := 1; i < len(child.path); i++ {
+						for i := 1; i < pl; i++ {
 							if child.path[i] == ':' {
 								params[child.params-1].Key = child.path[1:i]
 								break

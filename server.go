@@ -20,14 +20,16 @@ const (
 type (
 	//Server interface
 	Server interface {
-		POST(path string, f http.HandlerFunc)
-		GET(path string, f http.HandlerFunc)
-		PUT(path string, f http.HandlerFunc)
-		DELETE(path string, f http.HandlerFunc)
-		PATCH(path string, f http.HandlerFunc)
-		OPTIONS(path string, f http.HandlerFunc)
-		HEAD(path string, f http.HandlerFunc)
-		USE(method, path string, fs ...MiddlewareFunc)
+		Handle(method, pattern string, handler http.Handler)
+		HandleFunc(method, pattern string, handler http.HandlerFunc)
+		POST(pattern string, handler http.HandlerFunc)
+		GET(pattern string, handler http.HandlerFunc)
+		PUT(pattern string, handler http.HandlerFunc)
+		DELETE(pattern string, handler http.HandlerFunc)
+		PATCH(pattern string, handler http.HandlerFunc)
+		OPTIONS(pattern string, handler http.HandlerFunc)
+		HEAD(pattern string, handler http.HandlerFunc)
+		USE(method, pattern string, fs ...MiddlewareFunc)
 		ServeHTTP(http.ResponseWriter, *http.Request)
 		ServeFiles(path string, strip bool)
 		NotFound(http.Handler)
@@ -42,36 +44,46 @@ type (
 	}
 )
 
-func (s *server) POST(path string, f http.HandlerFunc) {
-	s.addRoute(POST, path, f)
+func (s *server) Handle(method, p string, h http.Handler) {
+	s.HandleFunc(method, p, func(w http.ResponseWriter, req *http.Request) {
+		h.ServeHTTP(w, req)
+	})
 }
 
-func (s *server) GET(path string, f http.HandlerFunc) {
-	s.addRoute(GET, path, f)
+func (s *server) HandleFunc(method, p string, f http.HandlerFunc) {
+	s.addRoute(method, p, f)
 }
 
-func (s *server) PUT(path string, f http.HandlerFunc) {
-	s.addRoute(PUT, path, f)
+func (s *server) POST(p string, f http.HandlerFunc) {
+	s.addRoute(POST, p, f)
 }
 
-func (s *server) DELETE(path string, f http.HandlerFunc) {
-	s.addRoute(DELETE, path, f)
+func (s *server) GET(p string, f http.HandlerFunc) {
+	s.addRoute(GET, p, f)
 }
 
-func (s *server) PATCH(path string, f http.HandlerFunc) {
-	s.addRoute(PATCH, path, f)
+func (s *server) PUT(p string, f http.HandlerFunc) {
+	s.addRoute(PUT, p, f)
 }
 
-func (s *server) OPTIONS(path string, f http.HandlerFunc) {
-	s.addRoute(OPTIONS, path, f)
+func (s *server) DELETE(p string, f http.HandlerFunc) {
+	s.addRoute(DELETE, p, f)
 }
 
-func (s *server) HEAD(path string, f http.HandlerFunc) {
-	s.addRoute(HEAD, path, f)
+func (s *server) PATCH(p string, f http.HandlerFunc) {
+	s.addRoute(PATCH, p, f)
 }
 
-func (s *server) USE(method, path string, fs ...MiddlewareFunc) {
-	s.addMiddleware(method, path, fs...)
+func (s *server) OPTIONS(p string, f http.HandlerFunc) {
+	s.addRoute(OPTIONS, p, f)
+}
+
+func (s *server) HEAD(p string, f http.HandlerFunc) {
+	s.addRoute(HEAD, p, f)
+}
+
+func (s *server) USE(method, p string, fs ...MiddlewareFunc) {
+	s.addMiddleware(method, p, fs...)
 }
 
 func (s *server) NotFound(notFound http.Handler) {

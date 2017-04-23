@@ -10,6 +10,42 @@ func TestInterface(t *testing.T) {
 	var _ http.Handler = New()
 }
 
+func TestHandle(t *testing.T) {
+	s := New().(*server)
+
+	s.Handle(POST, "/", http.HandlerFunc(mockHandler))
+
+	var cn *node
+	for _, child := range s.root.children {
+		if child.path == POST {
+			cn = child
+			break
+		}
+	}
+
+	if cn == nil {
+		t.Error("Route not found")
+	}
+}
+
+func TestHandleFunc(t *testing.T) {
+	s := New().(*server)
+
+	s.HandleFunc(POST, "/", mockHandler)
+
+	var cn *node
+	for _, child := range s.root.children {
+		if child.path == POST {
+			cn = child
+			break
+		}
+	}
+
+	if cn == nil {
+		t.Error("Route not found")
+	}
+}
+
 func TestPOST(t *testing.T) {
 	s := New().(*server)
 

@@ -215,7 +215,7 @@ func (s *server) addMiddleware(method, path string, fs ...MiddlewareFunc) {
 
 func (s *server) getRouteFromRequest(req *http.Request) (*route, Params) {
 	for _, node := range s.root.children {
-		if node.path == req.Method {
+		if node.pattern == req.Method {
 			path := req.URL.Path
 			if path != "" && path[0] == '/' {
 				path = path[1:]
@@ -243,18 +243,18 @@ func (s *server) allowed(req *http.Request) string {
 	path := req.URL.Path
 	if path == "*" {
 		for _, n := range s.root.children {
-			if n.path == OPTIONS {
+			if n.pattern == OPTIONS {
 				continue
 			}
 			if len(allow) == 0 {
-				allow = n.path
+				allow = n.pattern
 			} else {
-				allow += ", " + n.path
+				allow += ", " + n.pattern
 			}
 		}
 	} else {
 		for _, root := range s.root.children {
-			if root.path == req.Method || root.path == OPTIONS {
+			if root.pattern == req.Method || root.pattern == OPTIONS {
 				continue
 			}
 
@@ -266,9 +266,9 @@ func (s *server) allowed(req *http.Request) string {
 			n, _ := root.child(paths)
 			if n != nil && n.route != nil {
 				if len(allow) == 0 {
-					allow = root.path
+					allow = root.pattern
 				} else {
-					allow += ", " + root.path
+					allow += ", " + root.pattern
 				}
 			}
 		}

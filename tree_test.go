@@ -10,7 +10,7 @@ func TestGetRootNode(t *testing.T) {
 	paths := strings.Split(strings.Trim("/", "/"), "/")
 	n.addChild(paths)
 
-	equal(t, "/", n.path)
+	equal(t, "/", n.pattern)
 	equal(t, "", n.regexpToString())
 	equal(t, true, n.isRoot())
 	equal(t, nil, n.parent)
@@ -35,7 +35,7 @@ func TestGetRootNodeNotRecursive(t *testing.T) {
 	paths := strings.Split(strings.Trim("/", "/"), "/")
 	n.addChild(paths)
 
-	equal(t, "/", n.path)
+	equal(t, "/", n.pattern)
 	equal(t, "", n.regexpToString())
 	equal(t, true, n.isRoot())
 	equal(t, nil, n.parent)
@@ -252,7 +252,7 @@ func TestAddNode(t *testing.T) {
 
 	var cn *node
 	for _, child := range n.children {
-		if child.path == "example" {
+		if child.pattern == "example" {
 			cn = child
 			break
 		}
@@ -261,7 +261,7 @@ func TestAddNode(t *testing.T) {
 	equal(t, false, n.isLeaf())
 	if notEqual(t, nil, cn) {
 		equal(t, true, cn.isLeaf())
-		equal(t, "example", cn.path)
+		equal(t, "example", cn.pattern)
 		equal(t, nil, cn.regexp)
 	}
 }
@@ -273,7 +273,7 @@ func TestAddParamNode(t *testing.T) {
 
 	var cn *node
 	for _, child := range n.children {
-		if child.path == ":example" {
+		if child.pattern == ":example" {
 			cn = child
 			break
 		}
@@ -282,7 +282,7 @@ func TestAddParamNode(t *testing.T) {
 	equal(t, false, n.isLeaf())
 	if notEqual(t, nil, cn) {
 		equal(t, true, cn.isLeaf())
-		equal(t, ":example", cn.path)
+		equal(t, ":example", cn.pattern)
 		equal(t, nil, cn.regexp)
 	}
 }
@@ -296,7 +296,7 @@ func TestAddRegexpNode(t *testing.T) {
 
 	var cn *node
 	for _, child := range n.children {
-		if child.path == ":example:r([a-z]+)go" {
+		if child.pattern == ":example:r([a-z]+)go" {
 			cn = child
 			break
 		}
@@ -304,7 +304,7 @@ func TestAddRegexpNode(t *testing.T) {
 
 	if notEqual(t, nil, cn) {
 		equal(t, true, cn.isLeaf())
-		equal(t, ":example:r([a-z]+)go", cn.path)
+		equal(t, ":example:r([a-z]+)go", cn.pattern)
 		if notEqual(t, nil, cn.regexp) {
 			equal(t, true, cn.regexp.MatchString("rego"))
 		}

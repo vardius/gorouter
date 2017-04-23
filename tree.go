@@ -2,12 +2,13 @@ package goserver
 
 import (
 	"regexp"
+	"sort"
 	"strings"
 )
 
 type (
 	node struct {
-		path     string
+		pattern  string
 		regexp   *regexp.Regexp
 		route    *route
 		parent   *node
@@ -46,7 +47,7 @@ func (n *node) addChild(paths []string) *node {
 	if len(paths) > 0 && paths[0] != "" {
 		var cn *node
 		for _, child := range n.children {
-			if child.path == paths[0] {
+			if child.pattern == paths[0] {
 				cn = child
 				break
 			}
@@ -54,6 +55,18 @@ func (n *node) addChild(paths []string) *node {
 		if cn == nil {
 			cn = newNode(n, paths[0])
 			n.children = append(n.children, cn)
+
+			sort.Slice(n.children, func(i, j int) bool {
+				if n.children[i].pattern[0] == ':' {
+					return false
+				}
+
+				if n.children[j].pattern[0] == ':' {
+					return true
+				}
+
+				return n.children[i].pattern[1] < n.children[j].pattern[1]
+			})
 		}
 		return cn.addChild(paths[1:])
 	}
@@ -73,11 +86,11 @@ func (n *node) childRecursive(paths []string) (node *node, params Params) {
 	if pathsLen > 0 && paths[0] != "" {
 		path := paths[0]
 		for _, child := range n.children {
-			if child.path == path {
+			if child.pattern == path {
 				return child.child(paths[1:])
 			}
-			pathLen := len(child.path)
-			if pathLen > 1 && child.path[0] == ':' {
+			pathLen := len(child.pattern)
+			if pathLen > 1 && child.pattern[0] == ':' {
 				if child.regexp != nil && !child.regexp.MatchString(path) {
 					continue
 				}
@@ -87,13 +100,13 @@ func (n *node) childRecursive(paths []string) (node *node, params Params) {
 				}
 				if child.regexp != nil && child.regexp.MatchString(path) {
 					for i := 1; i < pathLen; i++ {
-						if child.path[i] == ':' {
-							params[child.params-1].Key = child.path[1:i]
+						if child.pattern[i] == ':' {
+							params[child.params-1].Key = child.pattern[1:i]
 							break
 						}
 					}
 				} else {
-					params[child.params-1].Key = child.path[1:]
+					params[child.params-1].Key = child.pattern[1:]
 				}
 				params[child.params-1].Value = path
 				return
@@ -115,13 +128,13 @@ st:
 		if pathsLen > 0 && paths[0] != "" {
 			path := paths[0]
 			for _, child := range n.children {
-				if child.path == path {
+				if child.pattern == path {
 					n = child
 					paths = paths[1:]
 					continue st
 				}
-				pathLen := len(child.path)
-				if pathLen > 0 && child.path[0] == ':' {
+				pathLen := len(child.pattern)
+				if pathLen > 0 && child.pattern[0] == ':' {
 					if child.regexp != nil && !child.regexp.MatchString(path) {
 						continue
 					}
@@ -130,13 +143,13 @@ st:
 					}
 					if child.regexp != nil && child.regexp.MatchString(path) {
 						for i := 1; i < pathLen; i++ {
-							if child.path[i] == ':' {
-								params[child.params-1].Key = child.path[1:i]
+							if child.pattern[i] == ':' {
+								params[child.params-1].Key = child.pattern[1:i]
 								break
 							}
 						}
 					} else {
-						params[child.params-1].Key = child.path[1:]
+						params[child.params-1].Key = child.pattern[1:]
 					}
 					params[child.params-1].Value = path
 					n = child
@@ -150,9 +163,9 @@ st:
 	}
 }
 
-func newNode(root *node, path string) *node {
+func newNode(root *node, pattern string) *node {
 	n := &node{
-		path:     path,
+		pattern:  pattern,
 		parent:   root,
 		children: make([]*node, 0),
 	}
@@ -161,9 +174,9 @@ func newNode(root *node, path string) *node {
 		n.params = root.params
 	}
 
-	if len(n.path) > 0 && path[:1] == ":" {
+	if len(n.pattern) > 0 && pattern[:1] == ":" {
 		n.params++
-		if parts := strings.Split(n.path, ":"); len(parts) == 3 {
+		if parts := strings.Split(n.pattern, ":"); len(parts) == 3 {
 			n.setRegexp(parts[2])
 		}
 	}
@@ -171,6 +184,6 @@ func newNode(root *node, path string) *node {
 	return n
 }
 
-func newRoot(path string) *node {
-	return newNode(nil, path)
+func newRoot(pattern string) *node {
+	return newNode(nil, pattern)
 }

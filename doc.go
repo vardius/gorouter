@@ -9,7 +9,7 @@ Package goserver provide request router with middleware
 		"fmt"
 		"log"
 		"net/http"
-		
+
 		"github.com/vardius/goserver"
 	)
 

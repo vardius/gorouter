@@ -17,7 +17,7 @@ func TestHandle(t *testing.T) {
 
 	var cn *node
 	for _, child := range s.root.children {
-		if child.path == POST {
+		if child.pattern == POST {
 			cn = child
 			break
 		}
@@ -35,7 +35,7 @@ func TestHandleFunc(t *testing.T) {
 
 	var cn *node
 	for _, child := range s.root.children {
-		if child.path == POST {
+		if child.pattern == POST {
 			cn = child
 			break
 		}
@@ -53,7 +53,7 @@ func TestPOST(t *testing.T) {
 
 	var cn *node
 	for _, child := range s.root.children {
-		if child.path == POST {
+		if child.pattern == POST {
 			cn = child
 			break
 		}
@@ -71,7 +71,7 @@ func TestGET(t *testing.T) {
 
 	var cn *node
 	for _, child := range s.root.children {
-		if child.path == GET {
+		if child.pattern == GET {
 			cn = child
 			break
 		}
@@ -89,7 +89,7 @@ func TestPUT(t *testing.T) {
 
 	var cn *node
 	for _, child := range s.root.children {
-		if child.path == PUT {
+		if child.pattern == PUT {
 			cn = child
 			break
 		}
@@ -107,7 +107,7 @@ func TestDELETE(t *testing.T) {
 
 	var cn *node
 	for _, child := range s.root.children {
-		if child.path == DELETE {
+		if child.pattern == DELETE {
 			cn = child
 			break
 		}
@@ -125,7 +125,7 @@ func TestPATCH(t *testing.T) {
 
 	var cn *node
 	for _, child := range s.root.children {
-		if child.path == PATCH {
+		if child.pattern == PATCH {
 			cn = child
 			break
 		}
@@ -143,7 +143,7 @@ func TestHEAD(t *testing.T) {
 
 	var cn *node
 	for _, child := range s.root.children {
-		if child.path == HEAD {
+		if child.pattern == HEAD {
 			cn = child
 			break
 		}
@@ -161,7 +161,7 @@ func TestOPTIONS(t *testing.T) {
 
 	var cn *node
 	for _, child := range s.root.children {
-		if child.path == OPTIONS {
+		if child.pattern == OPTIONS {
 			cn = child
 			break
 		}

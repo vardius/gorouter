@@ -40,6 +40,15 @@ func main() {
 ```
 ## Routing
 The router determines how to handle that request. Goserver uses a routing tree. Once one branch of the tree matches, only routes inside that branch are considered, not any routes after that branch. When instantiating server, the root node of router tree is created.
+### Route types
+- Static `/hello`
+will match requests matching given route
+- Named `/:name`
+will match requests matching given route scheme
+- Regexp `/:name:[a-z]+`
+will match requests matching given route scheme and its regexp
+#### Wildcards
+The values of *named parameter* or *regexp parameters* are accessible via *request context* `params, ok := goserver.ParamsFromContext(req.Context())`. You can get the value of a parameter either by its index in the slice, or by using the `params.Value(name)` method: `:name` or `/:name:[a-z]+` can be retrived by `params.Value("name")`.
 ### Defining Routes
 A full route definition contain up to three parts:
 1. HTTP method under which route will be available
@@ -53,13 +62,6 @@ server.GET("/hello/:name:r([a-z]+)go", func(w http.ResponseWriter, r *http.Reque
 })
 ```
 In this case, the route is matched by `/hello/rxxxxxgo` for example, because the `:name` wildcard matches the regular expression wildcard given (`r([a-z]+)go`). However, `/hello/foo` does not match, because "foo" fails the *name* wildcard. When using wildcards, these are returned in the map from request context. The part of the path that the wildcard matched (e.g. *rxxxxxgo*) is used as value.
-### Route types
-- Static `/hello`
-will match requests matching given route
-- Named `/:name`
-will match requests matching given route scheme
-- Regexp `/:name:[a-z]+`
-will match requests matching given route scheme and its regexp
 
 Advanced configuration
 ----------------

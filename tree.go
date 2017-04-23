@@ -65,7 +65,7 @@ func (n *node) child(paths []string) (*node, Params) {
 }
 
 //childRecursive returns child node by path using recurency
-func (n *node) childRecursive(paths []string) (*node, Params) {
+func (n *node) childRecursive(paths []string) (node *node, params Params) {
 	pathsLen := len(paths)
 	if pathsLen == 0 {
 		return n, make(Params, n.params)
@@ -81,7 +81,7 @@ func (n *node) childRecursive(paths []string) (*node, Params) {
 				if child.regexp != nil && !child.regexp.MatchString(path) {
 					continue
 				}
-				node, params := child.child(paths[1:])
+				node, params = child.child(paths[1:])
 				if node == nil {
 					continue
 				}
@@ -96,11 +96,11 @@ func (n *node) childRecursive(paths []string) (*node, Params) {
 					params[child.params-1].Key = child.path[1:]
 				}
 				params[child.params-1].Value = path
-				return node, params
+				return
 			}
 		}
 	}
-	return nil, nil
+	return
 }
 
 //childNotRecursive returns child node by path not using recurency

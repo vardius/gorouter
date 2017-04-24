@@ -56,6 +56,7 @@ BenchmarkGoserverRegexpParallel10-4     	  300000	      4429 ns/op
 BenchmarkGoserverRegexpParallel20-4     	  200000	      8145 ns/op
 ```
 ### [Go HTTP Router Benchmark](https://github.com/julienschmidt/go-http-routing-benchmark)
+**go-http-routing-benchmark** was runned without writing *parameters* to *request context* in case of comparing native router performance.
 #### Memory required only for loading the routing structure for the respective API
 | Router       | Static      | GitHub      | Google+    | Parse      |
 |:-------------|------------:|------------:|-----------:|-----------:|

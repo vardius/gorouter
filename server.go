@@ -3,7 +3,6 @@ package goserver
 import (
 	"net/http"
 	"os"
-	"strings"
 )
 
 // HTTP methods constants
@@ -106,10 +105,11 @@ func (s *server) ServeFiles(path string, strip bool) {
 }
 
 func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	route, params := s.getRouteFromRequest(req)
+	// route, params := s.getRouteFromRequest(req)
+	route, _ := s.getRouteFromRequest(req)
 	if route != nil {
 		if h := route.handler(); h != nil {
-			req = req.WithContext(newContextFromRequest(req, params))
+			// req = req.WithContext(newContextFromRequest(req, params))
 			h.ServeHTTP(w, req)
 			return
 		}
@@ -176,7 +176,7 @@ func (s *server) serveFiles(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *server) addRoute(method, path string, f http.HandlerFunc) {
-	paths := strings.Split(strings.Trim(path, "/"), "/")
+	paths := getPaths(path)
 	paths = append([]string{method}, paths...)
 
 	r := newRoute(f)
@@ -187,48 +187,27 @@ func (s *server) addRoute(method, path string, f http.HandlerFunc) {
 }
 
 func (s *server) addMiddleware(method, path string, fs ...MiddlewareFunc) {
-	type recFunc func(recFunc, *node, []string, middleware)
-	c := func(c recFunc, n *node, paths []string, m middleware) {
+	type recFunc func(recFunc, *node, string, middleware)
+	c := func(c recFunc, n *node, path string, m middleware) {
 		if n.route != nil {
 			n.route.addMiddleware(m)
 			for _, node := range n.children {
-				c(c, node, paths[1:], m)
+				c(c, node, path[len(node.pattern):], m)
 			}
 		}
 	}
 
-	var paths []string
-	if path := strings.Trim(path, "/"); path != "" {
-		paths = strings.Split(path, "/")
-	}
-
-	if method == "" {
-		for _, node := range s.root.children {
-			c(c, node, paths, fs)
+	for _, node := range s.root.children {
+		if method == "" || method == node.pattern {
+			c(c, node, path, fs)
 		}
-	} else {
-		paths = append([]string{method}, paths...)
-		node, _ := s.root.child(paths)
-		c(c, node, paths, fs)
 	}
 }
 
 func (s *server) getRouteFromRequest(req *http.Request) (*route, Params) {
 	for _, node := range s.root.children {
 		if node.pattern == req.Method {
-			path := req.URL.Path
-			if path != "" && path[0] == '/' {
-				path = path[1:]
-			}
-			pl := len(path)
-			if path != "" && path[pl-1] == '/' {
-				path = path[:pl-1]
-			}
-			var paths []string
-			if path != "" {
-				paths = strings.Split(path, "/")
-			}
-			node, params := node.child(paths)
+			node, params := node.child(req.URL.Path)
 			if node != nil {
 				return node.route, params
 			}
@@ -257,13 +236,7 @@ func (s *server) allowed(req *http.Request) string {
 			if root.pattern == req.Method || root.pattern == OPTIONS {
 				continue
 			}
-
-			var paths []string
-			if path = strings.Trim(path, "/"); path != "" {
-				paths = strings.Split(path, "/")
-			}
-
-			n, _ := root.child(paths)
+			n, _ := root.child(path)
 			if n != nil && n.route != nil {
 				if len(allow) == 0 {
 					allow = root.pattern

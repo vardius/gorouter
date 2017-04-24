@@ -55,17 +55,18 @@ func (n *node) addChild(paths []string) *node {
 		if cn == nil {
 			cn = newNode(n, paths[0])
 			n.children = append(n.children, cn)
-
 			sort.Slice(n.children, func(i, j int) bool {
-				if n.children[i].pattern[0] == ':' {
-					return false
+				iLen := len(n.children[i].pattern)
+				jLen := len(n.children[j].pattern)
+				if iLen > 0 && jLen > 0 {
+					isIParam := n.children[i].pattern[0] == ':'
+					isJParam := n.children[j].pattern[0] == ':'
+					if isIParam && isJParam {
+						return strings.Contains(n.children[i].pattern[1:], ":")
+					}
+					return !isIParam
 				}
-
-				if n.children[j].pattern[0] == ':' {
-					return true
-				}
-
-				return n.children[i].pattern[1] < n.children[j].pattern[1]
+				return n.children[i].pattern < n.children[j].pattern
 			})
 		}
 		return cn.addChild(paths[1:])

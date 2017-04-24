@@ -271,7 +271,7 @@ func TestServer(t *testing.T) {
 	s := New().(*server)
 
 	serverd := false
-	s.GET("/:param", func(_ http.ResponseWriter, r *http.Request) {
+	s.GET("/{param}", func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := ParamsFromContext(r.Context())
@@ -322,7 +322,7 @@ func TestServeFiles(t *testing.T) {
 func TestNilMiddleware(t *testing.T) {
 	s := New().(*server)
 
-	s.GET("/:param", func(w http.ResponseWriter, _ *http.Request) {
+	s.GET("/{param}", func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte("test"))
 	})
 
@@ -357,7 +357,7 @@ func TestPanicMiddleware(t *testing.T) {
 
 	s := New(panicMiddleware).(*server)
 
-	s.GET("/:param", func(_ http.ResponseWriter, _ *http.Request) {
+	s.GET("/{param}", func(_ http.ResponseWriter, _ *http.Request) {
 		panic("test panic recover")
 	})
 
@@ -377,7 +377,7 @@ func TestPanicMiddleware(t *testing.T) {
 func TestNodeApplyMiddleware(t *testing.T) {
 	s := New().(*server)
 
-	s.GET("/:param", func(w http.ResponseWriter, r *http.Request) {
+	s.GET("/{param}", func(w http.ResponseWriter, r *http.Request) {
 		params, ok := ParamsFromContext(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
@@ -386,7 +386,7 @@ func TestNodeApplyMiddleware(t *testing.T) {
 		w.Write([]byte(params.Value("param")))
 	})
 
-	s.USE(GET, "/:param", mockMiddleware)
+	s.USE(GET, "/{param}", mockMiddleware)
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, "/x", nil)

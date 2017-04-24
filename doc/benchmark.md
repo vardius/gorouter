@@ -10,38 +10,50 @@ The biggest competitor is [HttpRouter](https://github.com/julienschmidt/httprout
 
 The output
 ```
-BenchmarkStrictParallel1-4     	30000000	       58.1 ns/op
+BenchmarkGoserverStaticParallel1-4      	30000000	        56.1 ns/op
 ```
-means that the loop ran 30000000 times at a speed of 58.1 ns per loop. What gives around **17211704 req/sec** !
-Each benchmark name `BenchmarkStrictParallel1-4 ` means that test used a `static` or `regexp` route path for each node with a nested level `5`. Where `4` stands for CPU number.
+means that the loop ran 30000000 times at a speed of 56.1 ns per loop. What gives around **17825312 req/sec** !
+Each benchmark name `BenchmarkGoserverStaticParallel1-4 ` means that test used a `static` or `regexp` route path for each node with a nested level `5`. Where `4` stands for CPU number.
 
 The benchmarks from file [benchmark_test.go](benchmark_test.go).
 ```
 $ go test -bench=. -cpu=4
-BenchmarkStrict1-4             	20000000	        99.1 ns/op
-BenchmarkStrict2-4             	10000000	       165 ns/op
-BenchmarkStrict3-4             	10000000	       207 ns/op
-BenchmarkStrict5-4             	 5000000	       273 ns/op
-BenchmarkStrict10-4            	 3000000	       458 ns/op
-BenchmarkStrict100-4           	  300000	      4195 ns/op
-BenchmarkStrictParallel1-4     	30000000	        58.1 ns/op
-BenchmarkStrictParallel2-4     	20000000	        97.6 ns/op
-BenchmarkStrictParallel3-4     	10000000	       123 ns/op
-BenchmarkStrictParallel5-4     	10000000	       160 ns/op
-BenchmarkStrictParallel10-4    	 5000000	       269 ns/op
-BenchmarkStrictParallel100-4   	  500000	      2639 ns/op
-BenchmarkRegexp1-4             	 2000000	       668 ns/op
-BenchmarkRegexp2-4             	 1000000	      1291 ns/op
-BenchmarkRegexp3-4             	 1000000	      1865 ns/op
-BenchmarkRegexp5-4             	  500000	      2968 ns/op
-BenchmarkRegexp10-4            	  200000	      6010 ns/op
-BenchmarkRegexp100-4           	   20000	     63167 ns/op
-BenchmarkRegexpParallel1-4     	 2000000	       695 ns/op
-BenchmarkRegexpParallel2-4     	 1000000	      1211 ns/op
-BenchmarkRegexpParallel3-4     	 1000000	      1543 ns/op
-BenchmarkRegexpParallel5-4     	  500000	      2348 ns/op
-BenchmarkRegexpParallel10-4    	  300000	      4748 ns/op
-BenchmarkRegexpParallel100-4   	   50000	     36527 ns/op
+BenchmarkGoserverStatic1-4              	20000000	        90.0 ns/op
+BenchmarkGoserverStatic2-4              	10000000	       154 ns/op
+BenchmarkGoserverStatic3-4              	10000000	       195 ns/op
+BenchmarkGoserverStatic5-4              	 5000000	       260 ns/op
+BenchmarkGoserverStatic10-4             	 3000000	       429 ns/op
+BenchmarkGoserverStatic20-4             	 2000000	       813 ns/op
+BenchmarkGoserverWildcard1-4            	10000000	       129 ns/op
+BenchmarkGoserverWildcard2-4            	 5000000	       225 ns/op
+BenchmarkGoserverWildcard3-4            	 5000000	       287 ns/op
+BenchmarkGoserverWildcard5-4            	 5000000	       376 ns/op
+BenchmarkGoserverWildcard10-4           	 2000000	       629 ns/op
+BenchmarkGoserverWildcard20-4           	 1000000	      1152 ns/op
+BenchmarkGoserverRegexp1-4              	 2000000	       614 ns/op
+BenchmarkGoserverRegexp2-4              	 1000000	      1219 ns/op
+BenchmarkGoserverRegexp3-4              	 1000000	      1758 ns/op
+BenchmarkGoserverRegexp5-4              	  500000	      2867 ns/op
+BenchmarkGoserverRegexp10-4             	  200000	      5679 ns/op
+BenchmarkGoserverRegexp20-4             	  200000	     11165 ns/op
+BenchmarkGoserverStaticParallel1-4      	30000000	        56.1 ns/op
+BenchmarkGoserverStaticParallel2-4      	20000000	        90.6 ns/op
+BenchmarkGoserverStaticParallel3-4      	10000000	       117 ns/op
+BenchmarkGoserverStaticParallel5-4      	10000000	       159 ns/op
+BenchmarkGoserverStaticParallel10-4     	 5000000	       266 ns/op
+BenchmarkGoserverStaticParallel20-4     	 3000000	       488 ns/op
+BenchmarkGoserverWildcardParallel1-4    	20000000	        88.6 ns/op
+BenchmarkGoserverWildcardParallel2-4    	10000000	       168 ns/op
+BenchmarkGoserverWildcardParallel3-4    	10000000	       194 ns/op
+BenchmarkGoserverWildcardParallel5-4    	 5000000	       257 ns/op
+BenchmarkGoserverWildcardParallel10-4   	 3000000	       423 ns/op
+BenchmarkGoserverWildcardParallel20-4   	 2000000	       747 ns/op
+BenchmarkGoserverRegexpParallel1-4      	 2000000	       620 ns/op
+BenchmarkGoserverRegexpParallel2-4      	 1000000	      1089 ns/op
+BenchmarkGoserverRegexpParallel3-4      	 1000000	      1449 ns/op
+BenchmarkGoserverRegexpParallel5-4      	  500000	      2270 ns/op
+BenchmarkGoserverRegexpParallel10-4     	  300000	      4429 ns/op
+BenchmarkGoserverRegexpParallel20-4     	  200000	      8145 ns/op
 ```
 ### [Go HTTP Router Benchmark](https://github.com/julienschmidt/go-http-routing-benchmark)
 #### Memory required only for loading the routing structure for the respective API

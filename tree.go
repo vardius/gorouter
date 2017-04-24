@@ -99,7 +99,7 @@ func (n *node) childRecursive(paths []string) (node *node, params Params) {
 				if node == nil {
 					continue
 				}
-				if child.regexp != nil && child.regexp.MatchString(path) {
+				if child.regexp != nil {
 					for i := 1; i < pathLen; i++ {
 						if child.pattern[i] == ':' {
 							params[child.params-1].Key = child.pattern[1:i]
@@ -142,7 +142,7 @@ st:
 					if len(params) == 0 {
 						params = make(Params, len(paths))
 					}
-					if child.regexp != nil && child.regexp.MatchString(path) {
+					if child.regexp != nil {
 						for i := 1; i < pathLen; i++ {
 							if child.pattern[i] == ':' {
 								params[child.params-1].Key = child.pattern[1:i]

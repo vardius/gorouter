@@ -40,7 +40,6 @@ func benchmarkHttpRouterStaticParallel(t int, b *testing.B) {
 	s := httprouter.New()
 	s.GET(path, func(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {})
 
-	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, path, nil)
 	if err != nil {
 		b.Fatal(err)
@@ -49,6 +48,7 @@ func benchmarkHttpRouterStaticParallel(t int, b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		var buf bytes.Buffer
+		w := httptest.NewRecorder()
 		for pb.Next() {
 			buf.Reset()
 			s.ServeHTTP(w, req)
@@ -92,7 +92,6 @@ func benchmarkHttpRouterWildcardParallel(t int, b *testing.B) {
 	s := httprouter.New()
 	s.GET(path, func(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {})
 
-	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, rpath, nil)
 	if err != nil {
 		b.Fatal(err)
@@ -101,6 +100,7 @@ func benchmarkHttpRouterWildcardParallel(t int, b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		var buf bytes.Buffer
+		w := httptest.NewRecorder()
 		for pb.Next() {
 			buf.Reset()
 			s.ServeHTTP(w, req)

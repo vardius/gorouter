@@ -58,7 +58,7 @@ func main() {
     server := goserver.New(logger, example)
 
     server.GET("/", Index)
-    server.GET("/hello/:name", Hello)
+    server.GET("/hello/{name}", Hello)
 
     log.Fatal(http.ListenAndServe(":8080", server))
 }
@@ -109,7 +109,7 @@ func main() {
     server := goserver.New()
 
     server.GET("/", Index)
-    server.GET("/hello/:name", Hello)
+    server.GET("/hello/{name}", Hello)
 
 	//apply middlewares to all routes with GET method
 	//can pass as many as you want
@@ -164,11 +164,11 @@ func main() {
     server := goserver.New()
     server.GET("/", Index)
 
-    server.GET("/hello/:name", Hello)
+    server.GET("/hello/{name}", Hello)
 
 	//apply midlewares to route and all it childs
 	//can pass as many as you want
-    server.USE("GET", "/hello/:name", logger, example)
+    server.USE("GET", "/hello/{name}", logger, example)
 
     log.Fatal(http.ListenAndServe(":8080", server))
 }

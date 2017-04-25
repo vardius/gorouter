@@ -1,360 +1,280 @@
 package goserver
 
-// import (
-// 	"strings"
-// 	"testing"
-// )
+import "testing"
 
-// func TestGetRootNode(t *testing.T) {
-// 	n := newRoot("/")
-// 	paths := strings.Split(strings.Trim("/", "/"), "/")
-// 	n.addChild(paths)
+func TestGetRootNode(t *testing.T) {
+	n := newRoot("")
+	paths := splitPath("/")
+	n.addChild(paths)
 
-// 	equal(t, "/", n.pattern)
-// 	equal(t, "", n.regexpToString())
-// 	equal(t, true, n.isRoot())
-// 	equal(t, nil, n.parent)
-// 	notEqual(t, nil, n.children)
-// 	equal(t, true, n.isLeaf())
+	equal(t, "", n.pattern)
+	equal(t, "", n.regexpToString())
+	equal(t, true, n.isRoot())
+	equal(t, nil, n.parent)
+	notEqual(t, nil, n.children)
+	equal(t, true, n.isLeaf())
 
-// 	var node *node
-// 	node, _ = n.child([]string{""})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"", "x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"x", "y"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{})
-// 	notEqual(t, nil, node)
-// }
+	var node *node
+	node, _ = n.childByPath("")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("x")
+	equal(t, nil, node)
+	node, _ = n.childByPath("/x")
+	equal(t, nil, node)
+	node, _ = n.childByPath("/x/y")
+	equal(t, nil, node)
+}
 
-// func TestGetRootNodeNotRecursive(t *testing.T) {
-// 	n := newRoot("/")
-// 	paths := strings.Split(strings.Trim("/", "/"), "/")
-// 	n.addChild(paths)
+func TestGetStrictNode(t *testing.T) {
+	n := newRoot("")
+	paths := splitPath("/x")
+	n.addChild(paths)
 
-// 	equal(t, "/", n.pattern)
-// 	equal(t, "", n.regexpToString())
-// 	equal(t, true, n.isRoot())
-// 	equal(t, nil, n.parent)
-// 	notEqual(t, nil, n.children)
-// 	equal(t, true, n.isLeaf())
+	var node *node
+	node, _ = n.childByPath("")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/x")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("x")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/x/y")
+	equal(t, nil, node)
+}
 
-// 	var node *node
-// 	node, _ = n.childNotRecursive([]string{""})
-// 	equal(t, nil, node)
-// 	node, _ = n.childNotRecursive([]string{"x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.childNotRecursive([]string{"", "x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.childNotRecursive([]string{"x", "y"})
-// 	equal(t, nil, node)
-// 	node, _ = n.childNotRecursive([]string{})
-// 	notEqual(t, nil, node)
-// }
+func TestGetParamNode(t *testing.T) {
+	n := newRoot("")
+	paths := splitPath("/{x}")
+	n.addChild(paths)
 
-// func TestGetStrictNode(t *testing.T) {
-// 	n := newRoot("/")
-// 	paths := strings.Split(strings.Trim("/x", "/"), "/")
-// 	n.addChild(paths)
+	var node *node
+	node, _ = n.childByPath("")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/x/y")
+	equal(t, nil, node)
+	node, _ = n.childByPath("/x")
+	notEqual(t, nil, node)
 
-// 	var node *node
-// 	node, _ = n.child([]string{})
-// 	notEqual(t, nil, node)
-// 	node, _ = n.child([]string{""})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"", "x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"x", "y"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"x"})
-// 	notEqual(t, nil, node)
-// }
+	var params Params
+	node, params = n.childByPath("x")
+	notEqual(t, nil, node)
+	if notEqual(t, nil, params.Value("x")) {
+		equal(t, "x", params.Value("x"))
+	}
+	node, params = n.childByPath("y")
+	notEqual(t, nil, node)
+	if notEqual(t, nil, params.Value("x")) {
+		equal(t, "y", params.Value("x"))
+	}
+}
 
-// func TestGetParamNode(t *testing.T) {
-// 	n := newRoot("/")
-// 	paths := strings.Split(strings.Trim("/{x}", "/"), "/")
-// 	n.addChild(paths)
+func TestGetRegexNode(t *testing.T) {
+	n := newRoot("")
+	paths := splitPath("/{x:r([a-z]+)go}")
+	n.addChild(paths)
 
-// 	var node *node
-// 	node, _ = n.child([]string{})
-// 	notEqual(t, nil, node)
-// 	node, _ = n.child([]string{""})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"", "x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"x", "y"})
-// 	equal(t, nil, node)
+	var node *node
+	node, _ = n.childByPath("")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/x")
+	equal(t, nil, node)
+	node, _ = n.childByPath("/x/y")
+	equal(t, nil, node)
+	node, _ = n.childByPath("x")
+	equal(t, nil, node)
+	node, _ = n.childByPath("y")
+	equal(t, nil, node)
+	node, _ = n.childByPath("/rego/y")
+	equal(t, nil, node)
+	node, _ = n.childByPath("rego")
+	notEqual(t, nil, node)
+}
 
-// 	var params Params
-// 	node, params = n.child([]string{"x"})
-// 	notEqual(t, nil, node)
-// 	if notEqual(t, nil, params.Value("x")) {
-// 		equal(t, "x", params.Value("x"))
-// 	}
-// 	node, params = n.child([]string{"y"})
-// 	notEqual(t, nil, node)
-// 	if notEqual(t, nil, params.Value("x")) {
-// 		equal(t, "y", params.Value("x"))
-// 	}
-// }
+func TestGetNestedRegexNode(t *testing.T) {
+	n := newRoot("")
+	paths := splitPath("/{x:r([a-z]+)go}/{y:r([a-z]+)go}")
+	n.addChild(paths)
 
-// func TestGetRegexNode(t *testing.T) {
-// 	n := newRoot("/")
-// 	paths := strings.Split(strings.Trim("/{x:r([a-z]+)go}", "/"), "/")
-// 	n.addChild(paths)
+	var node *node
+	node, _ = n.childByPath("")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/x")
+	equal(t, nil, node)
+	node, _ = n.childByPath("//x/y")
+	equal(t, nil, node)
+	node, _ = n.childByPath("/x/y")
+	equal(t, nil, node)
+	node, _ = n.childByPath("/x/y/z")
+	equal(t, nil, node)
+	node, _ = n.childByPath("x")
+	equal(t, nil, node)
+	node, _ = n.childByPath("y")
+	equal(t, nil, node)
+	node, _ = n.childByPath("rego")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/rego/y")
+	equal(t, nil, node)
+	node, _ = n.childByPath("/rego/y/rego")
+	equal(t, nil, node)
+	node, _ = n.childByPath("/rego/rego")
+	notEqual(t, nil, node)
+}
 
-// 	var node *node
-// 	node, _ = n.child([]string{})
-// 	notEqual(t, nil, node)
-// 	node, _ = n.child([]string{""})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"", "x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"x", "y"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"y"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"rego", "y"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"rego"})
-// 	notEqual(t, nil, node)
-// }
+func TestAddRootNode(t *testing.T) {
+	n := newRoot("")
+	paths := splitPath("/")
+	n.addChild(paths)
 
-// func TestGetParamNodeNotRecursive(t *testing.T) {
-// 	n := newRoot("/")
-// 	paths := strings.Split(strings.Trim("/{x}", "/"), "/")
-// 	n.addChild(paths)
+	equal(t, true, n.isLeaf())
 
-// 	var node *node
-// 	node, _ = n.childNotRecursive([]string{})
-// 	notEqual(t, nil, node)
-// 	node, _ = n.childNotRecursive([]string{""})
-// 	equal(t, nil, node)
-// 	node, _ = n.childNotRecursive([]string{"", "x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.childNotRecursive([]string{"x", "y"})
-// 	equal(t, nil, node)
+	if len(n.children) > 0 {
+		t.Error("Rout should not contain childs")
+	}
+}
 
-// 	var params Params
-// 	node, params = n.childNotRecursive([]string{"x"})
-// 	notEqual(t, nil, node)
-// 	if notEqual(t, nil, params.Value("x")) {
-// 		equal(t, "x", params.Value("x"))
-// 	}
-// 	node, params = n.childNotRecursive([]string{"y"})
-// 	notEqual(t, nil, node)
-// 	if notEqual(t, nil, params.Value("x")) {
-// 		equal(t, "y", params.Value("x"))
-// 	}
-// }
+func TestAddEmptyRootNode(t *testing.T) {
+	n := newRoot("")
+	paths := splitPath("/")
+	n.addChild(paths)
 
-// func TestGetRegexNodeNotRecursive(t *testing.T) {
-// 	n := newRoot("/")
-// 	paths := strings.Split(strings.Trim("/{x:r([a-z]+)go}", "/"), "/")
-// 	n.addChild(paths)
+	equal(t, true, n.isLeaf())
 
-// 	var node *node
-// 	node, _ = n.childNotRecursive([]string{})
-// 	notEqual(t, nil, node)
-// 	node, _ = n.childNotRecursive([]string{""})
-// 	equal(t, nil, node)
-// 	node, _ = n.childNotRecursive([]string{"", "x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.childNotRecursive([]string{"x", "y"})
-// 	equal(t, nil, node)
-// 	node, _ = n.childNotRecursive([]string{"x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.childNotRecursive([]string{"y"})
-// 	equal(t, nil, node)
-// 	node, _ = n.childNotRecursive([]string{"rego", "y"})
-// 	equal(t, nil, node)
-// 	node, _ = n.childNotRecursive([]string{"rego"})
-// 	notEqual(t, nil, node)
-// }
+	if len(n.children) > 0 {
+		t.Error("Rout should not contain childs")
+	}
+}
 
-// func TestGetNestedRegexNode(t *testing.T) {
-// 	n := newRoot("/")
-// 	paths := strings.Split(strings.Trim("/{x:r([a-z]+)go/{y:r([a-z]+)go", "/"), "/")
-// 	n.addChild(paths)
+func TestAddEmptyRootNodeTwo(t *testing.T) {
+	n := newRoot("")
+	paths := splitPath("")
+	n.addChild(paths)
 
-// 	var node *node
-// 	node, _ = n.child([]string{})
-// 	notEqual(t, nil, node)
-// 	node, _ = n.child([]string{""})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"", "x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"", "x", "y"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"x", "y"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"x", "y", "z"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"y"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"rego"})
-// 	notEqual(t, nil, node)
-// 	node, _ = n.child([]string{"rego", "y"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"rego", "y", "rego"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"rego", "rego"})
-// 	notEqual(t, nil, node)
-// }
+	equal(t, true, n.isLeaf())
 
-// func TestAddRootNode(t *testing.T) {
-// 	n := newRoot("/")
-// 	paths := strings.Split(strings.Trim("/", "/"), "/")
-// 	n.addChild(paths)
+	if len(n.children) > 0 {
+		t.Error("Rout should not contain childs")
+	}
+}
 
-// 	equal(t, true, n.isLeaf())
+func TestAddNode(t *testing.T) {
+	n := newRoot("")
+	paths := splitPath("/example")
+	n.addChild(paths)
 
-// 	if len(n.children) > 0 {
-// 		t.Error("Rout should not contain childs")
-// 	}
-// }
+	var cn *node
+	for _, child := range n.children {
+		if child.pattern == "example" {
+			cn = child
+			break
+		}
+	}
 
-// func TestAddEmptyRootNode(t *testing.T) {
-// 	n := newRoot("")
-// 	paths := strings.Split(strings.Trim("/", "/"), "/")
-// 	n.addChild(paths)
+	equal(t, false, n.isLeaf())
+	if notEqual(t, nil, cn) {
+		equal(t, true, cn.isLeaf())
+		equal(t, "example", cn.pattern)
+		equal(t, nil, cn.regexp)
+	}
+}
 
-// 	equal(t, true, n.isLeaf())
+func TestAddParamNode(t *testing.T) {
+	n := newRoot("")
+	paths := splitPath("/{example}")
+	n.addChild(paths)
 
-// 	if len(n.children) > 0 {
-// 		t.Error("Rout should not contain childs")
-// 	}
-// }
+	var cn *node
+	for _, child := range n.children {
+		if child.pattern == "{example}" {
+			cn = child
+			break
+		}
+	}
 
-// func TestAddEmptyRootNodeTwo(t *testing.T) {
-// 	n := newRoot("")
-// 	paths := strings.Split(strings.Trim("", "/"), "/")
-// 	n.addChild(paths)
+	equal(t, false, n.isLeaf())
+	if notEqual(t, nil, cn) {
+		equal(t, true, cn.isLeaf())
+		equal(t, "{example}", cn.pattern)
+		equal(t, nil, cn.regexp)
+	}
+}
 
-// 	equal(t, true, n.isLeaf())
+func TestAddRegexpNode(t *testing.T) {
+	n := newRoot("")
+	paths := splitPath("/{example:r([a-z]+)go}")
+	n.addChild(paths)
 
-// 	if len(n.children) > 0 {
-// 		t.Error("Rout should not contain childs")
-// 	}
-// }
+	equal(t, false, n.isLeaf())
 
-// func TestAddNode(t *testing.T) {
-// 	n := newRoot("/")
-// 	paths := strings.Split(strings.Trim("/example", "/"), "/")
-// 	n.addChild(paths)
+	var cn *node
+	for _, child := range n.children {
+		if child.pattern == "{example:r([a-z]+)go}" {
+			cn = child
+			break
+		}
+	}
 
-// 	var cn *node
-// 	for _, child := range n.children {
-// 		if child.pattern == "example" {
-// 			cn = child
-// 			break
-// 		}
-// 	}
+	if notEqual(t, nil, cn) {
+		equal(t, true, cn.isLeaf())
+		equal(t, "{example:r([a-z]+)go}", cn.pattern)
+		if notEqual(t, nil, cn.regexp) {
+			equal(t, true, cn.regexp.MatchString("rego"))
+		}
+	}
+}
 
-// 	equal(t, false, n.isLeaf())
-// 	if notEqual(t, nil, cn) {
-// 		equal(t, true, cn.isLeaf())
-// 		equal(t, "example", cn.pattern)
-// 		equal(t, nil, cn.regexp)
-// 	}
-// }
+func TestWildcardConflictNodes(t *testing.T) {
+	n := newRoot("")
+	n.addChild(splitPath("/{x}/x"))
+	n.addChild(splitPath("/{y}/y"))
+	n.addChild(splitPath("/{z}/z"))
 
-// func TestAddParamNode(t *testing.T) {
-// 	n := newRoot("/")
-// 	paths := strings.Split(strings.Trim("/{example}", "/"), "/")
-// 	n.addChild(paths)
+	var node *node
+	node, _ = n.childByPath("")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/x")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/t/x")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/t/y")
+	equal(t, nil, node)
+	node, _ = n.childByPath("/t/z")
+	equal(t, nil, node)
+}
 
-// 	var cn *node
-// 	for _, child := range n.children {
-// 		if child.pattern == "{example}" {
-// 			cn = child
-// 			break
-// 		}
-// 	}
+func TestWildcardRegexpConflictNodes(t *testing.T) {
+	n := newRoot("")
+	n.addChild(splitPath("/{x:x([a-z]+)go}/x"))
+	n.addChild(splitPath("/{y:y([a-z]+)go}/y"))
+	n.addChild(splitPath("/{z:z([a-z]+)go}/z"))
 
-// 	equal(t, false, n.isLeaf())
-// 	if notEqual(t, nil, cn) {
-// 		equal(t, true, cn.isLeaf())
-// 		equal(t, "{example}", cn.pattern)
-// 		equal(t, nil, cn.regexp)
-// 	}
-// }
-
-// func TestAddRegexpNode(t *testing.T) {
-// 	n := newRoot("/")
-// 	paths := strings.Split(strings.Trim("/{example:r([a-z]+)go}", "/"), "/")
-// 	n.addChild(paths)
-
-// 	equal(t, false, n.isLeaf())
-
-// 	var cn *node
-// 	for _, child := range n.children {
-// 		if child.pattern == "{example}:r([a-z]+)go}" {
-// 			cn = child
-// 			break
-// 		}
-// 	}
-
-// 	if notEqual(t, nil, cn) {
-// 		equal(t, true, cn.isLeaf())
-// 		equal(t, "{example}:r([a-z]+)go}", cn.pattern)
-// 		if notEqual(t, nil, cn.regexp) {
-// 			equal(t, true, cn.regexp.MatchString("rego"))
-// 		}
-// 	}
-// }
-
-// func TestWildcardConflictNodes(t *testing.T) {
-// 	n := newRoot("/")
-// 	n.addChild(strings.Split(strings.Trim("/{x}/x", "/"), "/"))
-// 	n.addChild(strings.Split(strings.Trim("/{y}/y", "/"), "/"))
-// 	n.addChild(strings.Split(strings.Trim("/{z}/z", "/"), "/"))
-
-// 	var node *node
-// 	node, _ = n.child([]string{})
-// 	notEqual(t, nil, node)
-// 	node, _ = n.child([]string{""})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"", "x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"t", "x"})
-// 	notEqual(t, nil, node)
-// 	node, _ = n.child([]string{"t", "y"})
-// 	notEqual(t, nil, node)
-// 	node, _ = n.child([]string{"t", "z"})
-// 	notEqual(t, nil, node)
-// }
-
-// func TestWildcardRegexpConflictNodes(t *testing.T) {
-// 	n := newRoot("/")
-// 	n.addChild(strings.Split(strings.Trim("/{x:x([a-z]+)go}/x", "/"), "/"))
-// 	n.addChild(strings.Split(strings.Trim("/{y:y([a-z]+)go}/y", "/"), "/"))
-// 	n.addChild(strings.Split(strings.Trim("/{z:z([a-z]+)go}/z", "/"), "/"))
-
-// 	var node *node
-// 	node, _ = n.child([]string{})
-// 	notEqual(t, nil, node)
-// 	node, _ = n.child([]string{""})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"", "x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"x", "y"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"x"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"y"})
-// 	equal(t, nil, node)
-// 	node, _ = n.child([]string{"xego", "x"})
-// 	notEqual(t, nil, node)
-// 	node, _ = n.child([]string{"yego", "y"})
-// 	notEqual(t, nil, node)
-// 	node, _ = n.child([]string{"zego", "z"})
-// 	notEqual(t, nil, node)
-// }
+	var node *node
+	node, _ = n.childByPath("")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/x")
+	equal(t, nil, node)
+	node, _ = n.childByPath("/x/y")
+	equal(t, nil, node)
+	node, _ = n.childByPath("x")
+	equal(t, nil, node)
+	node, _ = n.childByPath("y")
+	equal(t, nil, node)
+	node, _ = n.childByPath("/xego/x")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/yego/y")
+	notEqual(t, nil, node)
+	node, _ = n.childByPath("/zego/z")
+	notEqual(t, nil, node)
+}

@@ -3,6 +3,7 @@ package goserver
 import (
 	"net/http"
 	"os"
+	"strings"
 )
 
 // HTTP methods constants
@@ -35,7 +36,8 @@ type (
 		NotAllowed(http.Handler)
 	}
 	server struct {
-		root       *node
+		roots      []*node
+		statics    map[string]*route
 		middleware middleware
 		fileServer http.Handler
 		notFound   http.Handler
@@ -43,14 +45,14 @@ type (
 	}
 )
 
-func (s *server) Handle(method, p string, h http.Handler) {
-	s.HandleFunc(method, p, func(w http.ResponseWriter, req *http.Request) {
+func (s *server) Handle(m, p string, h http.Handler) {
+	s.HandleFunc(m, p, func(w http.ResponseWriter, req *http.Request) {
 		h.ServeHTTP(w, req)
 	})
 }
 
-func (s *server) HandleFunc(method, p string, f http.HandlerFunc) {
-	s.addRoute(method, p, f)
+func (s *server) HandleFunc(m, p string, f http.HandlerFunc) {
+	s.addRoute(m, p, f)
 }
 
 func (s *server) POST(p string, f http.HandlerFunc) {
@@ -105,11 +107,31 @@ func (s *server) ServeFiles(path string, strip bool) {
 }
 
 func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	// route, params := s.getRouteFromRequest(req)
-	route, _ := s.getRouteFromRequest(req)
+	path := req.URL.Path
+	method := req.Method
+	pLen := len(path)
+
+	if pLen > 0 && path[0] == '/' {
+		path = path[1:]
+		pLen--
+	}
+	if pLen > 0 && path[pLen-1] == '/' {
+		path = path[:pLen-1]
+		pLen--
+	}
+
+	if r := s.statics[method+path]; r != nil {
+		if h := r.handler(); h != nil {
+			h.ServeHTTP(w, req)
+			return
+		}
+		return
+	}
+
+	route, params := s.getRouteFromRequest(method, path)
 	if route != nil {
 		if h := route.handler(); h != nil {
-			// req = req.WithContext(newContextFromRequest(req, params))
+			req = req.WithContext(newContextFromRequest(req, params))
 			h.ServeHTTP(w, req)
 			return
 		}
@@ -176,38 +198,54 @@ func (s *server) serveFiles(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *server) addRoute(method, path string, f http.HandlerFunc) {
-	paths := getPaths(path)
-	paths = append([]string{method}, paths...)
+	var root *node
+	for _, root = range s.roots {
+		if method == root.pattern {
+			break
+		}
+		root = nil
+	}
 
+	if root == nil {
+		root = newRoot(method)
+		s.roots = append(s.roots, root)
+	}
+
+	paths := splitPath(path)
 	r := newRoute(f)
 	r.addMiddleware(s.middleware)
-
-	n := s.root.addChild(paths)
+	n := root.addChild(paths)
 	n.setRoute(r)
+
+	if len(paths) == 1 {
+		s.statics[method+paths[0]] = r
+	}
 }
 
 func (s *server) addMiddleware(method, path string, fs ...MiddlewareFunc) {
-	type recFunc func(recFunc, *node, string, middleware)
-	c := func(c recFunc, n *node, path string, m middleware) {
+	type recFunc func(recFunc, *node, middleware)
+	c := func(c recFunc, n *node, m middleware) {
 		if n.route != nil {
 			n.route.addMiddleware(m)
-			for _, node := range n.children {
-				c(c, node, path[len(node.pattern):], m)
-			}
+		}
+		for _, child := range n.children {
+			c(c, child, m)
 		}
 	}
 
-	for _, node := range s.root.children {
-		if method == "" || method == node.pattern {
-			c(c, node, path, fs)
+	paths := splitPath(path)
+	for _, root := range s.roots {
+		if method == "" || method == root.pattern {
+			node := root.child(paths)
+			c(c, node, fs)
 		}
 	}
 }
 
-func (s *server) getRouteFromRequest(req *http.Request) (*route, Params) {
-	for _, node := range s.root.children {
-		if node.pattern == req.Method {
-			node, params := node.child(req.URL.Path)
+func (s *server) getRouteFromRequest(method, path string) (*route, Params) {
+	for _, root := range s.roots {
+		if root.pattern == method {
+			node, params := root.childByPath(path)
 			if node != nil {
 				return node.route, params
 			}
@@ -217,11 +255,39 @@ func (s *server) getRouteFromRequest(req *http.Request) (*route, Params) {
 	return nil, nil
 }
 
+func splitPath(path string) (parts []string) {
+	for {
+		if i := strings.IndexByte(path, '{'); i >= 0 {
+			if part := strings.Trim(path[:i], "/"); part != "" {
+				parts = append(parts, part)
+			}
+			if j := strings.IndexByte(path, '}') + 1; j > 0 {
+				if part := strings.Trim(path[i:j], "/"); part != "" {
+					parts = append(parts, part)
+				}
+				i = j
+			} else {
+				continue
+			}
+			path = path[i:]
+		} else {
+			break
+		}
+	}
+
+	if len(path) != 0 && path != "/" {
+		if part := strings.Trim(path, "/"); part != "" {
+			parts = append(parts, part)
+		}
+	}
+	return
+}
+
 func (s *server) allowed(req *http.Request) string {
 	var allow string
 	path := req.URL.Path
 	if path == "*" {
-		for _, n := range s.root.children {
+		for _, n := range s.roots {
 			if n.pattern == OPTIONS {
 				continue
 			}
@@ -232,16 +298,35 @@ func (s *server) allowed(req *http.Request) string {
 			}
 		}
 	} else {
-		for _, root := range s.root.children {
+		for _, root := range s.roots {
 			if root.pattern == req.Method || root.pattern == OPTIONS {
 				continue
 			}
-			n, _ := root.child(path)
-			if n != nil && n.route != nil {
+
+			pLen := len(path)
+			if pLen > 0 && path[0] == '/' {
+				path = path[1:]
+				pLen--
+			}
+			if pLen > 0 && path[pLen-1] == '/' {
+				path = path[:pLen-1]
+				pLen--
+			}
+
+			if r := s.statics[root.pattern+path]; r != nil {
 				if len(allow) == 0 {
 					allow = root.pattern
 				} else {
 					allow += ", " + root.pattern
+				}
+			} else {
+				n, _ := root.childByPath(path)
+				if n != nil && n.route != nil {
+					if len(allow) == 0 {
+						allow = root.pattern
+					} else {
+						allow += ", " + root.pattern
+					}
 				}
 			}
 		}
@@ -255,7 +340,8 @@ func (s *server) allowed(req *http.Request) string {
 //Creates new Server instance, return pointer
 func New(fs ...MiddlewareFunc) Server {
 	return &server{
-		root:       newRoot(""),
+		roots:      make([]*node, 0),
+		statics:    make(map[string]*route),
 		middleware: newMiddleware(fs...),
 	}
 }

@@ -16,7 +16,7 @@ func TestHandle(t *testing.T) {
 	s.Handle(POST, "/", http.HandlerFunc(mockHandler))
 
 	var cn *node
-	for _, child := range s.root.children {
+	for _, child := range s.roots {
 		if child.pattern == POST {
 			cn = child
 			break
@@ -34,7 +34,7 @@ func TestHandleFunc(t *testing.T) {
 	s.HandleFunc(POST, "/", mockHandler)
 
 	var cn *node
-	for _, child := range s.root.children {
+	for _, child := range s.roots {
 		if child.pattern == POST {
 			cn = child
 			break
@@ -52,7 +52,7 @@ func TestPOST(t *testing.T) {
 	s.POST("/", mockHandler)
 
 	var cn *node
-	for _, child := range s.root.children {
+	for _, child := range s.roots {
 		if child.pattern == POST {
 			cn = child
 			break
@@ -70,7 +70,7 @@ func TestGET(t *testing.T) {
 	s.GET("/", mockHandler)
 
 	var cn *node
-	for _, child := range s.root.children {
+	for _, child := range s.roots {
 		if child.pattern == GET {
 			cn = child
 			break
@@ -88,7 +88,7 @@ func TestPUT(t *testing.T) {
 	s.PUT("/", mockHandler)
 
 	var cn *node
-	for _, child := range s.root.children {
+	for _, child := range s.roots {
 		if child.pattern == PUT {
 			cn = child
 			break
@@ -106,7 +106,7 @@ func TestDELETE(t *testing.T) {
 	s.DELETE("/", mockHandler)
 
 	var cn *node
-	for _, child := range s.root.children {
+	for _, child := range s.roots {
 		if child.pattern == DELETE {
 			cn = child
 			break
@@ -124,7 +124,7 @@ func TestPATCH(t *testing.T) {
 	s.PATCH("/", mockHandler)
 
 	var cn *node
-	for _, child := range s.root.children {
+	for _, child := range s.roots {
 		if child.pattern == PATCH {
 			cn = child
 			break
@@ -142,7 +142,7 @@ func TestHEAD(t *testing.T) {
 	s.HEAD("/", mockHandler)
 
 	var cn *node
-	for _, child := range s.root.children {
+	for _, child := range s.roots {
 		if child.pattern == HEAD {
 			cn = child
 			break
@@ -160,7 +160,7 @@ func TestOPTIONS(t *testing.T) {
 	s.OPTIONS("/", mockHandler)
 
 	var cn *node
-	for _, child := range s.root.children {
+	for _, child := range s.roots {
 		if child.pattern == OPTIONS {
 			cn = child
 			break
@@ -267,11 +267,11 @@ func TestNotAllowed(t *testing.T) {
 	}
 }
 
-func TestServer(t *testing.T) {
+func TestParam(t *testing.T) {
 	s := New().(*server)
 
 	serverd := false
-	s.GET("/:param", func(_ http.ResponseWriter, r *http.Request) {
+	s.GET("/{param}", func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := ParamsFromContext(r.Context())
@@ -322,7 +322,7 @@ func TestServeFiles(t *testing.T) {
 func TestNilMiddleware(t *testing.T) {
 	s := New().(*server)
 
-	s.GET("/:param", func(w http.ResponseWriter, _ *http.Request) {
+	s.GET("/{param}", func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte("test"))
 	})
 
@@ -357,7 +357,7 @@ func TestPanicMiddleware(t *testing.T) {
 
 	s := New(panicMiddleware).(*server)
 
-	s.GET("/:param", func(_ http.ResponseWriter, _ *http.Request) {
+	s.GET("/{param}", func(_ http.ResponseWriter, _ *http.Request) {
 		panic("test panic recover")
 	})
 
@@ -377,7 +377,7 @@ func TestPanicMiddleware(t *testing.T) {
 func TestNodeApplyMiddleware(t *testing.T) {
 	s := New().(*server)
 
-	s.GET("/:param", func(w http.ResponseWriter, r *http.Request) {
+	s.GET("/{param}", func(w http.ResponseWriter, r *http.Request) {
 		params, ok := ParamsFromContext(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
@@ -386,7 +386,7 @@ func TestNodeApplyMiddleware(t *testing.T) {
 		w.Write([]byte(params.Value("param")))
 	})
 
-	s.USE(GET, "/:param", mockMiddleware)
+	s.USE(GET, "/{param}", mockMiddleware)
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, "/x", nil)
@@ -398,5 +398,145 @@ func TestNodeApplyMiddleware(t *testing.T) {
 
 	if w.Body.String() != "middlewarex" {
 		t.Errorf("Use global middleware error %s", w.Body.String())
+	}
+}
+
+func TestChainCalls(t *testing.T) {
+	s := New().(*server)
+
+	serverd := false
+	s.GET("/users/{user}/starred", func(_ http.ResponseWriter, r *http.Request) {
+		serverd = true
+
+		params, ok := ParamsFromContext(r.Context())
+		if !ok {
+			t.Fatal("Error while reading param")
+		}
+
+		if params.Value("user") != "x" {
+			t.Errorf("Wrong params value. Expected 'x', actual '%s'", params.Value("user"))
+		}
+	})
+
+	s.GET("/applications/{client_id}/tokens", func(_ http.ResponseWriter, r *http.Request) {
+		serverd = true
+
+		params, ok := ParamsFromContext(r.Context())
+		if !ok {
+			t.Fatal("Error while reading param")
+		}
+
+		if params.Value("client_id") != "client_id" {
+			t.Errorf("Wrong params value. Expected 'client_id', actual '%s'", params.Value("client_id"))
+		}
+	})
+
+	s.GET("/applications/{client_id}/tokens/{access_token}", func(_ http.ResponseWriter, r *http.Request) {
+		serverd = true
+
+		params, ok := ParamsFromContext(r.Context())
+		if !ok {
+			t.Fatal("Error while reading param")
+		}
+
+		if params.Value("client_id") != "client_id" {
+			t.Errorf("Wrong params value. Expected 'client_id', actual '%s'", params.Value("client_id"))
+		}
+
+		if params.Value("access_token") != "access_token" {
+			t.Errorf("Wrong params value. Expected 'access_token', actual '%s'", params.Value("access_token"))
+		}
+	})
+
+	s.GET("/users/{user}/received_events", func(_ http.ResponseWriter, r *http.Request) {
+		serverd = true
+
+		params, ok := ParamsFromContext(r.Context())
+		if !ok {
+			t.Fatal("Error while reading param")
+		}
+
+		if params.Value("user") != "user1" {
+			t.Errorf("Wrong params value. Expected 'user1', actual '%s'", params.Value("user"))
+		}
+	})
+
+	s.GET("/users/{user}/received_events/public", func(_ http.ResponseWriter, r *http.Request) {
+		serverd = true
+
+		params, ok := ParamsFromContext(r.Context())
+		if !ok {
+			t.Fatal("Error while reading param")
+		}
+
+		if params.Value("user") != "user2" {
+			t.Errorf("Wrong params value. Expected 'user2', actual '%s'", params.Value("user"))
+		}
+	})
+
+	w := httptest.NewRecorder()
+
+	// //FIRST CALL
+	req, err := http.NewRequest(GET, "/users/x/starred", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.ServeHTTP(w, req)
+
+	if !serverd {
+		t.Fatal("First not served")
+	}
+
+	//SECOND CALL
+	req, err = http.NewRequest(GET, "/applications/client_id/tokens", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serverd = false
+	s.ServeHTTP(w, req)
+
+	if !serverd {
+		t.Fatal("Second not served")
+	}
+
+	//THIRD CALL
+	req, err = http.NewRequest(GET, "/applications/client_id/tokens/access_token", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serverd = false
+	s.ServeHTTP(w, req)
+
+	if !serverd {
+		t.Fatal("Third not served")
+	}
+
+	//FOURTH CALL
+	req, err = http.NewRequest(GET, "/users/user1/received_events", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serverd = false
+	s.ServeHTTP(w, req)
+
+	if !serverd {
+		t.Fatal("Fourth not served")
+	}
+
+	//FIFTH CALL
+	req, err = http.NewRequest(GET, "/users/user2/received_events/public", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serverd = false
+	s.ServeHTTP(w, req)
+
+	if !serverd {
+		t.Fatal("Fifth not served")
 	}
 }

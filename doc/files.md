@@ -32,7 +32,7 @@ func Hello(w http.ResponseWriter, r *http.Request) {
 func main() {
     server := goserver.New()
     server.GET("/", Index)
-    server.GET("/hello/:name", Hello)
+    server.GET("/hello/{name}", Hello)
 	//If route not found and the request method equals Get
 	//server will serve files from directory
 	//second parameter decide if prefix should be striped

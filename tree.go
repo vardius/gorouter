@@ -52,116 +52,81 @@ func (n *node) addChild(paths []string) *node {
 				break
 			}
 		}
+
 		if cn == nil {
 			cn = newNode(n, paths[0])
 			n.children = append(n.children, cn)
 			sort.Slice(n.children, func(i, j int) bool {
-				iLen := len(n.children[i].pattern)
-				jLen := len(n.children[j].pattern)
-				if iLen > 0 && jLen > 0 {
-					isIParam := n.children[i].pattern[0] == ':'
-					isJParam := n.children[j].pattern[0] == ':'
-					if isIParam && isJParam {
-						return strings.Contains(n.children[i].pattern[1:], ":")
-					}
-					return !isIParam
-				}
-				return n.children[i].pattern < n.children[j].pattern
+				return len(n.children[i].pattern) > len(n.children[j].pattern)
 			})
 		}
+
 		return cn.addChild(paths[1:])
 	}
 	return n
 }
 
-func (n *node) child(paths []string) (*node, Params) {
-	return n.childRecursive(paths)
-}
-
-//childRecursive returns child node by path using recurency
-func (n *node) childRecursive(paths []string) (node *node, params Params) {
+func (n *node) child(paths []string) *node {
 	pathsLen := len(paths)
 	if pathsLen == 0 {
-		return n, make(Params, n.params)
+		return n
 	}
+
 	if pathsLen > 0 && paths[0] != "" {
-		path := paths[0]
 		for _, child := range n.children {
-			if child.pattern == path {
+			if child.pattern == paths[0] {
 				return child.child(paths[1:])
 			}
-			pathLen := len(child.pattern)
-			if pathLen > 1 && child.pattern[0] == ':' {
-				if child.regexp != nil && !child.regexp.MatchString(path) {
-					continue
-				}
-				node, params = child.child(paths[1:])
-				if node == nil {
-					continue
-				}
-				if child.regexp != nil {
-					for i := 1; i < pathLen; i++ {
-						if child.pattern[i] == ':' {
-							params[child.params-1].Key = child.pattern[1:i]
-							break
-						}
-					}
-				} else {
-					params[child.params-1].Key = child.pattern[1:]
-				}
-				params[child.params-1].Value = path
+		}
+	}
+
+	return nil
+}
+
+func (n *node) childByPath(path string) (node *node, params Params) {
+	pathLen := len(path)
+	if pathLen > 0 && path[0] == '/' {
+		path = path[1:]
+		pathLen--
+	}
+
+	if pathLen == 0 {
+		return n, make(Params, n.params)
+	}
+
+	for _, child := range n.children {
+		pLen := len(child.pattern)
+		if pathLen >= pLen && child.pattern == path[:pLen] {
+			return child.childByPath(path[pLen:])
+		}
+		if pLen > 1 && child.pattern[0] == '{' {
+			part := path
+			if i := strings.IndexByte(path, '/'); i > 0 {
+				part = path[:i]
+			}
+
+			if child.regexp != nil && !child.regexp.MatchString(part) {
+				continue
+			}
+
+			node, params = child.childByPath(path[len(part):])
+			if node == nil {
 				return
 			}
+
+			params[child.params-1].Value = part
+			if child.regexp != nil {
+				if i := strings.IndexByte(child.pattern, ':'); i > 1 {
+					params[child.params-1].Key = child.pattern[1:i]
+				}
+			} else {
+				params[child.params-1].Key = child.pattern[1 : pLen-1]
+			}
+
+			return
 		}
 	}
 	return
-}
-
-//childNotRecursive returns child node by path not using recurency
-func (n *node) childNotRecursive(paths []string) (*node, Params) {
-	var params Params
-st:
-	for {
-		pathsLen := len(paths)
-		if pathsLen == 0 {
-			return n, params
-		}
-		if pathsLen > 0 && paths[0] != "" {
-			path := paths[0]
-			for _, child := range n.children {
-				if child.pattern == path {
-					n = child
-					paths = paths[1:]
-					continue st
-				}
-				pathLen := len(child.pattern)
-				if pathLen > 0 && child.pattern[0] == ':' {
-					if child.regexp != nil && !child.regexp.MatchString(path) {
-						continue
-					}
-					if len(params) == 0 {
-						params = make(Params, len(paths))
-					}
-					if child.regexp != nil {
-						for i := 1; i < pathLen; i++ {
-							if child.pattern[i] == ':' {
-								params[child.params-1].Key = child.pattern[1:i]
-								break
-							}
-						}
-					} else {
-						params[child.params-1].Key = child.pattern[1:]
-					}
-					params[child.params-1].Value = path
-					n = child
-					paths = paths[1:]
-					continue st
-				}
-			}
-			return nil, nil
-		}
-		return nil, nil
-	}
 }
 
 func newNode(root *node, pattern string) *node {
@@ -175,10 +140,11 @@ func newNode(root *node, pattern string) *node {
 		n.params = root.params
 	}
 
-	if len(n.pattern) > 0 && pattern[:1] == ":" {
+	if len(n.pattern) > 0 && pattern[0] == '{' {
 		n.params++
-		if parts := strings.Split(n.pattern, ":"); len(parts) == 3 {
-			n.setRegexp(parts[2])
+		if parts := strings.Split(n.pattern, ":"); len(parts) == 2 {
+			r := parts[1]
+			n.setRegexp(r[:len(r)-1])
 		}
 	}
 

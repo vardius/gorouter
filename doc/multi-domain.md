@@ -31,7 +31,7 @@ func main() {
 	// Initialize a server as usual
 	server := goserver.New()
 	server.GET("/", Index)
-	server.GET("/hello/:name", Hello)
+	server.GET("/hello/{name}", Hello)
 
 	// Make a new HostSwitch and insert the server (our http handler)
 	// for example.com and port 12345

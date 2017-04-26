@@ -73,7 +73,7 @@ func (n *node) child(ids []string) (*node, Params) {
 	}
 
 	if n.length > 0 {
-		child := n.childById(ids[0])
+		child := n.childByID(ids[0])
 		if child != nil {
 			n, params := child.child(ids[1:])
 
@@ -91,15 +91,15 @@ func (n *node) child(ids []string) (*node, Params) {
 
 func (n *node) childAtIndex(i int) *node {
 	if n.length > i {
-		return n.childById(n.ids[i])
+		return n.childByID(n.ids[i])
 	}
 	return nil
 }
 
-func (n *node) childById(id string) *node {
+func (n *node) childByID(id string) *node {
 	if id != "" && n.length > 0 {
-		for i, cId := range n.ids {
-			if cId == id {
+		for i, cID := range n.ids {
+			if cID == id {
 				return n.children[i]
 			}
 
@@ -132,7 +132,7 @@ func (n *node) childByPath(path string) (*node, Params) {
 		if i := strings.IndexByte(path, '/'); i > 0 {
 			part = path[:i]
 		}
-		child := n.childById(part)
+		child := n.childByID(part)
 		if child != nil {
 			n, params := child.childByPath(path[len(part):])
 

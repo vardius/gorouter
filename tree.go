@@ -2,18 +2,20 @@ package goserver
 
 import (
 	"regexp"
-	"sort"
 	"strings"
 )
 
 type (
 	node struct {
-		pattern  string
-		regexp   *regexp.Regexp
-		route    *route
-		parent   *node
-		children []*node
-		params   uint8
+		id         string
+		ids        []string
+		parent     *node
+		children   map[int]*node
+		length     int
+		regexp     *regexp.Regexp
+		route      *route
+		params     uint8
+		isWildcard bool
 	}
 )
 
@@ -43,39 +45,41 @@ func (n *node) setRoute(r *route) {
 	n.route = r
 }
 
-func (n *node) addChild(paths []string) *node {
-	if len(paths) > 0 && paths[0] != "" {
-		var cn *node
-		for _, child := range n.children {
-			if child.pattern == paths[0] {
-				cn = child
+func (n *node) addChild(ids []string) *node {
+	if len(ids) > 0 && ids[0] != "" {
+		var node *node
+		for i, id := range n.ids {
+			if id == ids[0] {
+				node = n.children[i]
 				break
 			}
 		}
 
-		if cn == nil {
-			cn = newNode(n, paths[0])
-			n.children = append(n.children, cn)
-			sort.Slice(n.children, func(i, j int) bool {
-				return len(n.children[i].pattern) > len(n.children[j].pattern)
-			})
+		if node == nil {
+			node = newNode(n, ids[0])
+			n.ids = append(n.ids, ids[0])
+			n.children[n.length] = node
+			n.length++
 		}
 
-		return cn.addChild(paths[1:])
+		return node.addChild(ids[1:])
 	}
 	return n
 }
 
-func (n *node) child(paths []string) *node {
-	pathsLen := len(paths)
-	if pathsLen == 0 {
-		return n
-	}
+func (n *node) childById(id string) *node {
+	if id != "" && n.length > 0 {
+		for i, cId := range n.ids {
+			child := n.children[i]
+			if cId == id {
+				return child
+			}
 
-	if pathsLen > 0 && paths[0] != "" {
-		for _, child := range n.children {
-			if child.pattern == paths[0] {
-				return child.child(paths[1:])
+			if child.isWildcard {
+				if child.regexp != nil && !child.regexp.MatchString(id) {
+					continue
+				}
+				return child
 			}
 		}
 	}
@@ -83,74 +87,72 @@ func (n *node) child(paths []string) *node {
 	return nil
 }
 
-func (n *node) childByPath(path string) (node *node, params Params) {
-	pathLen := len(path)
-	if pathLen > 0 && path[0] == '/' {
-		path = path[1:]
-		pathLen--
+func (n *node) childAtIndex(i int) *node {
+	if i > -1 && n.length > i {
+		return n.childById(n.ids[i])
 	}
+	return nil
+}
 
-	if pathLen == 0 {
+func (n *node) child(ids []string) (*node, Params) {
+	idsLen := len(ids)
+	if idsLen == 0 {
 		return n, make(Params, n.params)
 	}
 
-	for _, child := range n.children {
-		pLen := len(child.pattern)
-		if pathLen >= pLen && child.pattern == path[:pLen] {
-			return child.childByPath(path[pLen:])
-		}
-		if pLen > 1 && child.pattern[0] == '{' {
-			part := path
-			if i := strings.IndexByte(path, '/'); i > 0 {
-				part = path[:i]
+	if idsLen > 0 && n.length > 0 {
+		id := ids[0]
+		child := n.childById(id)
+		if child != nil {
+			n, params := child.child(ids[1:])
+
+			if child.isWildcard {
+				params[child.params-1].Value = id
+				params[child.params-1].Key = child.id
 			}
 
-			if child.regexp != nil && !child.regexp.MatchString(part) {
-				continue
-			}
-
-			node, params = child.childByPath(path[len(part):])
-			if node == nil {
-				return
-			}
-
-			params[child.params-1].Value = part
-			if child.regexp != nil {
-				if i := strings.IndexByte(child.pattern, ':'); i > 1 {
-					params[child.params-1].Key = child.pattern[1:i]
-				}
-			} else {
-				params[child.params-1].Key = child.pattern[1 : pLen-1]
-			}
-
-			return
+			return n, params
 		}
 	}
-	return
+
+	return nil, nil
 }
 
-func newNode(root *node, pattern string) *node {
+func newNode(root *node, id string) *node {
+	var regexp string
+	isWildcard := false
+
+	if id[0] == '{' {
+		id = id[1 : len(id)-1]
+		isWildcard = true
+
+		if parts := strings.Split(id, ":"); len(parts) == 2 {
+			id = parts[0]
+			regexp = parts[1]
+			regexp = regexp[:len(regexp)-1]
+		}
+	}
+
 	n := &node{
-		pattern:  pattern,
-		parent:   root,
-		children: make([]*node, 0),
+		id:         id,
+		parent:     root,
+		children:   make(map[int]*node),
+		ids:        make([]string, 0),
+		isWildcard: isWildcard,
 	}
 
 	if root != nil {
 		n.params = root.params
 	}
 
-	if len(n.pattern) > 0 && pattern[0] == '{' {
+	if isWildcard {
 		n.params++
-		if parts := strings.Split(n.pattern, ":"); len(parts) == 2 {
-			r := parts[1]
-			n.setRegexp(r[:len(r)-1])
-		}
+		n.setRegexp(regexp)
 	}
 
 	return n
 }
 
-func newRoot(pattern string) *node {
-	return newNode(nil, pattern)
+func newRoot(id string) *node {
+	return newNode(nil, id)
 }

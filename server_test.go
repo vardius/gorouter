@@ -417,6 +417,36 @@ func TestParam(t *testing.T) {
 	}
 }
 
+func TestRegexpParam(t *testing.T) {
+	s := New().(*server)
+
+	serverd := false
+	s.GET("/{param:r([a-z]+)go}", func(_ http.ResponseWriter, r *http.Request) {
+		serverd = true
+
+		params, ok := ParamsFromContext(r.Context())
+		if !ok {
+			t.Fatal("Error while reading param")
+		}
+
+		if params.Value("param") != "rxgo" {
+			t.Errorf("Wrong params value. Expected 'rxgo', actual '%s'", params.Value("param"))
+		}
+	})
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(GET, "/rxgo", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.ServeHTTP(w, req)
+
+	if serverd != true {
+		t.Error("Handler has not been serverd")
+	}
+}
+
 func TestServeFiles(t *testing.T) {
 	s := New().(*server)
 

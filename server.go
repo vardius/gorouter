@@ -106,20 +106,10 @@ func (s *server) ServeFiles(path string, strip bool) {
 }
 
 func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	path := req.URL.Path
-	if path != "" && path[0] == '/' {
-		path = path[1:]
-	}
-
-	pl := len(path)
-	if path != "" && path[pl-1] == '/' {
-		path = path[:pl-1]
-	}
-
-	route, _ := s.getRoute(req.Method, path)
+	route, params := s.getRoute(req.Method, req.URL.Path)
 	if route != nil {
 		if h := route.handler(); h != nil {
-			// req = req.WithContext(newContextFromRequest(req, params))
+			req = req.WithContext(newContextFromRequest(req, params))
 			h.ServeHTTP(w, req)
 			return
 		}
@@ -127,7 +117,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	//Handle OPTIONS
 	if req.Method == OPTIONS {
-		if allow := s.allowed(req.Method, path); len(allow) > 0 {
+		if allow := s.allowed(req.Method, req.URL.Path); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			return
 		}
@@ -137,7 +127,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	} else {
 		//Handle 405
-		if allow := s.allowed(req.Method, path); len(allow) > 0 {
+		if allow := s.allowed(req.Method, req.URL.Path); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			s.serveNotAllowed(w, req)
 			return
@@ -232,11 +222,7 @@ func (s *server) addMiddleware(method, path string, fs ...MiddlewareFunc) {
 func (s *server) getRoute(method, path string) (*route, Params) {
 	for _, root := range s.roots {
 		if root.id == method {
-			var paths []string
-			if path != "" {
-				paths = strings.Split(path, "/")
-			}
-			node, params := root.child(paths)
+			node, params := root.childByPath(path)
 			if node != nil {
 				return node.route, params
 			}
@@ -246,17 +232,16 @@ func (s *server) getRoute(method, path string) (*route, Params) {
 	return nil, nil
 }
 
-func (s *server) allowed(method, path string) string {
-	var allow string
+func (s *server) allowed(method, path string) (allow string) {
 	if path == "*" {
-		for _, n := range s.roots {
-			if n.id == OPTIONS {
+		for _, root := range s.roots {
+			if root.id == OPTIONS {
 				continue
 			}
 			if len(allow) == 0 {
-				allow = n.id
+				allow = root.id
 			} else {
-				allow += ", " + n.id
+				allow += ", " + root.id
 			}
 		}
 	} else {
@@ -265,12 +250,7 @@ func (s *server) allowed(method, path string) string {
 				continue
 			}
 
-			var paths []string
-			if path != "" {
-				paths = strings.Split(path, "/")
-			}
-
-			n, _ := root.child(paths)
+			n, _ := root.childByPath(path)
 			if n != nil && n.route != nil {
 				if len(allow) == 0 {
 					allow = root.id

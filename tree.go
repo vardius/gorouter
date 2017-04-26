@@ -67,14 +67,43 @@ func (n *node) addChild(ids []string) *node {
 	return n
 }
 
+func (n *node) child(ids []string) (*node, Params) {
+	if len(ids) == 0 {
+		return n, make(Params, n.params)
+	}
+
+	if n.length > 0 {
+		child := n.childById(ids[0])
+		if child != nil {
+			n, params := child.child(ids[1:])
+
+			if child.isWildcard {
+				params[child.params-1].Value = ids[0]
+				params[child.params-1].Key = child.id
+			}
+
+			return n, params
+		}
+	}
+
+	return nil, nil
+}
+
+func (n *node) childAtIndex(i int) *node {
+	if n.length > i {
+		return n.childById(n.ids[i])
+	}
+	return nil
+}
+
 func (n *node) childById(id string) *node {
 	if id != "" && n.length > 0 {
 		for i, cId := range n.ids {
-			child := n.children[i]
 			if cId == id {
-				return child
+				return n.children[i]
 			}
 
+			child := n.children[i]
 			if child.isWildcard {
 				if child.regexp != nil && !child.regexp.MatchString(id) {
 					continue
@@ -87,27 +116,28 @@ func (n *node) childById(id string) *node {
 	return nil
 }
 
-func (n *node) childAtIndex(i int) *node {
-	if i > -1 && n.length > i {
-		return n.childById(n.ids[i])
+func (n *node) childByPath(path string) (*node, Params) {
+	pathLen := len(path)
+	if pathLen > 0 && path[0] == '/' {
+		path = path[1:]
+		pathLen--
 	}
-	return nil
-}
 
-func (n *node) child(ids []string) (*node, Params) {
-	idsLen := len(ids)
-	if idsLen == 0 {
+	if pathLen == 0 {
 		return n, make(Params, n.params)
 	}
 
-	if idsLen > 0 && n.length > 0 {
-		id := ids[0]
-		child := n.childById(id)
+	if n.length > 0 {
+		part := path
+		if i := strings.IndexByte(path, '/'); i > 0 {
+			part = path[:i]
+		}
+		child := n.childById(part)
 		if child != nil {
-			n, params := child.child(ids[1:])
+			n, params := child.childByPath(path[len(part):])
 
 			if child.isWildcard {
-				params[child.params-1].Value = id
+				params[child.params-1].Value = part
 				params[child.params-1].Key = child.id
 			}
 

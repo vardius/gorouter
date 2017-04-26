@@ -152,7 +152,7 @@ func newNode(root *node, id string) *node {
 	var regexp string
 	isWildcard := false
 
-	if id[0] == '{' {
+	if len(id) > 0 && id[0] == '{' {
 		id = id[1 : len(id)-1]
 		isWildcard = true
 

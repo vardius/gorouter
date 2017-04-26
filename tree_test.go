@@ -1,13 +1,15 @@
 package goserver
 
-// import "testing"
+// import (
+// 	"testing"
+// )
 
 // func TestGetRootNode(t *testing.T) {
 // 	n := newRoot("")
-// 	paths := splitPath("/")
+// 	paths := strings.Split(strings.Trim("/", "/"), "/")
 // 	n.addChild(paths)
 
-// 	equal(t, "", n.pattern)
+// 	equal(t, "", n.id)
 // 	equal(t, "", n.regexpToString())
 // 	equal(t, true, n.isRoot())
 // 	equal(t, nil, n.parent)
@@ -29,7 +31,7 @@ package goserver
 
 // func TestGetStrictNode(t *testing.T) {
 // 	n := newRoot("")
-// 	paths := splitPath("/x")
+// 	paths := strings.Split(strings.Trim("/x", "/"), "/")
 // 	n.addChild(paths)
 
 // 	var node *node
@@ -47,7 +49,7 @@ package goserver
 
 // func TestGetParamNode(t *testing.T) {
 // 	n := newRoot("")
-// 	paths := splitPath("/{x}")
+// 	paths := strings.Split(strings.Trim("/{x}", "/"), "/")
 // 	n.addChild(paths)
 
 // 	var node *node
@@ -75,7 +77,7 @@ package goserver
 
 // func TestGetRegexNode(t *testing.T) {
 // 	n := newRoot("")
-// 	paths := splitPath("/{x:r([a-z]+)go}")
+// 	paths := strings.Split(strings.Trim("/{x:r([a-z]+)go}", "/"), "/")
 // 	n.addChild(paths)
 
 // 	var node *node
@@ -99,7 +101,7 @@ package goserver
 
 // func TestGetNestedRegexNode(t *testing.T) {
 // 	n := newRoot("")
-// 	paths := splitPath("/{x:r([a-z]+)go}/{y:r([a-z]+)go}")
+// 	paths := strings.Split(strings.Trim("/{x:r([a-z]+)go}/{y:r([a-z]+)go}", "/"), "/")
 // 	n.addChild(paths)
 
 // 	var node *node
@@ -131,7 +133,7 @@ package goserver
 
 // func TestAddRootNode(t *testing.T) {
 // 	n := newRoot("")
-// 	paths := splitPath("/")
+// 	paths := strings.Split(strings.Trim("/", "/"), "/")
 // 	n.addChild(paths)
 
 // 	equal(t, true, n.isLeaf())
@@ -143,7 +145,7 @@ package goserver
 
 // func TestAddEmptyRootNode(t *testing.T) {
 // 	n := newRoot("")
-// 	paths := splitPath("/")
+// 	paths := strings.Split(strings.Trim("/", "/"), "/")
 // 	n.addChild(paths)
 
 // 	equal(t, true, n.isLeaf())
@@ -155,7 +157,7 @@ package goserver
 
 // func TestAddEmptyRootNodeTwo(t *testing.T) {
 // 	n := newRoot("")
-// 	paths := splitPath("")
+// 	paths := strings.Split(strings.Trim("", "/"), "/")
 // 	n.addChild(paths)
 
 // 	equal(t, true, n.isLeaf())
@@ -167,12 +169,12 @@ package goserver
 
 // func TestAddNode(t *testing.T) {
 // 	n := newRoot("")
-// 	paths := splitPath("/example")
+// 	paths := strings.Split(strings.Trim("/example", "/"), "/")
 // 	n.addChild(paths)
 
 // 	var cn *node
 // 	for _, child := range n.children {
-// 		if child.pattern == "example" {
+// 		if child.id == "example" {
 // 			cn = child
 // 			break
 // 		}
@@ -181,19 +183,19 @@ package goserver
 // 	equal(t, false, n.isLeaf())
 // 	if notEqual(t, nil, cn) {
 // 		equal(t, true, cn.isLeaf())
-// 		equal(t, "example", cn.pattern)
+// 		equal(t, "example", cn.id)
 // 		equal(t, nil, cn.regexp)
 // 	}
 // }
 
 // func TestAddParamNode(t *testing.T) {
 // 	n := newRoot("")
-// 	paths := splitPath("/{example}")
+// 	paths := strings.Split(strings.Trim("/{example}", "/"), "/")
 // 	n.addChild(paths)
 
 // 	var cn *node
 // 	for _, child := range n.children {
-// 		if child.pattern == "{example}" {
+// 		if child.id == "{example}" {
 // 			cn = child
 // 			break
 // 		}
@@ -202,21 +204,21 @@ package goserver
 // 	equal(t, false, n.isLeaf())
 // 	if notEqual(t, nil, cn) {
 // 		equal(t, true, cn.isLeaf())
-// 		equal(t, "{example}", cn.pattern)
+// 		equal(t, "{example}", cn.id)
 // 		equal(t, nil, cn.regexp)
 // 	}
 // }
 
 // func TestAddRegexpNode(t *testing.T) {
 // 	n := newRoot("")
-// 	paths := splitPath("/{example:r([a-z]+)go}")
+// 	paths := strings.Split(strings.Trim("/{example:r([a-z]+)go}", "/"), "/")
 // 	n.addChild(paths)
 
 // 	equal(t, false, n.isLeaf())
 
 // 	var cn *node
 // 	for _, child := range n.children {
-// 		if child.pattern == "{example:r([a-z]+)go}" {
+// 		if child.id == "{example:r([a-z]+)go}" {
 // 			cn = child
 // 			break
 // 		}
@@ -224,7 +226,7 @@ package goserver
 
 // 	if notEqual(t, nil, cn) {
 // 		equal(t, true, cn.isLeaf())
-// 		equal(t, "{example:r([a-z]+)go}", cn.pattern)
+// 		equal(t, "{example:r([a-z]+)go}", cn.id)
 // 		if notEqual(t, nil, cn.regexp) {
 // 			equal(t, true, cn.regexp.MatchString("rego"))
 // 		}
@@ -233,9 +235,9 @@ package goserver
 
 // func TestWildcardConflictNodes(t *testing.T) {
 // 	n := newRoot("")
-// 	n.addChild(splitPath("/{x}/x"))
-// 	n.addChild(splitPath("/{y}/y"))
-// 	n.addChild(splitPath("/{z}/z"))
+// 	n.addChild(strings.Split(strings.Trim("/{x}/x", "/"), "/"))
+// 	n.addChild(strings.Split(strings.Trim("/{y}/y", "/"), "/"))
+// 	n.addChild(strings.Split(strings.Trim("/{z}/z", "/"), "/"))
 
 // 	var node *node
 // 	node, _ = n.childByPath("")
@@ -254,9 +256,9 @@ package goserver
 
 // func TestWildcardRegexpConflictNodes(t *testing.T) {
 // 	n := newRoot("")
-// 	n.addChild(splitPath("/{x:x([a-z]+)go}/x"))
-// 	n.addChild(splitPath("/{y:y([a-z]+)go}/y"))
-// 	n.addChild(splitPath("/{z:z([a-z]+)go}/z"))
+// 	n.addChild(strings.Split(strings.Trim("/{x:x([a-z]+)go}/x", "/"), "/"))
+// 	n.addChild(strings.Split(strings.Trim("/{y:y([a-z]+)go}/y", "/"), "/"))
+// 	n.addChild(strings.Split(strings.Trim("/{z:z([a-z]+)go}/z", "/"), "/"))
 
 // 	var node *node
 // 	node, _ = n.childByPath("")

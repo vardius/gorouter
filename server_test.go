@@ -13,11 +13,14 @@ func TestInterface(t *testing.T) {
 func TestHandle(t *testing.T) {
 	s := New().(*server)
 
-	s.Handle(POST, "/", http.HandlerFunc(mockHandler))
+	serverd := false
+	s.Handle(POST, "/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		serverd = true
+	}))
 
 	var cn *node
 	for _, child := range s.roots {
-		if child.pattern == POST {
+		if child.id == POST {
 			cn = child
 			break
 		}
@@ -25,17 +28,32 @@ func TestHandle(t *testing.T) {
 
 	if cn == nil {
 		t.Error("Route not found")
+	}
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(POST, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.ServeHTTP(w, req)
+
+	if serverd != true {
+		t.Error("Handler has not been serverd")
 	}
 }
 
 func TestHandleFunc(t *testing.T) {
 	s := New().(*server)
 
-	s.HandleFunc(POST, "/", mockHandler)
+	serverd := false
+	s.HandleFunc(POST, "/", func(_ http.ResponseWriter, _ *http.Request) {
+		serverd = true
+	})
 
 	var cn *node
 	for _, child := range s.roots {
-		if child.pattern == POST {
+		if child.id == POST {
 			cn = child
 			break
 		}
@@ -43,17 +61,32 @@ func TestHandleFunc(t *testing.T) {
 
 	if cn == nil {
 		t.Error("Route not found")
+	}
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(POST, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.ServeHTTP(w, req)
+
+	if serverd != true {
+		t.Error("Handler has not been serverd")
 	}
 }
 
 func TestPOST(t *testing.T) {
 	s := New().(*server)
 
-	s.POST("/", mockHandler)
+	serverd := false
+	s.POST("/", func(_ http.ResponseWriter, _ *http.Request) {
+		serverd = true
+	})
 
 	var cn *node
 	for _, child := range s.roots {
-		if child.pattern == POST {
+		if child.id == POST {
 			cn = child
 			break
 		}
@@ -61,17 +94,32 @@ func TestPOST(t *testing.T) {
 
 	if cn == nil {
 		t.Error("Route not found")
+	}
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(POST, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.ServeHTTP(w, req)
+
+	if serverd != true {
+		t.Error("Handler has not been serverd")
 	}
 }
 
 func TestGET(t *testing.T) {
 	s := New().(*server)
 
-	s.GET("/", mockHandler)
+	serverd := false
+	s.GET("/", func(_ http.ResponseWriter, _ *http.Request) {
+		serverd = true
+	})
 
 	var cn *node
 	for _, child := range s.roots {
-		if child.pattern == GET {
+		if child.id == GET {
 			cn = child
 			break
 		}
@@ -79,17 +127,32 @@ func TestGET(t *testing.T) {
 
 	if cn == nil {
 		t.Error("Route not found")
+	}
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(GET, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.ServeHTTP(w, req)
+
+	if serverd != true {
+		t.Error("Handler has not been serverd")
 	}
 }
 
 func TestPUT(t *testing.T) {
 	s := New().(*server)
 
-	s.PUT("/", mockHandler)
+	serverd := false
+	s.PUT("/", func(_ http.ResponseWriter, _ *http.Request) {
+		serverd = true
+	})
 
 	var cn *node
 	for _, child := range s.roots {
-		if child.pattern == PUT {
+		if child.id == PUT {
 			cn = child
 			break
 		}
@@ -97,17 +160,32 @@ func TestPUT(t *testing.T) {
 
 	if cn == nil {
 		t.Error("Route not found")
+	}
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(PUT, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.ServeHTTP(w, req)
+
+	if serverd != true {
+		t.Error("Handler has not been serverd")
 	}
 }
 
 func TestDELETE(t *testing.T) {
 	s := New().(*server)
 
-	s.DELETE("/", mockHandler)
+	serverd := false
+	s.DELETE("/", func(_ http.ResponseWriter, _ *http.Request) {
+		serverd = true
+	})
 
 	var cn *node
 	for _, child := range s.roots {
-		if child.pattern == DELETE {
+		if child.id == DELETE {
 			cn = child
 			break
 		}
@@ -115,17 +193,32 @@ func TestDELETE(t *testing.T) {
 
 	if cn == nil {
 		t.Error("Route not found")
+	}
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(DELETE, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.ServeHTTP(w, req)
+
+	if serverd != true {
+		t.Error("Handler has not been serverd")
 	}
 }
 
 func TestPATCH(t *testing.T) {
 	s := New().(*server)
 
-	s.PATCH("/", mockHandler)
+	serverd := false
+	s.PATCH("/", func(_ http.ResponseWriter, _ *http.Request) {
+		serverd = true
+	})
 
 	var cn *node
 	for _, child := range s.roots {
-		if child.pattern == PATCH {
+		if child.id == PATCH {
 			cn = child
 			break
 		}
@@ -133,17 +226,32 @@ func TestPATCH(t *testing.T) {
 
 	if cn == nil {
 		t.Error("Route not found")
+	}
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(PATCH, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.ServeHTTP(w, req)
+
+	if serverd != true {
+		t.Error("Handler has not been serverd")
 	}
 }
 
 func TestHEAD(t *testing.T) {
 	s := New().(*server)
 
-	s.HEAD("/", mockHandler)
+	serverd := false
+	s.HEAD("/", func(_ http.ResponseWriter, _ *http.Request) {
+		serverd = true
+	})
 
 	var cn *node
 	for _, child := range s.roots {
-		if child.pattern == HEAD {
+		if child.id == HEAD {
 			cn = child
 			break
 		}
@@ -151,6 +259,18 @@ func TestHEAD(t *testing.T) {
 
 	if cn == nil {
 		t.Error("Route not found")
+	}
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(HEAD, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.ServeHTTP(w, req)
+
+	if serverd != true {
+		t.Error("Handler has not been serverd")
 	}
 }
 
@@ -161,7 +281,7 @@ func TestOPTIONS(t *testing.T) {
 
 	var cn *node
 	for _, child := range s.roots {
-		if child.pattern == OPTIONS {
+		if child.id == OPTIONS {
 			cn = child
 			break
 		}
@@ -286,6 +406,36 @@ func TestParam(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, "/x", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.ServeHTTP(w, req)
+
+	if serverd != true {
+		t.Error("Handler has not been serverd")
+	}
+}
+
+func TestRegexpParam(t *testing.T) {
+	s := New().(*server)
+
+	serverd := false
+	s.GET("/{param:r([a-z]+)go}", func(_ http.ResponseWriter, r *http.Request) {
+		serverd = true
+
+		params, ok := ParamsFromContext(r.Context())
+		if !ok {
+			t.Fatal("Error while reading param")
+		}
+
+		if params.Value("param") != "rxgo" {
+			t.Errorf("Wrong params value. Expected 'rxgo', actual '%s'", params.Value("param"))
+		}
+	})
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(GET, "/rxgo", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

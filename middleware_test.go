@@ -54,3 +54,28 @@ func TestOrders(t *testing.T) {
 		t.Error("The order is incorrect")
 	}
 }
+
+func TestAppend(t *testing.T) {
+	m1 := mockMiddlewareWithBody("1")
+	m2 := mockMiddlewareWithBody("2")
+	m3 := mockMiddlewareWithBody("3")
+	fn := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Write([]byte("4"))
+	})
+
+	m := newMiddleware(m1)
+	m = m.append(m2, m3)
+	h := m.handleFunc(fn)
+
+	w := httptest.NewRecorder()
+	r, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	h.ServeHTTP(w, r)
+
+	if w.Body.String() != "1234" {
+		t.Errorf("The order is incorrect expected: 1234 actual: %s", w.Body.String())
+	}
+}

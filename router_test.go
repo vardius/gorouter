@@ -41,3 +41,19 @@ func TestParams(t *testing.T) {
 		t.Error("Invalid params value")
 	}
 }
+
+func TestInvalidParams(t *testing.T) {
+	param := Param{"key", "value"}
+	params := Params{param}
+
+	if params.Value("invalid_key") != "" {
+		t.Error("Invalid params value")
+	}
+}
+
+func TestNilHandler(t *testing.T) {
+	r := newRoute(nil)
+	if h := r.handler(); h != nil {
+		t.Error("Handler hould be equal nil")
+	}
+}

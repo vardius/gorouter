@@ -27,6 +27,6 @@ func TestGetNodeByIndex(t *testing.T) {
 	n := newRoot("")
 	n.addChild([]string{"x"})
 
-	child := n.childAtIndex(0)
+	child := n.children.atIndex(0)
 	notEqual(t, nil, child)
 }

@@ -22,13 +22,13 @@ type (
 	Server interface {
 		Handle(method, pattern string, handler http.Handler)
 		HandleFunc(method, pattern string, handler http.HandlerFunc)
-		POST(pattern string, handler http.HandlerFunc)
-		GET(pattern string, handler http.HandlerFunc)
-		PUT(pattern string, handler http.HandlerFunc)
-		DELETE(pattern string, handler http.HandlerFunc)
-		PATCH(pattern string, handler http.HandlerFunc)
-		OPTIONS(pattern string, handler http.HandlerFunc)
-		HEAD(pattern string, handler http.HandlerFunc)
+		POST(pattern string, handler http.Handler)
+		GET(pattern string, handler http.Handler)
+		PUT(pattern string, handler http.Handler)
+		DELETE(pattern string, handler http.Handler)
+		PATCH(pattern string, handler http.Handler)
+		OPTIONS(pattern string, handler http.Handler)
+		HEAD(pattern string, handler http.Handler)
 		USE(method, pattern string, fs ...MiddlewareFunc)
 		ServeHTTP(http.ResponseWriter, *http.Request)
 		ServeFiles(path string, strip bool)
@@ -45,40 +45,38 @@ type (
 )
 
 func (s *server) Handle(m, p string, h http.Handler) {
-	s.HandleFunc(m, p, func(w http.ResponseWriter, req *http.Request) {
-		h.ServeHTTP(w, req)
-	})
+	s.addRoute(m, p, h)
 }
 
 func (s *server) HandleFunc(m, p string, f http.HandlerFunc) {
-	s.addRoute(m, p, f)
+	s.addRoute(m, p, http.HandlerFunc(f))
 }
 
-func (s *server) POST(p string, f http.HandlerFunc) {
+func (s *server) POST(p string, f http.Handler) {
 	s.addRoute(POST, p, f)
 }
 
-func (s *server) GET(p string, f http.HandlerFunc) {
+func (s *server) GET(p string, f http.Handler) {
 	s.addRoute(GET, p, f)
 }
 
-func (s *server) PUT(p string, f http.HandlerFunc) {
+func (s *server) PUT(p string, f http.Handler) {
 	s.addRoute(PUT, p, f)
 }
 
-func (s *server) DELETE(p string, f http.HandlerFunc) {
+func (s *server) DELETE(p string, f http.Handler) {
 	s.addRoute(DELETE, p, f)
 }
 
-func (s *server) PATCH(p string, f http.HandlerFunc) {
+func (s *server) PATCH(p string, f http.Handler) {
 	s.addRoute(PATCH, p, f)
 }
 
-func (s *server) OPTIONS(p string, f http.HandlerFunc) {
+func (s *server) OPTIONS(p string, f http.Handler) {
 	s.addRoute(OPTIONS, p, f)
 }
 
-func (s *server) HEAD(p string, f http.HandlerFunc) {
+func (s *server) HEAD(p string, f http.Handler) {
 	s.addRoute(HEAD, p, f)
 }
 
@@ -108,7 +106,7 @@ func (s *server) ServeFiles(path string, strip bool) {
 func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	route, params := s.getRoute(req.Method, req.URL.Path)
 	if route != nil {
-		if h := route.handler(); h != nil {
+		if h := route.chain(); h != nil {
 			req = req.WithContext(newContextFromRequest(req, params))
 			h.ServeHTTP(w, req)
 			return
@@ -175,7 +173,7 @@ func (s *server) serveFiles(w http.ResponseWriter, req *http.Request) {
 	s.fileServer.ServeHTTP(w, req)
 }
 
-func (s *server) addRoute(method, path string, f http.HandlerFunc) {
+func (s *server) addRoute(method, path string, f http.Handler) {
 	var root *node
 	for _, root = range s.roots {
 		if method == root.id {
@@ -189,7 +187,7 @@ func (s *server) addRoute(method, path string, f http.HandlerFunc) {
 		s.roots = append(s.roots, root)
 	}
 
-	paths := strings.Split(strings.Trim(path, "/"), "/")
+	paths := splitPath(path)
 
 	r := newRoute(f)
 	r.addMiddleware(s.middleware)
@@ -204,12 +202,18 @@ func (s *server) addMiddleware(method, path string, fs ...MiddlewareFunc) {
 		if n.route != nil {
 			n.route.addMiddleware(m)
 		}
-		for _, child := range n.children {
+		for _, child := range n.children.statics {
 			c(c, child, m)
+		}
+		for _, child := range n.children.regexps {
+			c(c, child, m)
+		}
+		if n.children.wildcard != nil {
+			c(c, n.children.wildcard, m)
 		}
 	}
 
-	paths := strings.Split(strings.Trim(path, "/"), "/")
+	paths := splitPath(path)
 
 	for _, root := range s.roots {
 		if method == "" || method == root.id {
@@ -230,6 +234,49 @@ func (s *server) getRoute(method, path string) (*route, Params) {
 		}
 	}
 	return nil, nil
+}
+
+func splitPath(path string) (parts []string) {
+	for {
+		if i := strings.IndexByte(path, '{'); i >= 0 {
+			if part := trimPath(path[:i]); part != "" {
+				parts = append(parts, part)
+			}
+			if j := strings.IndexByte(path, '}') + 1; j > 0 {
+				if part := trimPath(path[i:j]); part != "" {
+					parts = append(parts, part)
+				}
+				i = j
+			} else {
+				continue
+			}
+			path = path[i:]
+		} else {
+			break
+		}
+	}
+
+	if len(path) != 0 && path != "/" {
+		if part := trimPath(path); part != "" {
+			parts = append(parts, part)
+		}
+	}
+
+	return
+}
+
+func trimPath(path string) string {
+	pathLen := len(path)
+	if pathLen > 0 && path[0] == '/' {
+		path = path[1:]
+		pathLen--
+	}
+
+	if pathLen > 0 && path[pathLen-1] == '/' {
+		path = path[:pathLen-1]
+		pathLen--
+	}
+	return path
 }
 
 func (s *server) allowed(method, path string) (allow string) {

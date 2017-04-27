@@ -44,8 +44,8 @@ func WithError(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	server := goserver.New(recoverfunc)
-	server.GET("/", Index)	
-	server.GET("/panic", WithError)
+	server.GET("/", http.HandlerFunc(Index))
+	server.GET("/panic", http.HandlerFunc(WithError))
 
 	log.Fatal(http.ListenAndServe(":8080", server))
 }

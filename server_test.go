@@ -47,9 +47,9 @@ func TestHandleFunc(t *testing.T) {
 	s := New().(*server)
 
 	serverd := false
-	s.HandleFunc(POST, "/", func(_ http.ResponseWriter, _ *http.Request) {
+	s.HandleFunc(POST, "/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		serverd = true
-	})
+	}))
 
 	var cn *node
 	for _, child := range s.roots {
@@ -80,9 +80,9 @@ func TestPOST(t *testing.T) {
 	s := New().(*server)
 
 	serverd := false
-	s.POST("/", func(_ http.ResponseWriter, _ *http.Request) {
+	s.POST("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		serverd = true
-	})
+	}))
 
 	var cn *node
 	for _, child := range s.roots {
@@ -113,9 +113,9 @@ func TestGET(t *testing.T) {
 	s := New().(*server)
 
 	serverd := false
-	s.GET("/", func(_ http.ResponseWriter, _ *http.Request) {
+	s.GET("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		serverd = true
-	})
+	}))
 
 	var cn *node
 	for _, child := range s.roots {
@@ -146,9 +146,9 @@ func TestPUT(t *testing.T) {
 	s := New().(*server)
 
 	serverd := false
-	s.PUT("/", func(_ http.ResponseWriter, _ *http.Request) {
+	s.PUT("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		serverd = true
-	})
+	}))
 
 	var cn *node
 	for _, child := range s.roots {
@@ -179,9 +179,9 @@ func TestDELETE(t *testing.T) {
 	s := New().(*server)
 
 	serverd := false
-	s.DELETE("/", func(_ http.ResponseWriter, _ *http.Request) {
+	s.DELETE("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		serverd = true
-	})
+	}))
 
 	var cn *node
 	for _, child := range s.roots {
@@ -212,9 +212,9 @@ func TestPATCH(t *testing.T) {
 	s := New().(*server)
 
 	serverd := false
-	s.PATCH("/", func(_ http.ResponseWriter, _ *http.Request) {
+	s.PATCH("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		serverd = true
-	})
+	}))
 
 	var cn *node
 	for _, child := range s.roots {
@@ -245,9 +245,9 @@ func TestHEAD(t *testing.T) {
 	s := New().(*server)
 
 	serverd := false
-	s.HEAD("/", func(_ http.ResponseWriter, _ *http.Request) {
+	s.HEAD("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		serverd = true
-	})
+	}))
 
 	var cn *node
 	for _, child := range s.roots {
@@ -277,7 +277,7 @@ func TestHEAD(t *testing.T) {
 func TestOPTIONS(t *testing.T) {
 	s := New().(*server)
 
-	s.OPTIONS("/", mockHandler)
+	s.OPTIONS("/", http.HandlerFunc(mockHandler))
 
 	var cn *node
 	for _, child := range s.roots {
@@ -291,8 +291,8 @@ func TestOPTIONS(t *testing.T) {
 		t.Error("Route not found")
 	}
 
-	s.GET("/x", mockHandler)
-	s.POST("/x", mockHandler)
+	s.GET("/x", http.HandlerFunc(mockHandler))
+	s.POST("/x", http.HandlerFunc(mockHandler))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(OPTIONS, "/x", nil)
@@ -310,7 +310,7 @@ func TestOPTIONS(t *testing.T) {
 func TestNotFound(t *testing.T) {
 	s := New().(*server)
 
-	s.GET("/x", mockHandler)
+	s.GET("/x", http.HandlerFunc(mockHandler))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(POST, "/y", nil)
@@ -344,7 +344,7 @@ func TestNotFound(t *testing.T) {
 func TestNotAllowed(t *testing.T) {
 	s := New().(*server)
 
-	s.GET("/x", mockHandler)
+	s.GET("/x", http.HandlerFunc(mockHandler))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(POST, "/x", nil)
@@ -391,7 +391,7 @@ func TestParam(t *testing.T) {
 	s := New().(*server)
 
 	serverd := false
-	s.GET("/{param}", func(_ http.ResponseWriter, r *http.Request) {
+	s.GET("/{param}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := ParamsFromContext(r.Context())
@@ -402,7 +402,7 @@ func TestParam(t *testing.T) {
 		if params.Value("param") != "x" {
 			t.Errorf("Wrong params value. Expected 'x', actual '%s'", params.Value("param"))
 		}
-	})
+	}))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, "/x", nil)
@@ -421,7 +421,7 @@ func TestRegexpParam(t *testing.T) {
 	s := New().(*server)
 
 	serverd := false
-	s.GET("/{param:r([a-z]+)go}", func(_ http.ResponseWriter, r *http.Request) {
+	s.GET("/{param:r([a-z]+)go}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := ParamsFromContext(r.Context())
@@ -432,7 +432,7 @@ func TestRegexpParam(t *testing.T) {
 		if params.Value("param") != "rxgo" {
 			t.Errorf("Wrong params value. Expected 'rxgo', actual '%s'", params.Value("param"))
 		}
-	})
+	}))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, "/rxgo", nil)
@@ -472,9 +472,9 @@ func TestServeFiles(t *testing.T) {
 func TestNilMiddleware(t *testing.T) {
 	s := New().(*server)
 
-	s.GET("/{param}", func(w http.ResponseWriter, _ *http.Request) {
+	s.GET("/{param}", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte("test"))
-	})
+	}))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, "/x", nil)
@@ -507,9 +507,9 @@ func TestPanicMiddleware(t *testing.T) {
 
 	s := New(panicMiddleware).(*server)
 
-	s.GET("/{param}", func(_ http.ResponseWriter, _ *http.Request) {
+	s.GET("/{param}", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		panic("test panic recover")
-	})
+	}))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, "/x", nil)
@@ -527,14 +527,14 @@ func TestPanicMiddleware(t *testing.T) {
 func TestNodeApplyMiddleware(t *testing.T) {
 	s := New().(*server)
 
-	s.GET("/{param}", func(w http.ResponseWriter, r *http.Request) {
+	s.GET("/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		params, ok := ParamsFromContext(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
 
 		w.Write([]byte(params.Value("param")))
-	})
+	}))
 
 	s.USE(GET, "/{param}", mockMiddleware)
 
@@ -555,7 +555,7 @@ func TestChainCalls(t *testing.T) {
 	s := New().(*server)
 
 	serverd := false
-	s.GET("/users/{user}/starred", func(_ http.ResponseWriter, r *http.Request) {
+	s.GET("/users/{user}/starred", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := ParamsFromContext(r.Context())
@@ -566,9 +566,9 @@ func TestChainCalls(t *testing.T) {
 		if params.Value("user") != "x" {
 			t.Errorf("Wrong params value. Expected 'x', actual '%s'", params.Value("user"))
 		}
-	})
+	}))
 
-	s.GET("/applications/{client_id}/tokens", func(_ http.ResponseWriter, r *http.Request) {
+	s.GET("/applications/{client_id}/tokens", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := ParamsFromContext(r.Context())
@@ -579,9 +579,9 @@ func TestChainCalls(t *testing.T) {
 		if params.Value("client_id") != "client_id" {
 			t.Errorf("Wrong params value. Expected 'client_id', actual '%s'", params.Value("client_id"))
 		}
-	})
+	}))
 
-	s.GET("/applications/{client_id}/tokens/{access_token}", func(_ http.ResponseWriter, r *http.Request) {
+	s.GET("/applications/{client_id}/tokens/{access_token}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := ParamsFromContext(r.Context())
@@ -596,9 +596,9 @@ func TestChainCalls(t *testing.T) {
 		if params.Value("access_token") != "access_token" {
 			t.Errorf("Wrong params value. Expected 'access_token', actual '%s'", params.Value("access_token"))
 		}
-	})
+	}))
 
-	s.GET("/users/{user}/received_events", func(_ http.ResponseWriter, r *http.Request) {
+	s.GET("/users/{user}/received_events", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := ParamsFromContext(r.Context())
@@ -609,9 +609,9 @@ func TestChainCalls(t *testing.T) {
 		if params.Value("user") != "user1" {
 			t.Errorf("Wrong params value. Expected 'user1', actual '%s'", params.Value("user"))
 		}
-	})
+	}))
 
-	s.GET("/users/{user}/received_events/public", func(_ http.ResponseWriter, r *http.Request) {
+	s.GET("/users/{user}/received_events/public", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := ParamsFromContext(r.Context())
@@ -622,7 +622,7 @@ func TestChainCalls(t *testing.T) {
 		if params.Value("user") != "user2" {
 			t.Errorf("Wrong params value. Expected 'user2', actual '%s'", params.Value("user"))
 		}
-	})
+	}))
 
 	w := httptest.NewRecorder()
 

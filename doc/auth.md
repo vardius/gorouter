@@ -53,8 +53,8 @@ func Protected(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	server := goserver.New()
-	server.GET("/", Index)	
-	server.GET("/protected", Protected)
+	server.GET("/", http.HandlerFunc(Index))	
+	server.GET("/protected", http.HandlerFunc(Protected))
 
 	server.USE("GET", "/protected", BasicAuth)
 

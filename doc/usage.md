@@ -32,8 +32,8 @@ func Hello(w http.ResponseWriter, r *http.Request) {
 
 func main() {
     server := goserver.New()
-    server.GET("/", Index)
-    server.GET("/hello/{name}", Hello)
+    server.GET("/", http.HandlerFunc(Index))
+    server.GET("/hello/{name}", http.HandlerFunc(Hello))
 
     log.Fatal(http.ListenAndServe(":8080", server))
 }
@@ -56,10 +56,10 @@ A full route definition contain up to three parts:
 3. `http.HandleFunc`, which tells the server to handle matched requests to the router with handler.
 Take the following example:
 ```go
-server.GET("/hello/{name:r([a-z]+)go}", func(w http.ResponseWriter, r *http.Request) {
+server.GET("/hello/{name:r([a-z]+)go}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     params, _ := goserver.ParamsFromContext(r.Context())
     fmt.Fprintf(w, "hello, %s!\n", params.Value("name"))
-})
+}))
 ```
 In this case, the route is matched by `/hello/rxxxxxgo` for example, because the `{name}` wildcard matches the regular expression wildcard given (`r([a-z]+)go`). However, `/hello/foo` does not match, because "foo" fails the *name* wildcard. When using wildcards, these are returned in the map from request context. The part of the path that the wildcard matched (e.g. *rxxxxxgo*) is used as value.
 

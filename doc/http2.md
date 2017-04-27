@@ -38,7 +38,7 @@ func Pusher(w http.ResponseWriter, r *http.Request) {
 
 func main() {
     server := goserver.New()
-    server.GET("/", Pusher)
+    server.GET("/", http.HandlerFunc(Pusher))
 
     http2.ConfigureServer(server, &http2.Server{})
     log.Fatal(server.ListenAndServeTLS("server.crt", "server.key"))

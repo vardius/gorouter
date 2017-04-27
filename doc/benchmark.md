@@ -10,79 +10,79 @@ The biggest competitor is [HttpRouter](https://github.com/julienschmidt/httprout
 
 The output
 ```
-BenchmarkGoserverStaticParallel1-4      	50000000	        28.7 ns/op
+BenchmarkGoserverStaticParallel1-4      	50000000	        25.0 ns/op
 ```
-means that the loop ran 50000000 times at a speed of 28.7 ns per loop. What gives around **35714286 req/sec** !
+means that the loop ran 50000000 times at a speed of 25.0 ns per loop. What gives around **40000000 req/sec** !
 Each benchmark name `BenchmarkGoserverStaticParallel1-4 ` means that test used a `static` or `regexp` route path for each node with a nested level `5`. Where `4` stands for CPU number.
 
 The benchmarks from file [benchmark_test.go](benchmark_test.go).
 ```
 $ go test -bench=. -cpu=4
-BenchmarkGoserverStatic1-4              	30000000	        46.7 ns/op
-BenchmarkGoserverStatic2-4              	20000000	        62.0 ns/op
-BenchmarkGoserverStatic3-4              	20000000	        78.5 ns/op
-BenchmarkGoserverStatic5-4              	10000000	       114 ns/op
-BenchmarkGoserverStatic10-4             	10000000	       213 ns/op
-BenchmarkGoserverStatic20-4             	 3000000	       426 ns/op
-BenchmarkGoserverWildcard1-4            	 3000000	       420 ns/op
-BenchmarkGoserverWildcard2-4            	 3000000	       407 ns/op
-BenchmarkGoserverWildcard3-4            	 3000000	       395 ns/op
-BenchmarkGoserverWildcard5-4            	 3000000	       406 ns/op
-BenchmarkGoserverWildcard10-4           	 3000000	       406 ns/op
-BenchmarkGoserverWildcard20-4           	 3000000	       402 ns/op
-BenchmarkGoserverRegexp1-4              	 3000000	       412 ns/op
-BenchmarkGoserverRegexp2-4              	 3000000	       407 ns/op
-BenchmarkGoserverRegexp3-4              	 3000000	       404 ns/op
-BenchmarkGoserverRegexp5-4              	 3000000	       434 ns/op
-BenchmarkGoserverRegexp10-4             	 3000000	       533 ns/op
-BenchmarkGoserverRegexp20-4             	 3000000	       449 ns/op
-BenchmarkGoserverStaticParallel1-4      	50000000	        28.7 ns/op
-BenchmarkGoserverStaticParallel2-4      	50000000	        35.2 ns/op
-BenchmarkGoserverStaticParallel3-4      	30000000	        47.6 ns/op
-BenchmarkGoserverStaticParallel5-4      	20000000	        66.6 ns/op
-BenchmarkGoserverStaticParallel10-4     	10000000	       113 ns/op
-BenchmarkGoserverStaticParallel20-4     	10000000	       214 ns/op
-BenchmarkGoserverWildcardParallel1-4    	 5000000	       257 ns/op
-BenchmarkGoserverWildcardParallel2-4    	 5000000	       253 ns/op
-BenchmarkGoserverWildcardParallel3-4    	 5000000	       242 ns/op
-BenchmarkGoserverWildcardParallel5-4    	 5000000	       252 ns/op
-BenchmarkGoserverWildcardParallel10-4   	 5000000	       241 ns/op
-BenchmarkGoserverWildcardParallel20-4   	 5000000	       250 ns/op
-BenchmarkGoserverRegexpParallel1-4      	 5000000	       250 ns/op
-BenchmarkGoserverRegexpParallel2-4      	 5000000	       235 ns/op
-BenchmarkGoserverRegexpParallel3-4      	 5000000	       231 ns/op
-BenchmarkGoserverRegexpParallel5-4      	 5000000	       237 ns/op
-BenchmarkGoserverRegexpParallel10-4     	 5000000	       235 ns/op
-BenchmarkGoserverRegexpParallel20-4     	 5000000	       244 ns/op
+BenchmarkGoserverStatic1-4              	30000000	        42.5 ns/op
+BenchmarkGoserverStatic2-4              	30000000	        43.3 ns/op
+BenchmarkGoserverStatic3-4              	30000000	        42.0 ns/op
+BenchmarkGoserverStatic5-4              	30000000	        42.1 ns/op
+BenchmarkGoserverStatic10-4             	30000000	        43.2 ns/op
+BenchmarkGoserverStatic20-4             	30000000	        42.4 ns/op
+BenchmarkGoserverWildcard1-4            	 3000000	       390 ns/op
+BenchmarkGoserverWildcard2-4            	 3000000	       392 ns/op
+BenchmarkGoserverWildcard3-4            	 3000000	       379 ns/op
+BenchmarkGoserverWildcard5-4            	 3000000	       387 ns/op
+BenchmarkGoserverWildcard10-4           	 3000000	       390 ns/op
+BenchmarkGoserverWildcard20-4           	 3000000	       384 ns/op
+BenchmarkGoserverRegexp1-4              	 3000000	       392 ns/op
+BenchmarkGoserverRegexp2-4              	 3000000	       393 ns/op
+BenchmarkGoserverRegexp3-4              	 5000000	       395 ns/op
+BenchmarkGoserverRegexp5-4              	 3000000	       388 ns/op
+BenchmarkGoserverRegexp10-4             	 5000000	       383 ns/op
+BenchmarkGoserverRegexp20-4             	 3000000	       384 ns/op
+BenchmarkGoserverStaticParallel1-4      	50000000	        25.0 ns/op
+BenchmarkGoserverStaticParallel2-4      	50000000	        24.2 ns/op
+BenchmarkGoserverStaticParallel3-4      	50000000	        26.5 ns/op
+BenchmarkGoserverStaticParallel5-4      	50000000	        24.1 ns/op
+BenchmarkGoserverStaticParallel10-4     	50000000	        24.0 ns/op
+BenchmarkGoserverStaticParallel20-4     	50000000	        28.6 ns/op
+BenchmarkGoserverWildcardParallel1-4    	 5000000	       230 ns/op
+BenchmarkGoserverWildcardParallel2-4    	 5000000	       229 ns/op
+BenchmarkGoserverWildcardParallel3-4    	 5000000	       232 ns/op
+BenchmarkGoserverWildcardParallel5-4    	 5000000	       225 ns/op
+BenchmarkGoserverWildcardParallel10-4   	 5000000	       222 ns/op
+BenchmarkGoserverWildcardParallel20-4   	 5000000	       228 ns/op
+BenchmarkGoserverRegexpParallel1-4      	 5000000	       239 ns/op
+BenchmarkGoserverRegexpParallel2-4      	 5000000	       226 ns/op
+BenchmarkGoserverRegexpParallel3-4      	 5000000	       223 ns/op
+BenchmarkGoserverRegexpParallel5-4      	 5000000	       231 ns/op
+BenchmarkGoserverRegexpParallel10-4     	 5000000	       231 ns/op
+BenchmarkGoserverRegexpParallel20-4     	 5000000	       222 ns/op
 ```
 ### [Go HTTP Router Benchmark](https://github.com/julienschmidt/go-http-routing-benchmark)
 **go-http-routing-benchmark** was runned without writing *parameters* to *request context* in case of comparing native router performance.
 #### Memory required only for loading the routing structure for the respective API
 | Router       | Static      | GitHub      | Google+    | Parse      |
 |:-------------|------------:|------------:|-----------:|-----------:|
-| Goserver     | 40152 B     | 131744 B    |  11040 B   | 20192 B    |
+| Goserver     | 51016 B     | 87600 B     |  7008 B    | 11712 B    |
 | Gorilla Mux  | 670544 B    | 1503424 B   |  71072 B   | 122184 B   |
 | HttpRouter   | 21128 B     | 37464 B     |  2712 B    | 4976 B     |
 
 #### ns/op
 | | **Goserver** | [HttpRouter](https://github.com/julienschmidt/httprouter) | [GorillaMux](https://github.com/gorilla/mux) |
 |:-------------|-------------:|------------:|--------------:|
-| Param        | 194          | 114         | 3836          |
-| Param5       | 949          | 458         | 6937          |
-| Param20      | 1044         | 1460        | 10673         |
-| ParamWrite   | 282          | 128         | 3338          |
-| GithubStatic | 275          | 45.4        | 15145         |
-| GithubParam  | 478          | 329         | 9048          |
-| GithubAll    | 121619       | 53880       | 6692893       |
-| GPlusStatic  | 47           | 25.5        | 2404          |
-| GPlusParam   | 191          | 212         | 4075          |
-| GPlus2Params | 370          | 231         | 7407          |
-| GPlusAll     | 3476         | 2247        | 56497         |
-| ParseStatic  | 83           | 26.2        | 2629          |
-| ParseParam   | 202          | 190         | 2772          |
-| Parse2Params | 334          | 185         | 3660          |
-| ParseAll     | 6198         | 2788        | 104968        |
-| StaticAll    | 100535       | 10255       | 1764623       |
+| Param        | 94           | 114         | 3836          |
+| Param5       | 926          | 458         | 6937          |
+| Param20      | 930          | 1460        | 10673         |
+| ParamWrite   | 162          | 128         | 3338          |
+| GithubStatic | 60           | 45.4        | 15145         |
+| GithubParam  | 269          | 329         | 9048          |
+| GithubAll    | 55057        | 53880       | 6692893       |
+| GPlusStatic  | 44           | 25.5        | 2404          |
+| GPlusParam   | 96           | 212         | 4075          |
+| GPlus2Params | 184          | 231         | 7407          |
+| GPlusAll     | 1777         | 2247        | 56497         |
+| ParseStatic  | 44           | 26.2        | 2629          |
+| ParseParam   | 113          | 190         | 2772          |
+| Parse2Params | 168          | 185         | 3660          |
+| ParseAll     | 2976         | 2788        | 104968        |
+| StaticAll    | 47875        | 10255       | 1764623       |
 #### B/op
 | | **Goserver** | [HttpRouter](https://github.com/julienschmidt/httprouter) | [GorillaMux](https://github.com/gorilla/mux) |
 |:-------------|-----------:|------------:|-----------:|

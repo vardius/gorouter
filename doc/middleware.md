@@ -108,8 +108,8 @@ func Hello(w http.ResponseWriter, r *http.Request) {
 func main() {
     server := goserver.New()
 
-    server.GET("/", Index)
-    server.GET("/hello/{name}", Hello)
+    server.GET("/", http.HandlerFunc(Index))
+    server.GET("/hello/{name}", http.HandlerFunc(Hello))
 
 	//apply middlewares to all routes with GET method
 	//can pass as many as you want
@@ -162,9 +162,8 @@ func Hello(w http.ResponseWriter, r *http.Request) {
 
 func main() {
     server := goserver.New()
-    server.GET("/", Index)
-
-    server.GET("/hello/{name}", Hello)
+    server.GET("/", http.HandlerFunc(Index))
+    server.GET("/hello/{name}", http.HandlerFunc(Hello))
 
 	//apply midlewares to route and all it childs
 	//can pass as many as you want

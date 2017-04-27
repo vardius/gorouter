@@ -15,7 +15,7 @@ func benchmarkGoserverStaticCall(t int, b *testing.B) {
 	}
 
 	s := New().(*server)
-	s.GET(path, func(_ http.ResponseWriter, _ *http.Request) {})
+	s.GET(path, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, path, nil)
@@ -37,7 +37,7 @@ func benchmarkGoserverStaticParallel(t int, b *testing.B) {
 	}
 
 	s := New().(*server)
-	s.GET(path, func(_ http.ResponseWriter, _ *http.Request) {})
+	s.GET(path, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 
 	req, err := http.NewRequest(GET, path, nil)
 	if err != nil {
@@ -65,7 +65,7 @@ func benchmarkGoserverWildcardCall(t int, b *testing.B) {
 	}
 
 	s := New().(*server)
-	s.GET(path, func(_ http.ResponseWriter, _ *http.Request) {})
+	s.GET(path, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, rpath, nil)
@@ -89,7 +89,7 @@ func benchmarkGoserverWildcardParallel(t int, b *testing.B) {
 	}
 
 	s := New().(*server)
-	s.GET(path, func(_ http.ResponseWriter, _ *http.Request) {})
+	s.GET(path, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 
 	req, err := http.NewRequest(GET, rpath, nil)
 	if err != nil {
@@ -117,7 +117,7 @@ func benchmarkGoserverRegexpCall(t int, b *testing.B) {
 	}
 
 	s := New().(*server)
-	s.GET(path, func(_ http.ResponseWriter, _ *http.Request) {})
+	s.GET(path, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, rpath, nil)
@@ -141,7 +141,7 @@ func benchmarkGoserverRegexpParallel(t int, b *testing.B) {
 	}
 
 	s := New().(*server)
-	s.GET(path, func(_ http.ResponseWriter, _ *http.Request) {})
+	s.GET(path, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 
 	req, err := http.NewRequest(GET, rpath, nil)
 	if err != nil {

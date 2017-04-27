@@ -6,8 +6,8 @@ import (
 
 type (
 	route struct {
-		middleware  middleware
-		handlerFunc http.HandlerFunc
+		middleware middleware
+		handler    http.Handler
 	}
 	// Param object to hold request parameter
 	Param struct {
@@ -28,9 +28,9 @@ func (p Params) Value(key string) string {
 	return ""
 }
 
-func (r *route) handler() http.Handler {
-	if r.handlerFunc != nil {
-		return r.middleware.handleFunc(r.handlerFunc)
+func (r *route) chain() http.Handler {
+	if r.handler != nil {
+		return r.middleware.handle(r.handler)
 	}
 	return nil
 }
@@ -39,9 +39,9 @@ func (r *route) addMiddleware(m middleware) {
 	r.middleware = r.middleware.merge(m)
 }
 
-func newRoute(h http.HandlerFunc) *route {
+func newRoute(h http.Handler) *route {
 	return &route{
-		handlerFunc: h,
-		middleware:  newMiddleware(),
+		handler:    h,
+		middleware: newMiddleware(),
 	}
 }

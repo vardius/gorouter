@@ -30,8 +30,8 @@ func (hs HostSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func main() {
 	// Initialize a server as usual
 	server := goserver.New()
-	server.GET("/", Index)
-	server.GET("/hello/{name}", Hello)
+	server.GET("/", http.HandlerFunc(Index))
+	server.GET("/hello/{name}", http.HandlerFunc(Hello))
 
 	// Make a new HostSwitch and insert the server (our http handler)
 	// for example.com and port 12345

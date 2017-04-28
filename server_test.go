@@ -394,7 +394,7 @@ func TestParam(t *testing.T) {
 	s.GET("/{param}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
-		params, ok := ParamsFromContext(r.Context())
+		params, ok := FromContext(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
@@ -424,7 +424,7 @@ func TestRegexpParam(t *testing.T) {
 	s.GET("/{param:r([a-z]+)go}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
-		params, ok := ParamsFromContext(r.Context())
+		params, ok := FromContext(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
@@ -528,7 +528,7 @@ func TestNodeApplyMiddleware(t *testing.T) {
 	s := New().(*server)
 
 	s.GET("/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		params, ok := ParamsFromContext(r.Context())
+		params, ok := FromContext(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
@@ -558,7 +558,7 @@ func TestChainCalls(t *testing.T) {
 	s.GET("/users/{user}/starred", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
-		params, ok := ParamsFromContext(r.Context())
+		params, ok := FromContext(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
@@ -571,7 +571,7 @@ func TestChainCalls(t *testing.T) {
 	s.GET("/applications/{client_id}/tokens", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
-		params, ok := ParamsFromContext(r.Context())
+		params, ok := FromContext(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
@@ -584,7 +584,7 @@ func TestChainCalls(t *testing.T) {
 	s.GET("/applications/{client_id}/tokens/{access_token}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
-		params, ok := ParamsFromContext(r.Context())
+		params, ok := FromContext(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
@@ -601,7 +601,7 @@ func TestChainCalls(t *testing.T) {
 	s.GET("/users/{user}/received_events", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
-		params, ok := ParamsFromContext(r.Context())
+		params, ok := FromContext(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
@@ -614,7 +614,7 @@ func TestChainCalls(t *testing.T) {
 	s.GET("/users/{user}/received_events/public", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
-		params, ok := ParamsFromContext(r.Context())
+		params, ok := FromContext(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}

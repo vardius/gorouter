@@ -17,32 +17,72 @@ const (
 	HEAD    = "HEAD"
 )
 
-type (
-	//Server interface
-	Server interface {
-		Handle(method, pattern string, handler http.Handler)
-		HandleFunc(method, pattern string, handler http.HandlerFunc)
-		POST(pattern string, handler http.Handler)
-		GET(pattern string, handler http.Handler)
-		PUT(pattern string, handler http.Handler)
-		DELETE(pattern string, handler http.Handler)
-		PATCH(pattern string, handler http.Handler)
-		OPTIONS(pattern string, handler http.Handler)
-		HEAD(pattern string, handler http.Handler)
-		USE(method, pattern string, fs ...MiddlewareFunc)
-		ServeHTTP(http.ResponseWriter, *http.Request)
-		ServeFiles(path string, strip bool)
-		NotFound(http.Handler)
-		NotAllowed(http.Handler)
-	}
-	server struct {
-		roots      []*node
-		middleware middleware
-		fileServer http.Handler
-		notFound   http.Handler
-		notAllowed http.Handler
-	}
-)
+//Server is a micro framwework, HTTP request router, multiplexer, mux
+type Server interface {
+	//Handle adds http.Handler as router handler
+	//under given method and patter
+	Handle(method, pattern string, handler http.Handler)
+
+	//HandleFunc adds http.HandlerFunc as router handler
+	//under given method and patter
+	HandleFunc(method, pattern string, handler http.HandlerFunc)
+
+	//POST adds http.Handler as router handler
+	//under POST method and given patter
+	POST(pattern string, handler http.Handler)
+
+	//GET adds http.Handler as router handler
+	//under GET method and given patter
+	GET(pattern string, handler http.Handler)
+
+	//PUT adds http.Handler as router handler
+	//under PUT method and given patter
+	PUT(pattern string, handler http.Handler)
+
+	//DELETE adds http.Handler as router handler
+	//under DELETE method and given patter
+	DELETE(pattern string, handler http.Handler)
+
+	//PATCH adds http.Handler as router handler
+	//under PATCH method and given patter
+	PATCH(pattern string, handler http.Handler)
+
+	//OPTIONS adds http.Handler as router handler
+	//under OPTIONS method and given patter
+	OPTIONS(pattern string, handler http.Handler)
+
+	//HEAD adds http.Handler as router handler
+	//under HEAD method and given patter
+	HEAD(pattern string, handler http.Handler)
+
+	//USE adds middleware functions ([]MiddlewareFunc)
+	//to whole router branch under given method and patter
+	USE(method, pattern string, fs ...MiddlewareFunc)
+
+	//ServeHTTP dispatches the request to the route handler
+	//whose pattern matches the request URL
+	ServeHTTP(http.ResponseWriter, *http.Request)
+
+	//ServeFile replies to the request with the
+	//contents of the named file or directory.
+	ServeFiles(path string, strip bool)
+
+	//NotFound replies to the request with the
+	//404 Error code
+	NotFound(http.Handler)
+
+	//NotFound replies to the request with the
+	//405 Error code
+	NotAllowed(http.Handler)
+}
+
+type server struct {
+	roots      []*node
+	middleware middleware
+	fileServer http.Handler
+	notFound   http.Handler
+	notAllowed http.Handler
+}
 
 func (s *server) Handle(m, p string, h http.Handler) {
 	s.addRoute(m, p, h)
@@ -107,7 +147,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	route, params := s.getRoute(req.Method, req.URL.Path)
 	if route != nil {
 		if h := route.chain(); h != nil {
-			req = req.WithContext(newContextFromRequest(req, params))
+			req = req.WithContext(newContext(req, params))
 			h.ServeHTTP(w, req)
 			return
 		}

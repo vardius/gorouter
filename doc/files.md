@@ -25,7 +25,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func Hello(w http.ResponseWriter, r *http.Request) {
-    params, _ := goserver.ParamsFromContext(r.Context())
+    params, _ := goserver.FromContext(r.Context())
     fmt.Fprintf(w, "hello, %s!\n", params.Value("name"))
 }
 

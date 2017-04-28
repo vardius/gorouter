@@ -26,7 +26,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func Hello(w http.ResponseWriter, r *http.Request) {
-	params, _ := goserver.ParamsFromContext(r.Context())
+	params, _ := goserver.FromContext(r.Context())
     fmt.Fprintf(w, "hello, %s!\n", params.Value("name"))
 }
 
@@ -48,7 +48,7 @@ will match requests matching given route scheme
 - Regexp `/{name:[a-z]+}`
 will match requests matching given route scheme and its regexp
 #### Wildcards
-The values of *named parameter* or *regexp parameters* are accessible via *request context* `params, ok := goserver.ParamsFromContext(req.Context())`. You can get the value of a parameter either by its index in the slice, or by using the `params.Value(name)` method: `{name}` or `/{name:[a-z]+}` can be retrived by `params.Value("name")`.
+The values of *named parameter* or *regexp parameters* are accessible via *request context* `params, ok := goserver.FromContext(req.Context())`. You can get the value of a parameter either by its index in the slice, or by using the `params.Value(name)` method: `{name}` or `/{name:[a-z]+}` can be retrived by `params.Value("name")`.
 ### Defining Routes
 A full route definition contain up to three parts:
 1. HTTP method under which route will be available
@@ -57,7 +57,7 @@ A full route definition contain up to three parts:
 Take the following example:
 ```go
 server.GET("/hello/{name:r([a-z]+)go}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    params, _ := goserver.ParamsFromContext(r.Context())
+    params, _ := goserver.FromContext(r.Context())
     fmt.Fprintf(w, "hello, %s!\n", params.Value("name"))
 }))
 ```

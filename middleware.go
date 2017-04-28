@@ -2,11 +2,12 @@ package goserver
 
 import "net/http"
 
-type (
-	//MiddlewareFunc handles middleware logics
-	MiddlewareFunc func(http.Handler) http.Handler
-	middleware     []MiddlewareFunc
-)
+//MiddlewareFunc is a middleware function type. It accepts
+//as a parameter http.Handler and returns http.Handler as well
+//Long story - short: it is a http.Handler wrapper
+type MiddlewareFunc func(http.Handler) http.Handler
+
+type middleware []MiddlewareFunc
 
 func (m middleware) handle(h http.Handler) http.Handler {
 	if h == nil {

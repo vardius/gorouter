@@ -14,8 +14,8 @@ func TestContext(t *testing.T) {
 	p := Param{"test", "test"}
 	params := Params{p}
 
-	req = req.WithContext(newContextFromRequest(req, params))
-	cParams, ok := ParamsFromContext(req.Context())
+	req = req.WithContext(newContext(req, params))
+	cParams, ok := FromContext(req.Context())
 	if !ok {
 		t.Fatal("Error while getting context")
 	}

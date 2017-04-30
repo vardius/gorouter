@@ -15,6 +15,8 @@ const (
 	PATCH   = "PATCH"
 	OPTIONS = "OPTIONS"
 	HEAD    = "HEAD"
+	CONNECT = "CONNECT"
+	TRACE   = "TRACE"
 )
 
 //Server is a micro framwework, HTTP request router, multiplexer, mux
@@ -54,6 +56,14 @@ type Server interface {
 	//HEAD adds http.Handler as router handler
 	//under HEAD method and given patter
 	HEAD(pattern string, handler http.Handler)
+
+	//CONNECT adds http.Handler as router handler
+	//under CONNECT method and given patter
+	CONNECT(pattern string, handler http.Handler)
+
+	//TRACE adds http.Handler as router handler
+	//under TRACE method and given patter
+	TRACE(pattern string, handler http.Handler)
 
 	//USE adds middleware functions ([]MiddlewareFunc)
 	//to whole router branch under given method and patter

@@ -130,6 +130,14 @@ func (s *server) HEAD(p string, f http.Handler) {
 	s.addRoute(HEAD, p, f)
 }
 
+func (s *server) CONNECT(p string, f http.Handler) {
+	s.addRoute(CONNECT, p, f)
+}
+
+func (s *server) TRACE(p string, f http.Handler) {
+	s.addRoute(TRACE, p, f)
+}
+
 func (s *server) USE(method, p string, fs ...MiddlewareFunc) {
 	s.addMiddleware(method, p, fs...)
 }

@@ -307,7 +307,7 @@ func BenchmarkGoserverRegexpParallel5(b *testing.B)  { benchmarkGoserverRegexpPa
 func BenchmarkGoserverRegexpParallel10(b *testing.B) { benchmarkGoserverRegexpParallel(10, b) }
 func BenchmarkGoserverRegexpParallel20(b *testing.B) { benchmarkGoserverRegexpParallel(20, b) }
 
-//HttpRouter benchmark tests for comparision
+//HttpRouter benchmark tests for comparison
 func BenchmarkHttpRouterStatic1(b *testing.B)  { benchmarkHttpRouterStaticCall(1, b) }
 func BenchmarkHttpRouterStatic2(b *testing.B)  { benchmarkHttpRouterStaticCall(2, b) }
 func BenchmarkHttpRouterStatic3(b *testing.B)  { benchmarkHttpRouterStaticCall(3, b) }

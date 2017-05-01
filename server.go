@@ -371,7 +371,7 @@ func (s *server) allowed(method, path string) (allow string) {
 	return allow
 }
 
-//Creates new Server instance, return pointer
+//New creates new Server instance, return pointer
 func New(fs ...MiddlewareFunc) Server {
 	return &server{
 		roots:      make([]*node, 0),

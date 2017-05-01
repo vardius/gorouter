@@ -20,7 +20,7 @@ Wildcards
 The values of *named parameter* or *regexp parameters* are accessible via *request context*
 `params, ok := goserver.FromContext(req.Context())`.
 You can get the value of a parameter either by its index in the slice, or by using the `params.Value(name)` method:
-`:name` or `/{name:[a-z]+}` can be retrived by `params.Value("name")`.
+`:name` or `/{name:[a-z]+}` can be retrieved by `params.Value("name")`.
 
 Defining Routes
 

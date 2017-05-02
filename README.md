@@ -24,7 +24,7 @@ HOW TO USE
 
 1. [GoDoc](http://godoc.org/github.com/vardius/goserver)
 2. [Documentation](https://github.com/vardius/goserver/wiki)
-3. [Benchmarks](doc/benchmark.md)
+3. [Benchmarks](https://github.com/vardius/goserver/wiki/Benchmarks)
 
 ## Basic example
 ```go

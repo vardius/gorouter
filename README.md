@@ -23,8 +23,38 @@ HOW TO USE
 ==================================================
 
 1. [GoDoc](http://godoc.org/github.com/vardius/goserver)
-2. [Documentation](doc/usage.md)
+2. [Documentation](https://github.com/vardius/goserver/wiki)
 3. [Benchmarks](doc/benchmark.md)
+
+## Basic example
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+    "net/http"
+	
+    "github.com/vardius/goserver"
+)
+
+func Index(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprint(w, "Welcome!\n")
+}
+
+func Hello(w http.ResponseWriter, r *http.Request) {
+	params, _ := goserver.FromContext(r.Context())
+    fmt.Fprintf(w, "hello, %s!\n", params.Value("name"))
+}
+
+func main() {
+    server := goserver.New()
+    server.GET("/", http.HandlerFunc(Index))
+    server.GET("/hello/{name}", http.HandlerFunc(Hello))
+
+    log.Fatal(http.ListenAndServe(":8080", server))
+}
+```
 
 License
 -------

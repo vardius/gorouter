@@ -1,22 +1,10 @@
 language: go
 go:
-#  - 1.1
-#  - 1.2
-#  - 1.3
-#  - 1.4
-#  - 1.5
-#  - 1.6
-#  - 1.7
   - 1.8
   - tip
-before_install:
-  - go get github.com/modocache/gover
-  - go get github.com/axw/gocov/gocov
-  - go get github.com/mattn/goveralls
-  - go get golang.org/x/tools/cmd/cover
 script:
   - go build
-  - go test -v -cover -race -coverprofile=coverage.out
+  - go test -v -cover -race -coverprofile=coverage.txt -covermode=atomic
   - $HOME/gopath/bin/gover
 after_script:
-  - goveralls -coverprofile=coverage.out -service=travis-ci -repotoken='sebnj9M85jlphE3qOpVEvVKDXaNZK3UlA'
+  - bash <(curl -s https://codecov.io/bash)

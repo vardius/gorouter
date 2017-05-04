@@ -5,6 +5,5 @@ go:
 script:
   - go build
   - go test -v -cover -race -coverprofile=coverage.txt -covermode=atomic
-  - $HOME/gopath/bin/gover
 after_script:
   - bash <(curl -s https://codecov.io/bash)

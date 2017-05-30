@@ -5,13 +5,9 @@ Vardius - goserver
 [![codecov](https://codecov.io/gh/vardius/goserver/branch/master/graph/badge.svg)](https://codecov.io/gh/vardius/goserver)
 [![](https://godoc.org/github.com/vardius/goserver?status.svg)](http://godoc.org/github.com/vardius/goserver)
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/vardius/goserver/blob/master/LICENSE.md)
+[![Beerpay](https://beerpay.io/vardius/goserver/badge.svg?style=beer-square)](https://beerpay.io/vardius/goserver)  [![Beerpay](https://beerpay.io/vardius/goserver/make-wish.svg?style=flat-square)](https://beerpay.io/vardius/goserver?focus=wish)
 
 Go Server/API micro framwework, HTTP request router, multiplexer, mux.
-
-## Support on Beerpay
-Hey dude! Help me out for a couple of :beers:!
-
-[![Beerpay](https://beerpay.io/vardius/goserver/badge.svg?style=beer-square)](https://beerpay.io/vardius/goserver)  [![Beerpay](https://beerpay.io/vardius/goserver/make-wish.svg?style=flat-square)](https://beerpay.io/vardius/goserver?focus=wish)
 
 ABOUT
 ==================================================

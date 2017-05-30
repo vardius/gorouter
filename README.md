@@ -8,6 +8,11 @@ Vardius - goserver
 
 Go Server/API micro framwework, HTTP request router, multiplexer, mux.
 
+## Support on Beerpay
+Hey dude! Help me out for a couple of :beers:!
+
+[![Beerpay](https://beerpay.io/vardius/goserver/badge.svg?style=beer-square)](https://beerpay.io/vardius/goserver)  [![Beerpay](https://beerpay.io/vardius/goserver/make-wish.svg?style=flat-square)](https://beerpay.io/vardius/goserver?focus=wish)
+
 ABOUT
 ==================================================
 Contributors:
@@ -62,8 +67,3 @@ License
 This package is released under the MIT license. See the complete license in the package:
 
 [LICENSE](LICENSE.md)
-
-## Support on Beerpay
-Hey dude! Help me out for a couple of :beers:!
-
-[![Beerpay](https://beerpay.io/vardius/goserver/badge.svg?style=beer-square)](https://beerpay.io/vardius/goserver)  [![Beerpay](https://beerpay.io/vardius/goserver/make-wish.svg?style=flat-square)](https://beerpay.io/vardius/goserver?focus=wish)

@@ -3,7 +3,7 @@ services:
   app:
     image: golang:latest
     volumes:
-      - .:/go/src/github.com/vardius/goserver
-    working_dir: /go/src/github.com/vardius/goserver
+      - .:/go/src/github.com/vardius/gorouter
+    working_dir: /go/src/github.com/vardius/gorouter
     command: bash ./docker.sh
     privileged: true

@@ -1,4 +1,4 @@
-package goserver
+package gorouter
 
 type (
 	// Param object to hold request parameter

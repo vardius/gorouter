@@ -1,4 +1,4 @@
-package goserver
+package gorouter
 
 // import "testing"
 

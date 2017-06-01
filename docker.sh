@@ -8,5 +8,5 @@ go build
 go vet
 go test
 
-# go test -run benchmark_goserver_test.go -bench="BenchmarkGoserver*" -cpu=4
+# go test -run benchmark_gorouter_test.go -bench="BenchmarkGoRouter*" -cpu=4
 # go test -run benchmark_httprouter_test.go -bench="BenchmarkHttpRouter*" -cpu=4

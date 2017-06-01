@@ -1,11 +1,11 @@
 /*
-Package goserver provide request router with middleware
+Package gorouter provide request router with middleware
 
 Router
 
 The router determines how to handle that request.
-Goserver uses a routing tree. Once one branch of the tree matches, only routes inside that branch are considered,
-not any routes after that branch. When instantiating server, the root node of router tree is created.
+GoRouter uses a routing tree. Once one branch of the tree matches, only routes inside that branch are considered,
+not any routes after that branch. When instantiating router, the root node of tree is created.
 
 Route types
 
@@ -18,7 +18,7 @@ Route types
 Wildcards
 
 The values of *named parameter* or *regexp parameters* are accessible via *request context*
-`params, ok := goserver.FromContext(req.Context())`.
+`params, ok := gorouter.FromContext(req.Context())`.
 You can get the value of a parameter either by its index in the slice, or by using the `params.Value(name)` method:
 `:name` or `/{name:[a-z]+}` can be retrieved by `params.Value("name")`.
 
@@ -28,15 +28,15 @@ A full route definition contain up to three parts:
 
 1. HTTP method under which route will be available
 
-2. The URL path route. This is matched against the URL passed to the server,
+2. The URL path route. This is matched against the URL passed to the router,
 and can contain named wildcard placeholders *(e.g. {placeholder})* to match dynamic parts in the URL.
 
-3. `http.HandleFunc`, which tells the server to handle matched requests to the router with handler.
+3. `http.HandleFunc`, which tells the router to handle matched requests to the router with handler.
 
 Take the following example:
 
-	server.GET("/hello/{name:r([a-z]+)go}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		params, _ := goserver.FromContext(r.Context())
+	router.GET("/hello/{name:r([a-z]+)go}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		params, _ := gorouter.FromContext(r.Context())
 		fmt.Fprintf(w, "hello, %s!\n", params.Value("name"))
 	}))
 
@@ -54,7 +54,7 @@ Basic example:
 		"log"
 		"net/http"
 
-		"github.com/vardius/goserver"
+		"github.com/vardius/gorouter"
 	)
 
 	func Index(w http.ResponseWriter, r *http.Request) {
@@ -62,16 +62,16 @@ Basic example:
 	}
 
 	func Hello(w http.ResponseWriter, r *http.Request) {
-		params, _ := goserver.FromContext(r.Context())
+		params, _ := gorouter.FromContext(r.Context())
 		fmt.Fprintf(w, "hello, %s!\n", params.Value("name"))
 	}
 
 	func main() {
-		server := goserver.New()
-		server.GET("/", http.HandlerFunc(Index))
-		server.GET("/hello/{name}", http.HandlerFunc(Hello))
+		router := gorouter.New()
+		router.GET("/", http.HandlerFunc(Index))
+		router.GET("/hello/{name}", http.HandlerFunc(Hello))
 
-		log.Fatal(http.ListenAndServe(":8080", server))
+		log.Fatal(http.ListenAndServe(":8080", router))
 	}
 */
-package goserver
+package gorouter

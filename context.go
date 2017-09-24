@@ -5,9 +5,9 @@ import (
 	"net/http"
 )
 
-type key int
+type key struct{}
 
-const paramsKey key = 0
+const paramsKey key = key{}
 
 func newContext(req *http.Request, params Params) context.Context {
 	return context.WithValue(req.Context(), paramsKey, params)

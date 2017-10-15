@@ -1,11 +1,11 @@
 package gorouter
 
 import (
-	"bytes"
-	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 //GoRouter benchmark tests functions
@@ -49,10 +49,8 @@ func benchmarkGoRouterStaticParallel(t int, b *testing.B) {
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
-		var buf bytes.Buffer
 		w := httptest.NewRecorder()
 		for pb.Next() {
-			buf.Reset()
 			s.ServeHTTP(w, req)
 		}
 	})
@@ -101,10 +99,8 @@ func benchmarkGoRouterWildcardParallel(t int, b *testing.B) {
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
-		var buf bytes.Buffer
 		w := httptest.NewRecorder()
 		for pb.Next() {
-			buf.Reset()
 			s.ServeHTTP(w, req)
 		}
 	})
@@ -153,10 +149,8 @@ func benchmarkGoRouterRegexpParallel(t int, b *testing.B) {
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
-		var buf bytes.Buffer
 		w := httptest.NewRecorder()
 		for pb.Next() {
-			buf.Reset()
 			s.ServeHTTP(w, req)
 		}
 	})
@@ -203,10 +197,8 @@ func benchmarkHttpRouterStaticParallel(t int, b *testing.B) {
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
-		var buf bytes.Buffer
 		w := httptest.NewRecorder()
 		for pb.Next() {
-			buf.Reset()
 			s.ServeHTTP(w, req)
 		}
 	})
@@ -255,10 +247,8 @@ func benchmarkHttpRouterWildcardParallel(t int, b *testing.B) {
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
-		var buf bytes.Buffer
 		w := httptest.NewRecorder()
 		for pb.Next() {
-			buf.Reset()
 			s.ServeHTTP(w, req)
 		}
 	})

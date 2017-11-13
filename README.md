@@ -27,6 +27,7 @@ HOW TO USE
 1. [GoDoc](http://godoc.org/github.com/vardius/gorouter)
 2. [Documentation](https://github.com/vardius/gorouter/wiki)
 3. [Benchmarks](https://github.com/vardius/gorouter/wiki/Benchmarks)
+4. [Go Server/API boilerplate using best practices DDD CQRS ES](https://github.com/vardius/go-api-boilerplate)
 
 ## Basic example
 ```go

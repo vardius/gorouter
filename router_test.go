@@ -765,46 +765,46 @@ func TestChainCalls(t *testing.T) {
 	}
 }
 
-func TestMountSubRouter(t *testing.T) {
-	rGlobal1 := mockMiddlewareWithBody("rg1")
-	rGlobal2 := mockMiddlewareWithBody("rg2")
-	r1 := mockMiddlewareWithBody("r1")
-	r2 := mockMiddlewareWithBody("r2")
+// func TestMountSubRouter(t *testing.T) {
+// 	rGlobal1 := mockMiddlewareWithBody("rg1")
+// 	rGlobal2 := mockMiddlewareWithBody("rg2")
+// 	r1 := mockMiddlewareWithBody("r1")
+// 	r2 := mockMiddlewareWithBody("r2")
 
-	r := New(rGlobal1, rGlobal2).(*router)
+// 	r := New(rGlobal1, rGlobal2).(*router)
 
-	r.GET("/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("r"))
-	}))
+// 	r.GET("/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		w.Write([]byte("r"))
+// 	}))
 
-	r.USE(GET, "/{param}", r1)
-	r.USE(GET, "/{param}", r2)
+// 	r.USE(GET, "/{param}", r1)
+// 	r.USE(GET, "/{param}", r2)
 
-	sGlobal1 := mockMiddlewareWithBody("sg1")
-	sGlobal2 := mockMiddlewareWithBody("sg2")
-	s1 := mockMiddlewareWithBody("s1")
-	s2 := mockMiddlewareWithBody("s2")
+// 	sGlobal1 := mockMiddlewareWithBody("sg1")
+// 	sGlobal2 := mockMiddlewareWithBody("sg2")
+// 	s1 := mockMiddlewareWithBody("s1")
+// 	s2 := mockMiddlewareWithBody("s2")
 
-	s := New(sGlobal1, sGlobal2).(*router)
+// 	s := New(sGlobal1, sGlobal2).(*router)
 
-	s.GET("/y", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("s"))
-	}))
+// 	s.GET("/y", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		w.Write([]byte("s"))
+// 	}))
 
-	s.USE(GET, "/y", s1)
-	s.USE(GET, "/y", s2)
+// 	s.USE(GET, "/y", s1)
+// 	s.USE(GET, "/y", s2)
 
-	r.Mount("/{param}", s)
+// 	r.Mount("/{param}", s)
 
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, "/x/y", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	w := httptest.NewRecorder()
+// 	req, err := http.NewRequest(GET, "/x/y", nil)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	s.ServeHTTP(w, req)
+// 	s.ServeHTTP(w, req)
 
-	if w.Body.String() != "rg1rg2r1r2sg1sg2s1s2" {
-		t.Errorf("Router mount sub router middleware error %s", w.Body.String())
-	}
-}
+// 	if w.Body.String() != "rg1rg2r1r2sg1sg2s1s2" {
+// 		t.Errorf("Router mount sub router middleware error %s", w.Body.String())
+// 	}
+// }

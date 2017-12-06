@@ -3,10 +3,10 @@ package gorouter
 import "testing"
 
 func TestInsertNilNode(t *testing.T) {
-	t := newTree()
-	t.insert(nil)
+	tree := newTree()
+	tree.insert(nil)
 
-	if t.idsLen > 0 || len(t.regexps) > 0 || t.wildcard != nil {
+	if tree.idsLen > 0 || len(tree.regexps) > 0 || tree.wildcard != nil {
 		t.Error("Tree should not insert nil node")
 	}
 }
@@ -24,19 +24,19 @@ func TestTreeInsertWildcardNodePanic(t *testing.T) {
 	n2 := newRoot("")
 	n2.isWildcard = true
 
-	t := newTree()
-	t.insert(n1)
-	t.insert(n2)
+	tree := newTree()
+	tree.insert(n1)
+	tree.insert(n2)
 }
 
 func TestTreeGetRegexNodeById(t *testing.T) {
 	n := newRoot("")
 	n.setRegexp("r([a-z]+)go")
 
-	t := newTree()
-	t.insert(n)
+	tree := newTree()
+	tree.insert(n)
 
-	c := t.byID("rego")
+	c := tree.byID("rego")
 
 	if c == nil {
 		t.Error("Tree should match regex node by ID")
@@ -44,8 +44,8 @@ func TestTreeGetRegexNodeById(t *testing.T) {
 }
 
 func TestGetTreeNodeByEmptyPath(t *testing.T) {
-	t := newTree()
-	n := t.byPath("")
+	tree := newTree()
+	n := tree.byPath("")
 
 	if n != nil {
 		t.Error("Tree should return nil node for empty path")
@@ -67,7 +67,7 @@ func TestTreeMerge(t *testing.T) {
 	n3 := newRoot("")
 	t2.insert(n3)
 
-	if t.idsLen == 0 || len(t.regexps) == 0 || t.wildcard == nil {
+	if t1.idsLen == 0 || len(t1.regexps) == 0 || t1.wildcard == nil {
 		t.Error("Tree should merge sub tree correctly")
 	}
 }

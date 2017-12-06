@@ -45,7 +45,7 @@ func TestTreeGetRegexNodeById(t *testing.T) {
 
 func TestGetTreeNodeByEmptyPath(t *testing.T) {
 	tree := newTree()
-	n := tree.byPath("")
+	n, _, _ := tree.byPath("")
 
 	if n != nil {
 		t.Error("Tree should return nil node for empty path")

@@ -53,19 +53,19 @@ func TestGetTreeNodeByEmptyPath(t *testing.T) {
 }
 
 func TestTreeMerge(t *testing.T) {
-	t1 := newTree()
 	t2 := newTree()
-
 	n1 := newRoot("")
 	n1.isWildcard = true
-	t2.insert(n1)
-
 	n2 := newRoot("")
 	n2.setRegexp("r([a-z]+)go")
-	t2.insert(n2)
-
 	n3 := newRoot("")
+
+	t2.insert(n1)
+	t2.insert(n2)
 	t2.insert(n3)
+
+	t1 := newTree()
+	t1.merge(t2)
 
 	if t1.idsLen == 0 || len(t1.regexps) == 0 || t1.wildcard == nil {
 		t.Error("Tree should merge sub tree correctly")

@@ -540,7 +540,7 @@ func TestServeFiles(t *testing.T) {
 		}
 	}()
 
-	r2, err2 := http.NewRequest(GET, "/", nil)
+	r2, err2 := http.NewRequest(GET, "", nil)
 	if err2 != nil {
 		t.Fatal(err2)
 	}

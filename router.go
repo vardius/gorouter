@@ -110,9 +110,26 @@ func (r *router) Mount(p string, subRouter Router) {
 		panic("Unable to assert Router")
 	}
 
+	type recFunc func(recFunc, *node, middleware)
+	c := func(c recFunc, n *node, m middleware) {
+		if n.route != nil {
+			n.route.prependMiddleware(m)
+		}
+		for _, child := range n.children.statics {
+			c(c, child, m)
+		}
+		for _, child := range n.children.regexps {
+			c(c, child, m)
+		}
+		if n.children.wildcard != nil {
+			c(c, n.children.wildcard, m)
+		}
+	}
+
 	for _, srRoot := range sr.roots {
 		for _, root := range r.roots {
 			if srRoot.id == root.id {
+				c(c, srRoot, r.middleware)
 				root.children.merge(srRoot.children)
 				break
 			}
@@ -265,7 +282,7 @@ func (r *router) addRoute(method, path string, f http.Handler) {
 
 	paths := splitPath(path)
 	route := newRoute(f)
-	route.addMiddleware(r.middleware)
+	route.prependMiddleware(r.middleware)
 
 	n := root.addChild(paths)
 	n.setRoute(route)
@@ -275,7 +292,7 @@ func (r *router) addMiddleware(method, path string, fs ...MiddlewareFunc) {
 	type recFunc func(recFunc, *node, middleware)
 	c := func(c recFunc, n *node, m middleware) {
 		if n.route != nil {
-			n.route.addMiddleware(m)
+			n.route.appendMiddleware(m)
 		}
 		for _, child := range n.children.statics {
 			c(c, child, m)

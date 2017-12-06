@@ -540,12 +540,7 @@ func TestServeFiles(t *testing.T) {
 		}
 	}()
 
-	r2, err2 := http.NewRequest(GET, "", nil)
-	if err2 != nil {
-		t.Fatal(err2)
-	}
-
-	s.ServeHTTP(w, r2)
+	s.ServeFiles("", true)
 }
 
 func TestNilMiddleware(t *testing.T) {

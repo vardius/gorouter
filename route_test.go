@@ -16,7 +16,7 @@ func TestRouter(t *testing.T) {
 	m3 := mockMiddlewareWithBody("3")
 
 	r := newRoute(fn)
-	r.addMiddleware(newMiddleware(m1, m2, m3))
+	r.appendMiddleware(newMiddleware(m1, m2, m3))
 
 	h := r.chain()
 

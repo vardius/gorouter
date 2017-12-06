@@ -16,8 +16,12 @@ func (r *route) chain() http.Handler {
 	return nil
 }
 
-func (r *route) addMiddleware(m middleware) {
+func (r *route) appendMiddleware(m middleware) {
 	r.middleware = r.middleware.merge(m)
+}
+
+func (r *route) prependMiddleware(m middleware) {
+	r.middleware = m.merge(r.middleware)
 }
 
 func newRoute(h http.Handler) *route {

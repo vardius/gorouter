@@ -38,7 +38,7 @@ func TestTreeGetRegexNodeById(t *testing.T) {
 
 	c := tree.byID("rego")
 
-	if c == nil {
+	if c != n {
 		t.Error("Tree should match regex node by ID")
 	}
 }

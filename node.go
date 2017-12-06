@@ -36,6 +36,7 @@ func (n *node) setRegexp(exp string) {
 	if err == nil {
 		n.regexp = reg
 		n.isRegexp = true
+		n.isWildcard = true
 	}
 }
 

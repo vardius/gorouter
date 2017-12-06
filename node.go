@@ -35,6 +35,7 @@ func (n *node) setRegexp(exp string) {
 	reg, err := regexp.Compile(exp)
 	if err == nil {
 		n.regexp = reg
+		n.isRegexp = true
 	}
 }
 

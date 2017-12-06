@@ -19,6 +19,16 @@ func TestRegexNode(t *testing.T) {
 	equal(t, regexp, n.regexpToString())
 
 	if !n.regexp.MatchString("rzgo") {
-		t.Error("Regexp does not amtch string")
+		t.Error("Regexp does not match string")
+	}
+}
+
+func TestUnknownNodesChild(t *testing.T) {
+	n := newRoot("")
+
+	node, params := n.child([]string{"a", "b", "c"})
+
+	if node != nil || params != nil {
+		t.Error("Node should return nil values for unknown path")
 	}
 }

@@ -274,6 +274,72 @@ func TestHEAD(t *testing.T) {
 	}
 }
 
+func TestCONNECT(t *testing.T) {
+	s := New().(*router)
+
+	serverd := false
+	s.CONNECT("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		serverd = true
+	}))
+
+	var cn *node
+	for _, child := range s.roots {
+		if child.id == CONNECT {
+			cn = child
+			break
+		}
+	}
+
+	if cn == nil {
+		t.Error("Route not found")
+	}
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(CONNECT, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.ServeHTTP(w, req)
+
+	if serverd != true {
+		t.Error("Handler has not been serverd")
+	}
+}
+
+func TestTRACE(t *testing.T) {
+	s := New().(*router)
+
+	serverd := false
+	s.TRACE("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		serverd = true
+	}))
+
+	var cn *node
+	for _, child := range s.roots {
+		if child.id == TRACE {
+			cn = child
+			break
+		}
+	}
+
+	if cn == nil {
+		t.Error("Route not found")
+	}
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(TRACE, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.ServeHTTP(w, req)
+
+	if serverd != true {
+		t.Error("Handler has not been serverd")
+	}
+}
+
 func TestOPTIONS(t *testing.T) {
 	s := New().(*router)
 
@@ -467,6 +533,19 @@ func TestServeFiles(t *testing.T) {
 	if w.Code != http.StatusNotFound {
 		t.Error("File should not exist")
 	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Router should panic for empty path")
+		}
+	}()
+
+	r, err := http.NewRequest(GET, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.ServeHTTP(w, r)
 }
 
 func TestNilMiddleware(t *testing.T) {

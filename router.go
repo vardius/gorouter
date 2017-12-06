@@ -127,13 +127,24 @@ func (r *router) Mount(p string, subRouter Router) {
 	}
 
 	for _, srRoot := range sr.roots {
-		for _, root := range r.roots {
+		var root *node
+		for _, root = range r.roots {
 			if srRoot.id == root.id {
-				c(c, srRoot, r.middleware)
-				root.children.merge(srRoot.children)
 				break
 			}
+			root = nil
 		}
+
+		if root == nil {
+			root = newRoot(srRoot.id)
+			r.roots = append(r.roots, root)
+		}
+
+		paths := splitPath(p)
+		n := root.addChild(paths)
+
+		c(c, n, r.middleware)
+		root.children.merge(n.children)
 	}
 }
 

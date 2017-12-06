@@ -52,6 +52,18 @@ func (t *tree) insert(n *node) {
 	}
 }
 
+func (t *tree) merge(subTree *tree) {
+	for _, child := range subTree.statics {
+		t.insert(child)
+	}
+	for _, child := range subTree.regexps {
+		t.insert(child)
+	}
+	if subTree.wildcard != nil {
+		t.insert(subTree.wildcard)
+	}
+}
+
 func (t *tree) byID(id string) *node {
 	if id != "" {
 		if t.idsLen > 0 {

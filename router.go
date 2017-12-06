@@ -3,7 +3,6 @@ package gorouter
 import (
 	"net/http"
 	"os"
-	"strings"
 )
 
 // HTTP methods constants
@@ -19,70 +18,73 @@ const (
 	TRACE   = "TRACE"
 )
 
-//Router is a micro framwework, HTTP request router, multiplexer, mux
+// Router is a micro framwework, HTTP request router, multiplexer, mux
 type Router interface {
-	//Handle adds http.Handler as router handler
-	//under given method and patter
+	// Handle adds http.Handler as router handler
+	// under given method and patter
 	Handle(method, pattern string, handler http.Handler)
 
-	//HandleFunc adds http.HandlerFunc as router handler
-	//under given method and patter
+	// HandleFunc adds http.HandlerFunc as router handler
+	// under given method and patter
 	HandleFunc(method, pattern string, handler http.HandlerFunc)
 
-	//POST adds http.Handler as router handler
-	//under POST method and given patter
+	// Mount another router instance as a sub tree
+	Mount(pattern string, s Router)
+
+	// POST adds http.Handler as router handler
+	// under POST method and given patter
 	POST(pattern string, handler http.Handler)
 
-	//GET adds http.Handler as router handler
-	//under GET method and given patter
+	// GET adds http.Handler as router handler
+	// under GET method and given patter
 	GET(pattern string, handler http.Handler)
 
-	//PUT adds http.Handler as router handler
-	//under PUT method and given patter
+	// PUT adds http.Handler as router handler
+	// under PUT method and given patter
 	PUT(pattern string, handler http.Handler)
 
-	//DELETE adds http.Handler as router handler
-	//under DELETE method and given patter
+	// DELETE adds http.Handler as router handler
+	// under DELETE method and given patter
 	DELETE(pattern string, handler http.Handler)
 
-	//PATCH adds http.Handler as router handler
-	//under PATCH method and given patter
+	// PATCH adds http.Handler as router handler
+	// under PATCH method and given patter
 	PATCH(pattern string, handler http.Handler)
 
-	//OPTIONS adds http.Handler as router handler
-	//under OPTIONS method and given patter
+	// OPTIONS adds http.Handler as router handler
+	// under OPTIONS method and given patter
 	OPTIONS(pattern string, handler http.Handler)
 
-	//HEAD adds http.Handler as router handler
-	//under HEAD method and given patter
+	// HEAD adds http.Handler as router handler
+	// under HEAD method and given patter
 	HEAD(pattern string, handler http.Handler)
 
-	//CONNECT adds http.Handler as router handler
-	//under CONNECT method and given patter
+	// CONNECT adds http.Handler as router handler
+	// under CONNECT method and given patter
 	CONNECT(pattern string, handler http.Handler)
 
-	//TRACE adds http.Handler as router handler
-	//under TRACE method and given patter
+	// TRACE adds http.Handler as router handler
+	// under TRACE method and given patter
 	TRACE(pattern string, handler http.Handler)
 
-	//USE adds middleware functions ([]MiddlewareFunc)
-	//to whole router branch under given method and patter
+	// USE adds middleware functions ([]MiddlewareFunc)
+	// to whole router branch under given method and patter
 	USE(method, pattern string, fs ...MiddlewareFunc)
 
-	//ServeHTTP dispatches the request to the route handler
-	//whose pattern matches the request URL
+	// ServeHTTP dispatches the request to the route handler
+	// whose pattern matches the request URL
 	ServeHTTP(http.ResponseWriter, *http.Request)
 
-	//ServeFile replies to the request with the
-	//contents of the named file or directory.
+	// ServeFile replies to the request with the
+	// contents of the named file or directory.
 	ServeFiles(path string, strip bool)
 
-	//NotFound replies to the request with the
-	//404 Error code
+	// NotFound replies to the request with the
+	// 404 Error code
 	NotFound(http.Handler)
 
-	//NotFound replies to the request with the
-	//405 Error code
+	// NotFound replies to the request with the
+	// 405 Error code
 	NotAllowed(http.Handler)
 }
 
@@ -94,63 +96,79 @@ type router struct {
 	notAllowed http.Handler
 }
 
-func (s *router) Handle(m, p string, h http.Handler) {
-	s.addRoute(m, p, h)
+func (r *router) Handle(m, p string, h http.Handler) {
+	r.addRoute(m, p, h)
 }
 
-func (s *router) HandleFunc(m, p string, f http.HandlerFunc) {
-	s.addRoute(m, p, http.HandlerFunc(f))
+func (r *router) HandleFunc(m, p string, f http.HandlerFunc) {
+	r.addRoute(m, p, http.HandlerFunc(f))
 }
 
-func (s *router) POST(p string, f http.Handler) {
-	s.addRoute(POST, p, f)
+func (r *router) Mount(p string, subRouter Router) {
+	sr, ok := subRouter.(*router)
+	if !ok {
+		panic("Unable to assert Router")
+	}
+
+	for _, srRoot := range sr.roots {
+		for _, root := range r.roots {
+			if srRoot.id == root.id {
+				root.children.merge(srRoot.children)
+				break
+			}
+		}
+	}
 }
 
-func (s *router) GET(p string, f http.Handler) {
-	s.addRoute(GET, p, f)
+func (r *router) POST(p string, f http.Handler) {
+	r.addRoute(POST, p, f)
 }
 
-func (s *router) PUT(p string, f http.Handler) {
-	s.addRoute(PUT, p, f)
+func (r *router) GET(p string, f http.Handler) {
+	r.addRoute(GET, p, f)
 }
 
-func (s *router) DELETE(p string, f http.Handler) {
-	s.addRoute(DELETE, p, f)
+func (r *router) PUT(p string, f http.Handler) {
+	r.addRoute(PUT, p, f)
 }
 
-func (s *router) PATCH(p string, f http.Handler) {
-	s.addRoute(PATCH, p, f)
+func (r *router) DELETE(p string, f http.Handler) {
+	r.addRoute(DELETE, p, f)
 }
 
-func (s *router) OPTIONS(p string, f http.Handler) {
-	s.addRoute(OPTIONS, p, f)
+func (r *router) PATCH(p string, f http.Handler) {
+	r.addRoute(PATCH, p, f)
 }
 
-func (s *router) HEAD(p string, f http.Handler) {
-	s.addRoute(HEAD, p, f)
+func (r *router) OPTIONS(p string, f http.Handler) {
+	r.addRoute(OPTIONS, p, f)
 }
 
-func (s *router) CONNECT(p string, f http.Handler) {
-	s.addRoute(CONNECT, p, f)
+func (r *router) HEAD(p string, f http.Handler) {
+	r.addRoute(HEAD, p, f)
 }
 
-func (s *router) TRACE(p string, f http.Handler) {
-	s.addRoute(TRACE, p, f)
+func (r *router) CONNECT(p string, f http.Handler) {
+	r.addRoute(CONNECT, p, f)
 }
 
-func (s *router) USE(method, p string, fs ...MiddlewareFunc) {
-	s.addMiddleware(method, p, fs...)
+func (r *router) TRACE(p string, f http.Handler) {
+	r.addRoute(TRACE, p, f)
 }
 
-func (s *router) NotFound(notFound http.Handler) {
-	s.notFound = notFound
+func (r *router) USE(method, p string, fs ...MiddlewareFunc) {
+	r.addMiddleware(method, p, fs...)
 }
 
-func (s *router) NotAllowed(notAllowed http.Handler) {
-	s.notAllowed = notAllowed
+func (r *router) NotFound(notFound http.Handler) {
+	r.notFound = notFound
 }
 
-func (s *router) ServeFiles(path string, strip bool) {
+func (r *router) NotAllowed(notAllowed http.Handler) {
+	r.notAllowed = notAllowed
+}
+
+func (r *router) ServeFiles(path string, strip bool) {
 	if path == "" {
 		panic("goapi.ServeFiles: empty path!")
 	}
@@ -158,11 +176,11 @@ func (s *router) ServeFiles(path string, strip bool) {
 	if strip {
 		handler = http.StripPrefix("/"+path+"/", handler)
 	}
-	s.fileServer = handler
+	r.fileServer = handler
 }
 
-func (s *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	route, params := s.getRoute(req.Method, req.URL.Path)
+func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	route, params := r.getRoute(req.Method, req.URL.Path)
 	if route != nil {
 		if h := route.chain(); h != nil {
 			req = req.WithContext(newContext(req, params))
@@ -173,38 +191,38 @@ func (s *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	//Handle OPTIONS
 	if req.Method == OPTIONS {
-		if allow := s.allowed(req.Method, req.URL.Path); len(allow) > 0 {
+		if allow := r.allowed(req.Method, req.URL.Path); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			return
 		}
-	} else if req.Method == GET && s.fileServer != nil {
+	} else if req.Method == GET && r.fileServer != nil {
 		//Handle file serve
-		s.serveFiles(w, req)
+		r.serveFiles(w, req)
 		return
 	} else {
 		//Handle 405
-		if allow := s.allowed(req.Method, req.URL.Path); len(allow) > 0 {
+		if allow := r.allowed(req.Method, req.URL.Path); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
-			s.serveNotAllowed(w, req)
+			r.serveNotAllowed(w, req)
 			return
 		}
 	}
 
 	//Handle 404
-	s.serveNotFound(w, req)
+	r.serveNotFound(w, req)
 }
 
-func (s *router) serveNotFound(w http.ResponseWriter, req *http.Request) {
-	if s.notFound != nil {
-		s.notFound.ServeHTTP(w, req)
+func (r *router) serveNotFound(w http.ResponseWriter, req *http.Request) {
+	if r.notFound != nil {
+		r.notFound.ServeHTTP(w, req)
 	} else {
 		http.NotFound(w, req)
 	}
 }
 
-func (s *router) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
-	if s.notAllowed != nil {
-		s.notAllowed.ServeHTTP(w, req)
+func (r *router) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
+	if r.notAllowed != nil {
+		r.notAllowed.ServeHTTP(w, req)
 	} else {
 		http.Error(w,
 			http.StatusText(http.StatusMethodNotAllowed),
@@ -213,27 +231,27 @@ func (s *router) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (s *router) serveFiles(w http.ResponseWriter, req *http.Request) {
+func (r *router) serveFiles(w http.ResponseWriter, req *http.Request) {
 	fp := req.URL.Path
 	//Return a 404 if the file doesn't exist
 	info, err := os.Stat(fp)
 	if err != nil {
 		if os.IsNotExist(err) {
-			s.serveNotFound(w, req)
+			r.serveNotFound(w, req)
 			return
 		}
 	}
 	//Return a 404 if the request is for a directory
 	if info.IsDir() {
-		s.serveNotFound(w, req)
+		r.serveNotFound(w, req)
 		return
 	}
-	s.fileServer.ServeHTTP(w, req)
+	r.fileServer.ServeHTTP(w, req)
 }
 
-func (s *router) addRoute(method, path string, f http.Handler) {
+func (r *router) addRoute(method, path string, f http.Handler) {
 	var root *node
-	for _, root = range s.roots {
+	for _, root = range r.roots {
 		if method == root.id {
 			break
 		}
@@ -242,19 +260,18 @@ func (s *router) addRoute(method, path string, f http.Handler) {
 
 	if root == nil {
 		root = newRoot(method)
-		s.roots = append(s.roots, root)
+		r.roots = append(r.roots, root)
 	}
 
 	paths := splitPath(path)
-
-	r := newRoute(f)
-	r.addMiddleware(s.middleware)
+	route := newRoute(f)
+	route.addMiddleware(r.middleware)
 
 	n := root.addChild(paths)
-	n.setRoute(r)
+	n.setRoute(route)
 }
 
-func (s *router) addMiddleware(method, path string, fs ...MiddlewareFunc) {
+func (r *router) addMiddleware(method, path string, fs ...MiddlewareFunc) {
 	type recFunc func(recFunc, *node, middleware)
 	c := func(c recFunc, n *node, m middleware) {
 		if n.route != nil {
@@ -273,7 +290,7 @@ func (s *router) addMiddleware(method, path string, fs ...MiddlewareFunc) {
 
 	paths := splitPath(path)
 
-	for _, root := range s.roots {
+	for _, root := range r.roots {
 		if method == "" || method == root.id {
 			node, _ := root.child(paths)
 			c(c, node, fs)
@@ -281,8 +298,8 @@ func (s *router) addMiddleware(method, path string, fs ...MiddlewareFunc) {
 	}
 }
 
-func (s *router) getRoute(method, path string) (*route, Params) {
-	for _, root := range s.roots {
+func (r *router) getRoute(method, path string) (*route, Params) {
+	for _, root := range r.roots {
 		if root.id == method {
 			node, params := root.childByPath(path)
 			if node != nil {
@@ -294,52 +311,9 @@ func (s *router) getRoute(method, path string) (*route, Params) {
 	return nil, nil
 }
 
-func splitPath(path string) (parts []string) {
-	for {
-		if i := strings.IndexByte(path, '{'); i >= 0 {
-			if part := trimPath(path[:i]); part != "" {
-				parts = append(parts, part)
-			}
-			if j := strings.IndexByte(path, '}') + 1; j > 0 {
-				if part := trimPath(path[i:j]); part != "" {
-					parts = append(parts, part)
-				}
-				i = j
-			} else {
-				continue
-			}
-			path = path[i:]
-		} else {
-			break
-		}
-	}
-
-	if len(path) != 0 && path != "/" {
-		if part := trimPath(path); part != "" {
-			parts = append(parts, part)
-		}
-	}
-
-	return
-}
-
-func trimPath(path string) string {
-	pathLen := len(path)
-	if pathLen > 0 && path[0] == '/' {
-		path = path[1:]
-		pathLen--
-	}
-
-	if pathLen > 0 && path[pathLen-1] == '/' {
-		path = path[:pathLen-1]
-		pathLen--
-	}
-	return path
-}
-
-func (s *router) allowed(method, path string) (allow string) {
+func (r *router) allowed(method, path string) (allow string) {
 	if path == "*" {
-		for _, root := range s.roots {
+		for _, root := range r.roots {
 			if root.id == OPTIONS {
 				continue
 			}
@@ -350,7 +324,7 @@ func (s *router) allowed(method, path string) (allow string) {
 			}
 		}
 	} else {
-		for _, root := range s.roots {
+		for _, root := range r.roots {
 			if root.id == method || root.id == OPTIONS {
 				continue
 			}
@@ -371,7 +345,7 @@ func (s *router) allowed(method, path string) (allow string) {
 	return allow
 }
 
-//New creates new Router instance, return pointer
+// New creates new Router instance, return pointer
 func New(fs ...MiddlewareFunc) Router {
 	return &router{
 		roots:      make([]*node, 0),

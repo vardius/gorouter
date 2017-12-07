@@ -20,17 +20,6 @@ const (
 
 // Router is a micro framwework, HTTP request router, multiplexer, mux
 type Router interface {
-	// Handle adds http.Handler as router handler
-	// under given method and patter
-	Handle(method, pattern string, handler http.Handler)
-
-	// HandleFunc adds http.HandlerFunc as router handler
-	// under given method and patter
-	HandleFunc(method, pattern string, handler http.HandlerFunc)
-
-	// Mount another router instance as a sub tree
-	Mount(pattern string, s Router)
-
 	// POST adds http.Handler as router handler
 	// under POST method and given patter
 	POST(pattern string, handler http.Handler)
@@ -71,6 +60,17 @@ type Router interface {
 	// to whole router branch under given method and patter
 	USE(method, pattern string, fs ...MiddlewareFunc)
 
+	// Handle adds http.Handler as router handler
+	// under given method and patter
+	Handle(method, pattern string, handler http.Handler)
+
+	// HandleFunc adds http.HandlerFunc as router handler
+	// under given method and patter
+	HandleFunc(method, pattern string, handler http.HandlerFunc)
+
+	// Mount another router instance as a sub tree
+	Mount(pattern string, s Router)
+
 	// ServeHTTP dispatches the request to the route handler
 	// whose pattern matches the request URL
 	ServeHTTP(http.ResponseWriter, *http.Request)
@@ -89,11 +89,51 @@ type Router interface {
 }
 
 type router struct {
-	roots      []*node
+	routes     *tree
 	middleware middleware
 	fileServer http.Handler
 	notFound   http.Handler
 	notAllowed http.Handler
+}
+
+func (r *router) POST(p string, f http.Handler) {
+	r.Handle(POST, p, f)
+}
+
+func (r *router) GET(p string, f http.Handler) {
+	r.Handle(GET, p, f)
+}
+
+func (r *router) PUT(p string, f http.Handler) {
+	r.Handle(PUT, p, f)
+}
+
+func (r *router) DELETE(p string, f http.Handler) {
+	r.Handle(DELETE, p, f)
+}
+
+func (r *router) PATCH(p string, f http.Handler) {
+	r.Handle(PATCH, p, f)
+}
+
+func (r *router) OPTIONS(p string, f http.Handler) {
+	r.Handle(OPTIONS, p, f)
+}
+
+func (r *router) HEAD(p string, f http.Handler) {
+	r.Handle(HEAD, p, f)
+}
+
+func (r *router) CONNECT(p string, f http.Handler) {
+	r.Handle(CONNECT, p, f)
+}
+
+func (r *router) TRACE(p string, f http.Handler) {
+	r.Handle(TRACE, p, f)
+}
+
+func (r *router) USE(method, p string, fs ...MiddlewareFunc) {
+	r.addMiddleware(method, p, fs...)
 }
 
 func (r *router) Handle(m, p string, h http.Handler) {
@@ -110,82 +150,7 @@ func (r *router) Mount(p string, subRouter Router) {
 		panic("Unable to assert Router")
 	}
 
-	type recFunc func(recFunc, *node, middleware)
-	c := func(c recFunc, n *node, m middleware) {
-		if n.route != nil {
-			n.route.prependMiddleware(m)
-		}
-		for _, child := range n.children.statics {
-			c(c, child, m)
-		}
-		for _, child := range n.children.regexps {
-			c(c, child, m)
-		}
-		if n.children.wildcard != nil {
-			c(c, n.children.wildcard, m)
-		}
-	}
-
-	for _, srRoot := range sr.roots {
-		var root *node
-		for _, root = range r.roots {
-			if srRoot.id == root.id {
-				break
-			}
-			root = nil
-		}
-
-		if root == nil {
-			root = newRoot(srRoot.id)
-			r.roots = append(r.roots, root)
-		}
-
-		paths := splitPath(p)
-		n := root.addChild(paths)
-
-		c(c, n, r.middleware)
-		root.children.merge(n.children)
-	}
-}
-
-func (r *router) POST(p string, f http.Handler) {
-	r.addRoute(POST, p, f)
-}
-
-func (r *router) GET(p string, f http.Handler) {
-	r.addRoute(GET, p, f)
-}
-
-func (r *router) PUT(p string, f http.Handler) {
-	r.addRoute(PUT, p, f)
-}
-
-func (r *router) DELETE(p string, f http.Handler) {
-	r.addRoute(DELETE, p, f)
-}
-
-func (r *router) PATCH(p string, f http.Handler) {
-	r.addRoute(PATCH, p, f)
-}
-
-func (r *router) OPTIONS(p string, f http.Handler) {
-	r.addRoute(OPTIONS, p, f)
-}
-
-func (r *router) HEAD(p string, f http.Handler) {
-	r.addRoute(HEAD, p, f)
-}
-
-func (r *router) CONNECT(p string, f http.Handler) {
-	r.addRoute(CONNECT, p, f)
-}
-
-func (r *router) TRACE(p string, f http.Handler) {
-	r.addRoute(TRACE, p, f)
-}
-
-func (r *router) USE(method, p string, fs ...MiddlewareFunc) {
-	r.addMiddleware(method, p, fs...)
+	r.mergeRouter(p, sr)
 }
 
 func (r *router) NotFound(notFound http.Handler) {
@@ -208,27 +173,29 @@ func (r *router) ServeFiles(path string, strip bool) {
 }
 
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	route, params := r.getRoute(req.Method, req.URL.Path)
-	if route != nil {
-		if h := route.chain(); h != nil {
+	root := r.routes.byID(req.Method)
+	node, params := root.childByPath(req.URL.Path)
+
+	if node != nil && node.route != nil {
+		if h := node.route.chain(); h != nil {
 			req = req.WithContext(newContext(req, params))
 			h.ServeHTTP(w, req)
 			return
 		}
 	}
 
-	//Handle OPTIONS
+	// Handle OPTIONS
 	if req.Method == OPTIONS {
 		if allow := r.allowed(req.Method, req.URL.Path); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			return
 		}
 	} else if req.Method == GET && r.fileServer != nil {
-		//Handle file serve
+		// Handle file serve
 		r.serveFiles(w, req)
 		return
 	} else {
-		//Handle 405
+		// Handle 405
 		if allow := r.allowed(req.Method, req.URL.Path); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			r.serveNotAllowed(w, req)
@@ -236,7 +203,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	//Handle 404
+	// Handle 404
 	r.serveNotFound(w, req)
 }
 
@@ -261,7 +228,7 @@ func (r *router) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
 
 func (r *router) serveFiles(w http.ResponseWriter, req *http.Request) {
 	fp := req.URL.Path
-	//Return a 404 if the file doesn't exist
+	// Return a 404 if the file doesn't exist
 	info, err := os.Stat(fp)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -269,7 +236,7 @@ func (r *router) serveFiles(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
-	//Return a 404 if the request is for a directory
+	// Return a 404 if the request is for a directory
 	if info.IsDir() {
 		r.serveNotFound(w, req)
 		return
@@ -278,17 +245,10 @@ func (r *router) serveFiles(w http.ResponseWriter, req *http.Request) {
 }
 
 func (r *router) addRoute(method, path string, f http.Handler) {
-	var root *node
-	for _, root = range r.roots {
-		if method == root.id {
-			break
-		}
-		root = nil
-	}
-
+	root := r.routes.byID(method)
 	if root == nil {
 		root = newRoot(method)
-		r.roots = append(r.roots, root)
+		r.routes.insert(root)
 	}
 
 	paths := splitPath(path)
@@ -318,7 +278,8 @@ func (r *router) addMiddleware(method, path string, fs ...MiddlewareFunc) {
 
 	paths := splitPath(path)
 
-	for _, root := range r.roots {
+	// routes tree roots should be http method nodes only
+	for _, root := range r.routes.statics {
 		if method == "" || method == root.id {
 			node, _ := root.child(paths)
 			c(c, node, fs)
@@ -326,22 +287,47 @@ func (r *router) addMiddleware(method, path string, fs ...MiddlewareFunc) {
 	}
 }
 
-func (r *router) getRoute(method, path string) (*route, Params) {
-	for _, root := range r.roots {
-		if root.id == method {
-			node, params := root.childByPath(path)
-			if node != nil {
-				return node.route, params
-			}
-			break
+func (r *router) mergeRouter(path string, sr *router) {
+	type recFunc func(recFunc, *node, uint8, middleware)
+	c := func(c recFunc, n *node, rp uint8, m middleware) {
+		n.params += rp
+		if n.route != nil {
+			n.route.prependMiddleware(m)
+		}
+		for _, child := range n.children.statics {
+			c(c, child, rp, m)
+		}
+		for _, child := range n.children.regexps {
+			c(c, child, rp, m)
+		}
+		if n.children.wildcard != nil {
+			c(c, n.children.wildcard, rp, m)
 		}
 	}
-	return nil, nil
+
+	// routes tree roots should be http method nodes only
+	for _, root := range sr.routes.statics {
+		// create new root nodes if we do not have them
+		newRootNode := r.routes.byID(root.id)
+		if newRootNode == nil {
+			newRootNode = newRoot(root.id)
+			r.routes.insert(newRootNode)
+		}
+
+		paths := splitPath(path)
+		n := newRootNode.addChild(paths)
+		n.setRoute(root.route)
+		n.setChildren(root.children)
+
+		// prepend global middleware to sub router and increase params if needed
+		c(c, n, n.params, r.middleware)
+	}
 }
 
 func (r *router) allowed(method, path string) (allow string) {
 	if path == "*" {
-		for _, root := range r.roots {
+		// routes tree roots should be http method nodes only
+		for _, root := range r.routes.statics {
 			if root.id == OPTIONS {
 				continue
 			}
@@ -352,7 +338,8 @@ func (r *router) allowed(method, path string) (allow string) {
 			}
 		}
 	} else {
-		for _, root := range r.roots {
+		// routes tree roots should be http method nodes only
+		for _, root := range r.routes.statics {
 			if root.id == method || root.id == OPTIONS {
 				continue
 			}
@@ -376,7 +363,7 @@ func (r *router) allowed(method, path string) (allow string) {
 // New creates new Router instance, return pointer
 func New(fs ...MiddlewareFunc) Router {
 	return &router{
-		roots:      make([]*node, 0),
+		routes:     newTree(),
 		middleware: newMiddleware(fs...),
 	}
 }

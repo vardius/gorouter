@@ -18,14 +18,7 @@ func TestHandle(t *testing.T) {
 		serverd = true
 	}))
 
-	var cn *node
-	for _, child := range s.roots {
-		if child.id == POST {
-			cn = child
-			break
-		}
-	}
-
+	cn := s.routes.byID(POST)
 	if cn == nil {
 		t.Error("Route not found")
 	}
@@ -51,14 +44,7 @@ func TestHandleFunc(t *testing.T) {
 		serverd = true
 	}))
 
-	var cn *node
-	for _, child := range s.roots {
-		if child.id == POST {
-			cn = child
-			break
-		}
-	}
-
+	cn := s.routes.byID(POST)
 	if cn == nil {
 		t.Error("Route not found")
 	}
@@ -84,14 +70,7 @@ func TestPOST(t *testing.T) {
 		serverd = true
 	}))
 
-	var cn *node
-	for _, child := range s.roots {
-		if child.id == POST {
-			cn = child
-			break
-		}
-	}
-
+	cn := s.routes.byID(POST)
 	if cn == nil {
 		t.Error("Route not found")
 	}
@@ -117,14 +96,7 @@ func TestGET(t *testing.T) {
 		serverd = true
 	}))
 
-	var cn *node
-	for _, child := range s.roots {
-		if child.id == GET {
-			cn = child
-			break
-		}
-	}
-
+	cn := s.routes.byID(GET)
 	if cn == nil {
 		t.Error("Route not found")
 	}
@@ -150,14 +122,7 @@ func TestPUT(t *testing.T) {
 		serverd = true
 	}))
 
-	var cn *node
-	for _, child := range s.roots {
-		if child.id == PUT {
-			cn = child
-			break
-		}
-	}
-
+	cn := s.routes.byID(PUT)
 	if cn == nil {
 		t.Error("Route not found")
 	}
@@ -183,14 +148,7 @@ func TestDELETE(t *testing.T) {
 		serverd = true
 	}))
 
-	var cn *node
-	for _, child := range s.roots {
-		if child.id == DELETE {
-			cn = child
-			break
-		}
-	}
-
+	cn := s.routes.byID(DELETE)
 	if cn == nil {
 		t.Error("Route not found")
 	}
@@ -216,14 +174,7 @@ func TestPATCH(t *testing.T) {
 		serverd = true
 	}))
 
-	var cn *node
-	for _, child := range s.roots {
-		if child.id == PATCH {
-			cn = child
-			break
-		}
-	}
-
+	cn := s.routes.byID(PATCH)
 	if cn == nil {
 		t.Error("Route not found")
 	}
@@ -249,14 +200,7 @@ func TestHEAD(t *testing.T) {
 		serverd = true
 	}))
 
-	var cn *node
-	for _, child := range s.roots {
-		if child.id == HEAD {
-			cn = child
-			break
-		}
-	}
-
+	cn := s.routes.byID(HEAD)
 	if cn == nil {
 		t.Error("Route not found")
 	}
@@ -282,14 +226,7 @@ func TestCONNECT(t *testing.T) {
 		serverd = true
 	}))
 
-	var cn *node
-	for _, child := range s.roots {
-		if child.id == CONNECT {
-			cn = child
-			break
-		}
-	}
-
+	cn := s.routes.byID(CONNECT)
 	if cn == nil {
 		t.Error("Route not found")
 	}
@@ -315,14 +252,7 @@ func TestTRACE(t *testing.T) {
 		serverd = true
 	}))
 
-	var cn *node
-	for _, child := range s.roots {
-		if child.id == TRACE {
-			cn = child
-			break
-		}
-	}
-
+	cn := s.routes.byID(TRACE)
 	if cn == nil {
 		t.Error("Route not found")
 	}
@@ -345,14 +275,7 @@ func TestOPTIONS(t *testing.T) {
 
 	s.OPTIONS("/", http.HandlerFunc(mockHandler))
 
-	var cn *node
-	for _, child := range s.roots {
-		if child.id == OPTIONS {
-			cn = child
-			break
-		}
-	}
-
+	cn := s.routes.byID(OPTIONS)
 	if cn == nil {
 		t.Error("Route not found")
 	}

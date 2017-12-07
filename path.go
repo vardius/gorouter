@@ -42,5 +42,6 @@ func trimPath(path string) string {
 		path = path[:pathLen-1]
 		pathLen--
 	}
+
 	return path
 }

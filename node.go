@@ -44,6 +44,10 @@ func (n *node) setRoute(r *route) {
 	n.route = r
 }
 
+func (n *node) setChildren(children *tree) {
+	n.children = children
+}
+
 func (n *node) addChild(ids []string) *node {
 	if len(ids) > 0 && ids[0] != "" {
 		node := n.children.byID(ids[0])

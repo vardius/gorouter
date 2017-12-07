@@ -174,13 +174,14 @@ func (r *router) ServeFiles(path string, strip bool) {
 
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	root := r.routes.byID(req.Method)
-	node, params := root.childByPath(req.URL.Path)
-
-	if node != nil && node.route != nil {
-		if h := node.route.chain(); h != nil {
-			req = req.WithContext(newContext(req, params))
-			h.ServeHTTP(w, req)
-			return
+	if root != nil {
+		node, params := root.childByPath(req.URL.Path)
+		if node != nil && node.route != nil {
+			if h := node.route.chain(); h != nil {
+				req = req.WithContext(newContext(req, params))
+				h.ServeHTTP(w, req)
+				return
+			}
 		}
 	}
 

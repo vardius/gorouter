@@ -1,7 +1,6 @@
 package gorouter
 
 import (
-	"encoding/json"
 	"regexp"
 	"strings"
 )
@@ -15,26 +14,6 @@ type node struct {
 	params     uint8
 	isWildcard bool
 	isRegexp   bool
-}
-
-type Nodetest struct {
-	Id         string         `json:"id"`
-	Regexp     *regexp.Regexp `json:"regexp"`
-	Children   *tree          `json:"children"`
-	Params     uint8          `json:"params"`
-	IsWildcard bool           `json:"isWildcard"`
-	IsRegexp   bool           `json:"isRegexp"`
-}
-
-func (n *node) MarshalJSON() ([]byte, error) {
-	return json.Marshal(Nodetest{
-		n.id,
-		n.regexp,
-		n.children,
-		n.params,
-		n.isWildcard,
-		n.isRegexp,
-	})
 }
 
 func (n *node) isRoot() bool {

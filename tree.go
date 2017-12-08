@@ -1,7 +1,6 @@
 package gorouter
 
 import (
-	"encoding/json"
 	"strings"
 )
 
@@ -11,24 +10,6 @@ type tree struct {
 	statics  map[int]*node
 	regexps  []*node
 	wildcard *node
-}
-
-type Treetest struct {
-	IdsLen   int           `json:"idsLen"`
-	Ids      []string      `json:"ids"`
-	Statics  map[int]*node `json:"statics"`
-	Regexps  []*node       `json:"regexps"`
-	Wildcard *node         `json:"wildcard"`
-}
-
-func (t *tree) MarshalJSON() ([]byte, error) {
-	return json.Marshal(Treetest{
-		t.idsLen,
-		t.ids,
-		t.statics,
-		t.regexps,
-		t.wildcard,
-	})
 }
 
 func (t *tree) insert(n *node) {

@@ -320,8 +320,11 @@ func (r *router) mergeRouter(path string, sr *router) {
 		n.setRoute(root.route)
 		n.setChildren(root.children)
 
+		rp := n.params
+		n.params = 0
+
 		// prepend global middleware to sub router and increase params if needed
-		c(c, n, n.params, r.middleware)
+		c(c, n, rp, r.middleware)
 	}
 }
 

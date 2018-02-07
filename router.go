@@ -283,7 +283,9 @@ func (r *router) addMiddleware(method, path string, fs ...MiddlewareFunc) {
 	for _, root := range r.routes.statics {
 		if method == "" || method == root.id {
 			node, _ := root.child(paths)
-			c(c, node, fs)
+			if node != nil {
+				c(c, node, fs)
+			}
 		}
 	}
 }

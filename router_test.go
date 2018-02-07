@@ -14,7 +14,7 @@ func TestHandle(t *testing.T) {
 	s := New().(*router)
 
 	serverd := false
-	s.Handle(POST, "/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+	s.Handle(POST, "/x/y", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		serverd = true
 	}))
 
@@ -24,7 +24,7 @@ func TestHandle(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(POST, "/", nil)
+	req, err := http.NewRequest(POST, "/x/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func TestHandleFunc(t *testing.T) {
 	s := New().(*router)
 
 	serverd := false
-	s.HandleFunc(POST, "/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+	s.HandleFunc(POST, "/x/y", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		serverd = true
 	}))
 
@@ -50,7 +50,7 @@ func TestHandleFunc(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(POST, "/", nil)
+	req, err := http.NewRequest(POST, "/x/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func TestPOST(t *testing.T) {
 	s := New().(*router)
 
 	serverd := false
-	s.POST("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+	s.POST("/x/y", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		serverd = true
 	}))
 
@@ -76,7 +76,7 @@ func TestPOST(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(POST, "/", nil)
+	req, err := http.NewRequest(POST, "/x/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -299,10 +299,10 @@ func TestOPTIONS(t *testing.T) {
 func TestNotFound(t *testing.T) {
 	s := New().(*router)
 
-	s.GET("/x", http.HandlerFunc(mockHandler))
+	s.GET("/x/y", http.HandlerFunc(mockHandler))
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(POST, "/y", nil)
+	req, err := http.NewRequest(POST, "/y/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -333,10 +333,10 @@ func TestNotFound(t *testing.T) {
 func TestNotAllowed(t *testing.T) {
 	s := New().(*router)
 
-	s.GET("/x", http.HandlerFunc(mockHandler))
+	s.GET("/x/y", http.HandlerFunc(mockHandler))
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(POST, "/x", nil)
+	req, err := http.NewRequest(POST, "/x/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -380,7 +380,7 @@ func TestParam(t *testing.T) {
 	s := New().(*router)
 
 	serverd := false
-	s.GET("/{param}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+	s.GET("/x/{param}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := FromContext(r.Context())
@@ -394,7 +394,7 @@ func TestParam(t *testing.T) {
 	}))
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, "/x", nil)
+	req, err := http.NewRequest(GET, "/x/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -410,7 +410,7 @@ func TestRegexpParam(t *testing.T) {
 	s := New().(*router)
 
 	serverd := false
-	s.GET("/{param:r([a-z]+)go}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+	s.GET("/x/{param:r([a-z]+)go}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := FromContext(r.Context())
@@ -424,7 +424,7 @@ func TestRegexpParam(t *testing.T) {
 	}))
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, "/rxgo", nil)
+	req, err := http.NewRequest(GET, "/x/rxgo", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -469,12 +469,12 @@ func TestServeFiles(t *testing.T) {
 func TestNilMiddleware(t *testing.T) {
 	s := New().(*router)
 
-	s.GET("/{param}", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	s.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte("test"))
 	}))
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, "/x", nil)
+	req, err := http.NewRequest(GET, "/x/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -504,12 +504,12 @@ func TestPanicMiddleware(t *testing.T) {
 
 	s := New(panicMiddleware).(*router)
 
-	s.GET("/{param}", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+	s.GET("/x/{param}", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		panic("test panic recover")
 	}))
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, "/x", nil)
+	req, err := http.NewRequest(GET, "/x/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -524,7 +524,7 @@ func TestPanicMiddleware(t *testing.T) {
 func TestNodeApplyMiddleware(t *testing.T) {
 	s := New().(*router)
 
-	s.GET("/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	s.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		params, ok := FromContext(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
@@ -533,17 +533,17 @@ func TestNodeApplyMiddleware(t *testing.T) {
 		w.Write([]byte(params.Value("param")))
 	}))
 
-	s.USE(GET, "/{param}", mockMiddleware)
+	s.USE(GET, "/x/{param}", mockMiddleware)
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, "/x", nil)
+	req, err := http.NewRequest(GET, "/x/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	s.ServeHTTP(w, req)
 
-	if w.Body.String() != "middlewarex" {
+	if w.Body.String() != "middlewarey" {
 		t.Errorf("Use global middleware error %s", w.Body.String())
 	}
 }

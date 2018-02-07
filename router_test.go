@@ -388,7 +388,7 @@ func TestParam(t *testing.T) {
 			t.Fatal("Error while reading param")
 		}
 
-		if params.Value("param") != "x" {
+		if params.Value("param") != "y" {
 			t.Errorf("Wrong params value. Expected 'x', actual '%s'", params.Value("param"))
 		}
 	}))

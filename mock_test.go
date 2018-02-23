@@ -2,9 +2,22 @@ package gorouter
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 )
+
+func mockServeHTTP(h http.Handler, method, path string) error {
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(method, path, nil)
+	if err != nil {
+		return err
+	}
+
+	h.ServeHTTP(w, req)
+
+	return nil
+}
 
 func mockHandler(_ http.ResponseWriter, _ *http.Request) {}
 
@@ -62,4 +75,28 @@ func areEqual(expected, actual interface{}) bool {
 func isNil(value interface{}) bool {
 	defer func() { recover() }()
 	return value == nil || reflect.ValueOf(value).IsNil()
+}
+
+func checkIfHasRootRoute(t *testing.T, router *router, method string) {
+	if rootRoute := router.routes.byID(method); rootRoute == nil {
+		t.Error("Route not found")
+	}
+}
+
+func testBasicMethod(t *testing.T, router *router, h func(pattern string, handler http.Handler), method string) {
+	serverd := false
+	h("/x/y", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		serverd = true
+	}))
+
+	checkIfHasRootRoute(t, router, method)
+
+	err := mockServeHTTP(router, method, "/x/y")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if serverd != true {
+		t.Error("Handler has not been serverd")
+	}
 }

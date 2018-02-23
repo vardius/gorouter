@@ -11,25 +11,21 @@ func TestInterface(t *testing.T) {
 }
 
 func TestHandle(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
+
+	router := New().(*router)
 
 	serverd := false
-	s.Handle(POST, "/x/y", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+	router.Handle(POST, "/x/y", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		serverd = true
 	}))
 
-	cn := s.routes.byID(POST)
-	if cn == nil {
-		t.Error("Route not found")
-	}
+	checkIfHasRootRoute(t, router, POST)
 
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(POST, "/x/y", nil)
+	err := mockServeHTTP(router, POST, "/x/y")
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	s.ServeHTTP(w, req)
 
 	if serverd != true {
 		t.Error("Handler has not been serverd")
@@ -37,25 +33,21 @@ func TestHandle(t *testing.T) {
 }
 
 func TestHandleFunc(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
+
+	router := New().(*router)
 
 	serverd := false
-	s.HandleFunc(POST, "/x/y", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+	router.HandleFunc(POST, "/x/y", func(_ http.ResponseWriter, _ *http.Request) {
 		serverd = true
-	}))
+	})
 
-	cn := s.routes.byID(POST)
-	if cn == nil {
-		t.Error("Route not found")
-	}
+	checkIfHasRootRoute(t, router, POST)
 
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(POST, "/x/y", nil)
+	err := mockServeHTTP(router, POST, "/x/y")
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	s.ServeHTTP(w, req)
 
 	if serverd != true {
 		t.Error("Handler has not been serverd")
@@ -63,243 +55,74 @@ func TestHandleFunc(t *testing.T) {
 }
 
 func TestPOST(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
 
-	serverd := false
-	s.POST("/x/y", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		serverd = true
-	}))
-
-	cn := s.routes.byID(POST)
-	if cn == nil {
-		t.Error("Route not found")
-	}
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(POST, "/x/y", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	s.ServeHTTP(w, req)
-
-	if serverd != true {
-		t.Error("Handler has not been serverd")
-	}
+	router := New().(*router)
+	testBasicMethod(t, router, router.POST, POST)
 }
 
 func TestGET(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
 
-	serverd := false
-	s.GET("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		serverd = true
-	}))
-
-	cn := s.routes.byID(GET)
-	if cn == nil {
-		t.Error("Route not found")
-	}
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	s.ServeHTTP(w, req)
-
-	if serverd != true {
-		t.Error("Handler has not been serverd")
-	}
+	router := New().(*router)
+	testBasicMethod(t, router, router.GET, GET)
 }
 
 func TestPUT(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
 
-	serverd := false
-	s.PUT("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		serverd = true
-	}))
-
-	cn := s.routes.byID(PUT)
-	if cn == nil {
-		t.Error("Route not found")
-	}
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(PUT, "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	s.ServeHTTP(w, req)
-
-	if serverd != true {
-		t.Error("Handler has not been serverd")
-	}
+	router := New().(*router)
+	testBasicMethod(t, router, router.PUT, PUT)
 }
 
 func TestDELETE(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
 
-	serverd := false
-	s.DELETE("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		serverd = true
-	}))
-
-	cn := s.routes.byID(DELETE)
-	if cn == nil {
-		t.Error("Route not found")
-	}
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(DELETE, "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	s.ServeHTTP(w, req)
-
-	if serverd != true {
-		t.Error("Handler has not been serverd")
-	}
+	router := New().(*router)
+	testBasicMethod(t, router, router.DELETE, DELETE)
 }
 
 func TestPATCH(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
 
-	serverd := false
-	s.PATCH("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		serverd = true
-	}))
-
-	cn := s.routes.byID(PATCH)
-	if cn == nil {
-		t.Error("Route not found")
-	}
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(PATCH, "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	s.ServeHTTP(w, req)
-
-	if serverd != true {
-		t.Error("Handler has not been serverd")
-	}
+	router := New().(*router)
+	testBasicMethod(t, router, router.PATCH, PATCH)
 }
 
 func TestHEAD(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
 
-	serverd := false
-	s.HEAD("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		serverd = true
-	}))
-
-	cn := s.routes.byID(HEAD)
-	if cn == nil {
-		t.Error("Route not found")
-	}
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(HEAD, "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	s.ServeHTTP(w, req)
-
-	if serverd != true {
-		t.Error("Handler has not been serverd")
-	}
+	router := New().(*router)
+	testBasicMethod(t, router, router.HEAD, HEAD)
 }
 
 func TestCONNECT(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
 
-	serverd := false
-	s.CONNECT("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		serverd = true
-	}))
-
-	cn := s.routes.byID(CONNECT)
-	if cn == nil {
-		t.Error("Route not found")
-	}
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(CONNECT, "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	s.ServeHTTP(w, req)
-
-	if serverd != true {
-		t.Error("Handler has not been serverd")
-	}
+	router := New().(*router)
+	testBasicMethod(t, router, router.CONNECT, CONNECT)
 }
 
 func TestTRACE(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
 
-	serverd := false
-	s.TRACE("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		serverd = true
-	}))
-
-	cn := s.routes.byID(TRACE)
-	if cn == nil {
-		t.Error("Route not found")
-	}
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(TRACE, "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	s.ServeHTTP(w, req)
-
-	if serverd != true {
-		t.Error("Handler has not been serverd")
-	}
+	router := New().(*router)
+	testBasicMethod(t, router, router.TRACE, TRACE)
 }
 
 func TestOPTIONS(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
 
-	s.OPTIONS("/", http.HandlerFunc(mockHandler))
-
-	cn := s.routes.byID(OPTIONS)
-	if cn == nil {
-		t.Error("Route not found")
-	}
-
-	s.GET("/x", http.HandlerFunc(mockHandler))
-	s.POST("/x", http.HandlerFunc(mockHandler))
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(OPTIONS, "/x", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	s.ServeHTTP(w, req)
-
-	if w.Header().Get("Allow") == "" {
-		t.Error("Allow header should not be empty")
-	}
+	router := New().(*router)
+	testBasicMethod(t, router, router.OPTIONS, OPTIONS)
 }
 
 func TestNotFound(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
 
-	s.GET("/x/y", http.HandlerFunc(mockHandler))
+	router := New().(*router)
+
+	router.GET("/x/y", http.HandlerFunc(mockHandler))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(POST, "/y/y", nil)
@@ -307,23 +130,23 @@ func TestNotFound(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s.ServeHTTP(w, req)
+	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusNotFound {
 		t.Errorf("NotFound error, actual code: %d", w.Code)
 	}
 
-	s.NotFound(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	router.NotFound(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte("test"))
 	}))
 
-	if s.notFound == nil {
+	if router.notFound == nil {
 		t.Error("NotFound handler error")
 	}
 
 	w = httptest.NewRecorder()
 
-	s.ServeHTTP(w, req)
+	router.ServeHTTP(w, req)
 
 	if w.Body.String() != "test" {
 		t.Error("Not found handler wasn't invoked")
@@ -331,9 +154,11 @@ func TestNotFound(t *testing.T) {
 }
 
 func TestNotAllowed(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
 
-	s.GET("/x/y", http.HandlerFunc(mockHandler))
+	router := New().(*router)
+
+	router.GET("/x/y", http.HandlerFunc(mockHandler))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(POST, "/x/y", nil)
@@ -341,23 +166,23 @@ func TestNotAllowed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s.ServeHTTP(w, req)
+	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusMethodNotAllowed {
 		t.Error("NotAllowed doesnt work")
 	}
 
-	s.NotAllowed(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	router.NotAllowed(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte("test"))
 	}))
 
-	if s.notAllowed == nil {
+	if router.notAllowed == nil {
 		t.Error("NotAllowed handler error")
 	}
 
 	w = httptest.NewRecorder()
 
-	s.ServeHTTP(w, req)
+	router.ServeHTTP(w, req)
 
 	if w.Body.String() != "test" {
 		t.Error("Not found handler wasn't invoked")
@@ -369,7 +194,7 @@ func TestNotAllowed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s.ServeHTTP(w, req)
+	router.ServeHTTP(w, req)
 
 	if w.Body.String() != "test" {
 		t.Error("Not found handler wasn't invoked")
@@ -377,10 +202,12 @@ func TestNotAllowed(t *testing.T) {
 }
 
 func TestParam(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
+
+	router := New().(*router)
 
 	serverd := false
-	s.GET("/x/{param}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+	router.GET("/x/{param}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := FromContext(r.Context())
@@ -393,13 +220,10 @@ func TestParam(t *testing.T) {
 		}
 	}))
 
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, "/x/y", nil)
+	err := mockServeHTTP(router, GET, "/x/y")
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	s.ServeHTTP(w, req)
 
 	if serverd != true {
 		t.Error("Handler has not been serverd")
@@ -407,10 +231,12 @@ func TestParam(t *testing.T) {
 }
 
 func TestRegexpParam(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
+
+	router := New().(*router)
 
 	serverd := false
-	s.GET("/x/{param:r([a-z]+)go}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+	router.GET("/x/{param:r([a-z]+)go}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := FromContext(r.Context())
@@ -423,13 +249,10 @@ func TestRegexpParam(t *testing.T) {
 		}
 	}))
 
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, "/x/rxgo", nil)
+	err := mockServeHTTP(router, GET, "/x/rxgo")
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	s.ServeHTTP(w, req)
 
 	if serverd != true {
 		t.Error("Handler has not been serverd")
@@ -437,11 +260,13 @@ func TestRegexpParam(t *testing.T) {
 }
 
 func TestServeFiles(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
 
-	s.ServeFiles("static", true)
+	router := New().(*router)
 
-	if s.fileServer == nil {
+	router.ServeFiles("static", true)
+
+	if router.fileServer == nil {
 		t.Error("File serve handler error")
 	}
 
@@ -451,7 +276,7 @@ func TestServeFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s.ServeHTTP(w, r)
+	router.ServeHTTP(w, r)
 
 	if w.Code != http.StatusNotFound {
 		t.Error("File should not exist")
@@ -463,13 +288,15 @@ func TestServeFiles(t *testing.T) {
 		}
 	}()
 
-	s.ServeFiles("", true)
+	router.ServeFiles("", true)
 }
 
 func TestNilMiddleware(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
 
-	s.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	router := New().(*router)
+
+	router.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte("test"))
 	}))
 
@@ -479,7 +306,7 @@ func TestNilMiddleware(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s.ServeHTTP(w, req)
+	router.ServeHTTP(w, req)
 
 	if w.Body.String() != "test" {
 		t.Error("Nil middleware works")
@@ -487,6 +314,8 @@ func TestNilMiddleware(t *testing.T) {
 }
 
 func TestPanicMiddleware(t *testing.T) {
+	t.Parallel()
+
 	paniced := false
 	panicMiddleware := func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
@@ -502,19 +331,16 @@ func TestPanicMiddleware(t *testing.T) {
 		return http.HandlerFunc(fn)
 	}
 
-	s := New(panicMiddleware).(*router)
+	router := New(panicMiddleware).(*router)
 
-	s.GET("/x/{param}", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+	router.GET("/x/{param}", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		panic("test panic recover")
 	}))
 
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, "/x/y", nil)
+	err := mockServeHTTP(router, GET, "/x/y")
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	s.ServeHTTP(w, req)
 
 	if paniced != true {
 		t.Error("Panic has not been handled")
@@ -522,9 +348,11 @@ func TestPanicMiddleware(t *testing.T) {
 }
 
 func TestNodeApplyMiddleware(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
 
-	s.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router := New().(*router)
+
+	router.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		params, ok := FromContext(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
@@ -533,7 +361,7 @@ func TestNodeApplyMiddleware(t *testing.T) {
 		w.Write([]byte(params.Value("param")))
 	}))
 
-	s.USE(GET, "/x/{param}", mockMiddleware)
+	router.USE(GET, "/x/{param}", mockMiddleware)
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, "/x/y", nil)
@@ -541,7 +369,7 @@ func TestNodeApplyMiddleware(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s.ServeHTTP(w, req)
+	router.ServeHTTP(w, req)
 
 	if w.Body.String() != "middlewarey" {
 		t.Errorf("Use global middleware error %s", w.Body.String())
@@ -549,10 +377,12 @@ func TestNodeApplyMiddleware(t *testing.T) {
 }
 
 func TestChainCalls(t *testing.T) {
-	s := New().(*router)
+	t.Parallel()
+
+	router := New().(*router)
 
 	serverd := false
-	s.GET("/users/{user}/starred", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+	router.GET("/users/{user}/starred", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := FromContext(r.Context())
@@ -565,7 +395,7 @@ func TestChainCalls(t *testing.T) {
 		}
 	}))
 
-	s.GET("/applications/{client_id}/tokens", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+	router.GET("/applications/{client_id}/tokens", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := FromContext(r.Context())
@@ -578,7 +408,7 @@ func TestChainCalls(t *testing.T) {
 		}
 	}))
 
-	s.GET("/applications/{client_id}/tokens/{access_token}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+	router.GET("/applications/{client_id}/tokens/{access_token}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := FromContext(r.Context())
@@ -595,7 +425,7 @@ func TestChainCalls(t *testing.T) {
 		}
 	}))
 
-	s.GET("/users/{user}/received_events", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+	router.GET("/users/{user}/received_events", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := FromContext(r.Context())
@@ -608,7 +438,7 @@ func TestChainCalls(t *testing.T) {
 		}
 	}))
 
-	s.GET("/users/{user}/received_events/public", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+	router.GET("/users/{user}/received_events/public", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := FromContext(r.Context())
@@ -621,67 +451,55 @@ func TestChainCalls(t *testing.T) {
 		}
 	}))
 
-	w := httptest.NewRecorder()
-
 	// //FIRST CALL
-	req, err := http.NewRequest(GET, "/users/x/starred", nil)
+	err := mockServeHTTP(router, GET, "/users/x/starred")
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	s.ServeHTTP(w, req)
 
 	if !serverd {
 		t.Fatal("First not served")
 	}
 
 	//SECOND CALL
-	req, err = http.NewRequest(GET, "/applications/client_id/tokens", nil)
+	serverd = false
+	err = mockServeHTTP(router, GET, "/applications/client_id/tokens")
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	serverd = false
-	s.ServeHTTP(w, req)
 
 	if !serverd {
 		t.Fatal("Second not served")
 	}
 
 	//THIRD CALL
-	req, err = http.NewRequest(GET, "/applications/client_id/tokens/access_token", nil)
+	serverd = false
+	err = mockServeHTTP(router, GET, "/applications/client_id/tokens/access_token")
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	serverd = false
-	s.ServeHTTP(w, req)
 
 	if !serverd {
 		t.Fatal("Third not served")
 	}
 
 	//FOURTH CALL
-	req, err = http.NewRequest(GET, "/users/user1/received_events", nil)
+	serverd = false
+	err = mockServeHTTP(router, GET, "/users/user1/received_events")
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	serverd = false
-	s.ServeHTTP(w, req)
 
 	if !serverd {
 		t.Fatal("Fourth not served")
 	}
 
 	//FIFTH CALL
-	req, err = http.NewRequest(GET, "/users/user2/received_events/public", nil)
+	serverd = false
+	err = mockServeHTTP(router, GET, "/users/user2/received_events/public")
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	serverd = false
-	s.ServeHTTP(w, req)
 
 	if !serverd {
 		t.Fatal("Fifth not served")
@@ -689,6 +507,8 @@ func TestChainCalls(t *testing.T) {
 }
 
 func TestMountSubRouter(t *testing.T) {
+	t.Parallel()
+
 	rGlobal1 := mockMiddlewareWithBody("rg1")
 	rGlobal2 := mockMiddlewareWithBody("rg2")
 	r := New(rGlobal1, rGlobal2).(*router)
@@ -698,12 +518,12 @@ func TestMountSubRouter(t *testing.T) {
 
 	sGlobal1 := mockMiddlewareWithBody("sg1")
 	sGlobal2 := mockMiddlewareWithBody("sg2")
-	s := New(sGlobal1, sGlobal2).(*router)
-	s.GET("/y", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router := New(sGlobal1, sGlobal2).(*router)
+	router.GET("/y", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("s"))
 	}))
 
-	r.Mount("/{param}", s)
+	r.Mount("/{param}", router)
 
 	r1 := mockMiddlewareWithBody("r1")
 	r2 := mockMiddlewareWithBody("r2")
@@ -712,8 +532,8 @@ func TestMountSubRouter(t *testing.T) {
 
 	s1 := mockMiddlewareWithBody("s1")
 	s2 := mockMiddlewareWithBody("s2")
-	s.USE(GET, "/y", s1)
-	s.USE(GET, "/y", s2)
+	router.USE(GET, "/y", s1)
+	router.USE(GET, "/y", s2)
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, "/x/y", nil)

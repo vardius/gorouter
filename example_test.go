@@ -33,7 +33,7 @@ func Example() {
 	// Hello, guest!
 }
 
-func ExampleMiddlewareFunc_global_middleware() {
+func ExampleMiddlewareFunc_global() {
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := gorouter.FromContext(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
@@ -70,7 +70,7 @@ func ExampleMiddlewareFunc_global_middleware() {
 	// Hello, guest!
 }
 
-func ExampleMiddlewareFunc_route_middleware() {
+func ExampleMiddlewareFunc_route() {
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := gorouter.FromContext(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
@@ -109,7 +109,7 @@ func ExampleMiddlewareFunc_route_middleware() {
 	// Hello, guest!
 }
 
-func ExampleMiddlewareFunc_http_method_middleware() {
+func ExampleMiddlewareFunc_method() {
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := gorouter.FromContext(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
@@ -148,7 +148,7 @@ func ExampleMiddlewareFunc_http_method_middleware() {
 	// Hello, guest!
 }
 
-func ExampleRouter_mount() {
+func ExampleRouter_Mount() {
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := gorouter.FromContext(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))

@@ -1,10 +1,71 @@
 package gorouter
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
+
+type mockHandler struct {
+	served bool
+}
+
+func (mh *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	mh.served = true
+}
+
+type mockFileSystem struct {
+	opened bool
+}
+
+func (mfs *mockFileSystem) Open(name string) (http.File, error) {
+	mfs.opened = true
+	return nil, errors.New("")
+}
+
+func mockMiddleware(body string) MiddlewareFunc {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(body))
+			h.ServeHTTP(w, r)
+		})
+	}
+}
+
+func mockServeHTTP(h http.Handler, method, path string) error {
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(method, path, nil)
+	if err != nil {
+		return err
+	}
+
+	h.ServeHTTP(w, req)
+
+	return nil
+}
+
+func checkIfHasRootRoute(t *testing.T, router *router, method string) {
+	if rootRoute := router.routes.byID(method); rootRoute == nil {
+		t.Error("Route not found")
+	}
+}
+
+func testBasicMethod(t *testing.T, router *router, h func(pattern string, handler http.Handler), method string) {
+	handler := &mockHandler{}
+	h("/x/y", handler)
+
+	checkIfHasRootRoute(t, router, method)
+
+	err := mockServeHTTP(router, method, "/x/y")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if handler.served != true {
+		t.Error("Handler has not been serverd")
+	}
+}
 
 func TestInterface(t *testing.T) {
 	var _ http.Handler = New()
@@ -13,12 +74,9 @@ func TestInterface(t *testing.T) {
 func TestHandle(t *testing.T) {
 	t.Parallel()
 
+	handler := &mockHandler{}
 	router := New().(*router)
-
-	serverd := false
-	router.Handle(POST, "/x/y", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		serverd = true
-	}))
+	router.Handle(POST, "/x/y", handler)
 
 	checkIfHasRootRoute(t, router, POST)
 
@@ -27,7 +85,7 @@ func TestHandle(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if serverd != true {
+	if handler.served != true {
 		t.Error("Handler has not been serverd")
 	}
 }
@@ -35,12 +93,9 @@ func TestHandle(t *testing.T) {
 func TestHandleFunc(t *testing.T) {
 	t.Parallel()
 
+	handler := &mockHandler{}
 	router := New().(*router)
-
-	serverd := false
-	router.HandleFunc(POST, "/x/y", func(_ http.ResponseWriter, _ *http.Request) {
-		serverd = true
-	})
+	router.Handle(POST, "/x/y", handler)
 
 	checkIfHasRootRoute(t, router, POST)
 
@@ -49,7 +104,7 @@ func TestHandleFunc(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if serverd != true {
+	if handler.served != true {
 		t.Error("Handler has not been serverd")
 	}
 }
@@ -120,9 +175,9 @@ func TestOPTIONS(t *testing.T) {
 func TestNotFound(t *testing.T) {
 	t.Parallel()
 
+	handler := &mockHandler{}
 	router := New().(*router)
-
-	router.GET("/x/y", http.HandlerFunc(mockHandler))
+	router.GET("/x/y", handler)
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(POST, "/y/y", nil)
@@ -156,9 +211,9 @@ func TestNotFound(t *testing.T) {
 func TestNotAllowed(t *testing.T) {
 	t.Parallel()
 
+	handler := &mockHandler{}
 	router := New().(*router)
-
-	router.GET("/x/y", http.HandlerFunc(mockHandler))
+	router.GET("/x/y", handler)
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(POST, "/x/y", nil)
@@ -262,9 +317,10 @@ func TestRegexpParam(t *testing.T) {
 func TestServeFiles(t *testing.T) {
 	t.Parallel()
 
+	mfs := &mockFileSystem{}
 	router := New().(*router)
 
-	router.ServeFiles("static", true)
+	router.ServeFiles(mfs, "static", true)
 
 	if router.fileServer == nil {
 		t.Error("File serve handler error")
@@ -288,7 +344,7 @@ func TestServeFiles(t *testing.T) {
 		}
 	}()
 
-	router.ServeFiles("", true)
+	router.ServeFiles(mfs, "", true)
 }
 
 func TestNilMiddleware(t *testing.T) {
@@ -361,7 +417,7 @@ func TestNodeApplyMiddleware(t *testing.T) {
 		w.Write([]byte(params.Value("param")))
 	}))
 
-	router.USE(GET, "/x/{param}", mockMiddleware)
+	router.USE(GET, "/x/{param}", mockMiddleware("m"))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, "/x/y", nil)
@@ -371,7 +427,7 @@ func TestNodeApplyMiddleware(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	if w.Body.String() != "middlewarey" {
+	if w.Body.String() != "my" {
 		t.Errorf("Use global middleware error %s", w.Body.String())
 	}
 }
@@ -509,15 +565,15 @@ func TestChainCalls(t *testing.T) {
 func TestMountSubRouter(t *testing.T) {
 	t.Parallel()
 
-	rGlobal1 := mockMiddlewareWithBody("rg1")
-	rGlobal2 := mockMiddlewareWithBody("rg2")
+	rGlobal1 := mockMiddleware("rg1")
+	rGlobal2 := mockMiddleware("rg2")
 	r := New(rGlobal1, rGlobal2).(*router)
 	r.GET("/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("r"))
 	}))
 
-	sGlobal1 := mockMiddlewareWithBody("sg1")
-	sGlobal2 := mockMiddlewareWithBody("sg2")
+	sGlobal1 := mockMiddleware("sg1")
+	sGlobal2 := mockMiddleware("sg2")
 	router := New(sGlobal1, sGlobal2).(*router)
 	router.GET("/y", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("s"))
@@ -525,13 +581,13 @@ func TestMountSubRouter(t *testing.T) {
 
 	r.Mount("/{param}", router)
 
-	r1 := mockMiddlewareWithBody("r1")
-	r2 := mockMiddlewareWithBody("r2")
+	r1 := mockMiddleware("r1")
+	r2 := mockMiddleware("r2")
 	r.USE(GET, "/{param}", r1)
 	r.USE(GET, "/{param}", r2)
 
-	s1 := mockMiddlewareWithBody("s1")
-	s2 := mockMiddlewareWithBody("s2")
+	s1 := mockMiddleware("s1")
+	s2 := mockMiddleware("s2")
 	router.USE(GET, "/y", s1)
 	router.USE(GET, "/y", s2)
 

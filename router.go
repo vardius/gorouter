@@ -2,7 +2,6 @@ package gorouter
 
 import (
 	"net/http"
-	"os"
 )
 
 // HTTP methods constants
@@ -77,7 +76,7 @@ type Router interface {
 
 	// ServeFile replies to the request with the
 	// contents of the named file or directory.
-	ServeFiles(path string, strip bool)
+	ServeFiles(root http.FileSystem, path string, strip bool)
 
 	// NotFound replies to the request with the
 	// 404 Error code
@@ -161,11 +160,11 @@ func (r *router) NotAllowed(notAllowed http.Handler) {
 	r.notAllowed = notAllowed
 }
 
-func (r *router) ServeFiles(path string, strip bool) {
+func (r *router) ServeFiles(root http.FileSystem, path string, strip bool) {
 	if path == "" {
 		panic("goapi.ServeFiles: empty path!")
 	}
-	handler := http.FileServer(http.Dir(path))
+	handler := http.FileServer(root)
 	if strip {
 		handler = http.StripPrefix("/"+path+"/", handler)
 	}
@@ -193,7 +192,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	} else if req.Method == GET && r.fileServer != nil {
 		// Handle file serve
-		r.serveFiles(w, req)
+		r.fileServer.ServeHTTP(w, req)
 		return
 	} else {
 		// Handle 405
@@ -225,24 +224,6 @@ func (r *router) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
 			http.StatusMethodNotAllowed,
 		)
 	}
-}
-
-func (r *router) serveFiles(w http.ResponseWriter, req *http.Request) {
-	fp := req.URL.Path
-	// Return a 404 if the file doesn't exist
-	info, err := os.Stat(fp)
-	if err != nil {
-		if os.IsNotExist(err) {
-			r.serveNotFound(w, req)
-			return
-		}
-	}
-	// Return a 404 if the request is for a directory
-	if info.IsDir() {
-		r.serveNotFound(w, req)
-		return
-	}
-	r.fileServer.ServeHTTP(w, req)
 }
 
 func (r *router) addRoute(method, path string, f http.Handler) {

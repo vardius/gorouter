@@ -11,9 +11,9 @@ func TestRouter(t *testing.T) {
 		w.Write([]byte("4"))
 	})
 
-	m1 := mockMiddlewareWithBody("1")
-	m2 := mockMiddlewareWithBody("2")
-	m3 := mockMiddlewareWithBody("3")
+	m1 := mockMiddleware("1")
+	m2 := mockMiddleware("2")
+	m3 := mockMiddleware("3")
 
 	r := newRoute(fn)
 	r.appendMiddleware(newMiddleware(m1, m2, m3))

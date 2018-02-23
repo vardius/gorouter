@@ -1,6 +1,46 @@
 package gorouter
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
+
+func equal(t *testing.T, expected, actual interface{}) bool {
+	if !areEqual(expected, actual) {
+		t.Errorf("Asserts are not equal. Expected: %v, Actual: %v", expected, actual)
+
+		return false
+	}
+
+	return true
+}
+
+func notEqual(t *testing.T, expected, actual interface{}) bool {
+	if areEqual(expected, actual) {
+		t.Errorf("Asserts are equal. Expected: %v, Actual: %v", expected, actual)
+
+		return false
+	}
+
+	return true
+}
+
+func areEqual(expected, actual interface{}) bool {
+	if expected == nil {
+		return isNil(actual)
+	}
+
+	if actual == nil {
+		return isNil(expected)
+	}
+
+	return reflect.DeepEqual(expected, actual)
+}
+
+func isNil(value interface{}) bool {
+	defer func() { recover() }()
+	return value == nil || reflect.ValueOf(value).IsNil()
+}
 
 func TestRootNode(t *testing.T) {
 	n := newRoot("")

@@ -32,9 +32,9 @@ func TestHandlerFunc(t *testing.T) {
 }
 
 func TestOrders(t *testing.T) {
-	m1 := mockMiddlewareWithBody("1")
-	m2 := mockMiddlewareWithBody("2")
-	m3 := mockMiddlewareWithBody("3")
+	m1 := mockMiddleware("1")
+	m2 := mockMiddleware("2")
+	m3 := mockMiddleware("3")
 	fn := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte("4"))
 	})
@@ -56,9 +56,9 @@ func TestOrders(t *testing.T) {
 }
 
 func TestAppend(t *testing.T) {
-	m1 := mockMiddlewareWithBody("1")
-	m2 := mockMiddlewareWithBody("2")
-	m3 := mockMiddlewareWithBody("3")
+	m1 := mockMiddleware("1")
+	m2 := mockMiddleware("2")
+	m3 := mockMiddleware("3")
 	fn := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte("4"))
 	})

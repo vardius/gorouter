@@ -44,34 +44,5 @@ In this case, the route is matched by `/hello/rxxxxxgo` for example,
 because the `:name` wildcard matches the regular expression wildcard given (`r([a-z]+)go`). However,
 `/hello/foo` does not match, because "foo" fails the *name* wildcard. When using wildcards,
 these are returned in the map from request context. The part of the path that the wildcard matched (e.g. *rxxxxxgo*) is used as value.
-
-Basic example:
-
-	package main
-
-	import (
-		"fmt"
-		"log"
-		"net/http"
-
-		"github.com/vardius/gorouter"
-	)
-
-	func Index(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "Welcome!\n")
-	}
-
-	func Hello(w http.ResponseWriter, r *http.Request) {
-		params, _ := gorouter.FromContext(r.Context())
-		fmt.Fprintf(w, "hello, %s!\n", params.Value("name"))
-	}
-
-	func main() {
-		router := gorouter.New()
-		router.GET("/", http.HandlerFunc(Index))
-		router.GET("/hello/{name}", http.HandlerFunc(Hello))
-
-		log.Fatal(http.ListenAndServe(":8080", router))
-	}
 */
 package gorouter

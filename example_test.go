@@ -148,7 +148,7 @@ func ExampleMiddlewareFunc_method() {
 	// Hello, guest!
 }
 
-func ExampleRouter_Mount() {
+func ExampleRouter_mount() {
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := gorouter.FromContext(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))

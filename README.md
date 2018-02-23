@@ -46,7 +46,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func Hello(w http.ResponseWriter, r *http.Request) {
-	params, _ := gorouter.FromContext(r.Context())
+    params, _ := gorouter.FromContext(r.Context())
     fmt.Fprintf(w, "hello, %s!\n", params.Value("name"))
 }
 

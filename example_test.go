@@ -17,7 +17,8 @@ func Example() {
 	router := gorouter.New()
 	router.GET("/hello/{name}", http.HandlerFunc(hello))
 
-	// Normally you would call
+	// Normally you would call ListenAndServe starting an HTTP server
+	// with a given address and router as a handler
 	// log.Fatal(http.ListenAndServe(":8080", router))
 	// but for this example we will mock request
 
@@ -53,7 +54,8 @@ func ExampleMiddlewareFunc_global() {
 	router := gorouter.New(logger)
 	router.GET("/hello/{name}", http.HandlerFunc(hello))
 
-	// Normally you would call
+	// Normally you would call ListenAndServe starting an HTTP server
+	// with a given address and router as a handler
 	// log.Fatal(http.ListenAndServe(":8080", router))
 	// but for this example we will mock request
 
@@ -92,7 +94,8 @@ func ExampleMiddlewareFunc_route() {
 	// can pass as many as you want
 	router.USE("GET", "/hello/{name}", logger)
 
-	// Normally you would call
+	// Normally you would call ListenAndServe starting an HTTP server
+	// with a given address and router as a handler
 	// log.Fatal(http.ListenAndServe(":8080", router))
 	// but for this example we will mock request
 
@@ -131,7 +134,8 @@ func ExampleMiddlewareFunc_method() {
 	// can pass as many as you want
 	router.USE("GET", "", logger)
 
-	// Normally you would call
+	// Normally you would call ListenAndServe starting an HTTP server
+	// with a given address and router as a handler
 	// log.Fatal(http.ListenAndServe(":8080", router))
 	// but for this example we will mock request
 
@@ -160,7 +164,8 @@ func ExampleRouter_mount() {
 	router := gorouter.New()
 	router.Mount("/hello", subrouter)
 
-	// Normally you would call
+	// Normally you would call ListenAndServe starting an HTTP server
+	// with a given address and router as a handler
 	// log.Fatal(http.ListenAndServe(":8080", router))
 	// but for this example we will mock request
 

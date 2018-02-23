@@ -36,8 +36,8 @@ and can contain named wildcard placeholders *(e.g. {placeholder})* to match dyna
 Take the following example:
 
 	router.GET("/hello/{name:r([a-z]+)go}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		params, _ := gorouter.FromContext(r.Context())
-		fmt.Fprintf(w, "hello, %s!\n", params.Value("name"))
+	  params, _ := gorouter.FromContext(r.Context())
+	  fmt.Fprintf(w, "hello, %s!\n", params.Value("name"))
 	}))
 
 In this case, the route is matched by `/hello/rxxxxxgo` for example,

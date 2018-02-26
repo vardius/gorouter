@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -189,7 +190,7 @@ func TestOPTIONS(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	if allow := w.Header().Get("Allow"); allow != "POST, GET, OPTIONS" {
+	if allow := w.Header().Get("Allow"); !strings.Contains(allow, "POST") || !strings.Contains(allow, "GET") || !strings.Contains(allow, "OPTIONS") {
 		t.Errorf("Allow header incorrect value: %s", allow)
 	}
 
@@ -201,7 +202,7 @@ func TestOPTIONS(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	if allow := w.Header().Get("Allow"); allow != "POST, GET, OPTIONS" {
+	if allow := w.Header().Get("Allow"); !strings.Contains(allow, "POST") || !strings.Contains(allow, "GET") || !strings.Contains(allow, "OPTIONS") {
 		t.Errorf("Allow header incorrect value: %s", allow)
 	}
 }

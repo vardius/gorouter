@@ -6,14 +6,15 @@ import (
 )
 
 type node struct {
-	id         string
-	regexp     *regexp.Regexp
-	route      *route
-	parent     *node
-	children   *tree
-	params     uint8
-	isWildcard bool
-	isRegexp   bool
+	id          string
+	regexp      *regexp.Regexp
+	route       *route
+	parent      *node
+	children    *tree
+	params      uint8
+	isWildcard  bool
+	isRegexp    bool
+	isSubrouter bool
 }
 
 func (n *node) isRoot() bool {
@@ -76,13 +77,21 @@ func (n *node) child(ids []string) (*node, Params) {
 			params[child.params-1].Key = child.id
 		}
 
+		if n == nil && child.isSubrouter {
+			return child, params
+		}
+
 		return n, params
 	}
 
 	return nil, nil
 }
 
-func (n *node) childByPath(path string) (*node, Params) {
+// childByPath accepts string path then returns:
+// child node as a first arg,
+// parameters built from wildcards,
+// and part of path (this is used to strip request path for sub routers)
+func (n *node) childByPath(path string) (*node, Params, string) {
 	pathLen := len(path)
 	if pathLen > 0 && path[0] == '/' {
 		path = path[1:]
@@ -90,23 +99,27 @@ func (n *node) childByPath(path string) (*node, Params) {
 	}
 
 	if pathLen == 0 {
-		return n, make(Params, n.params)
+		return n, make(Params, n.params), ""
 	}
 
 	child, part, path := n.children.byPath(path)
 
 	if child != nil {
-		n, params := child.childByPath(path)
+		n, params, _ := child.childByPath(path)
 
 		if part != "" && params != nil {
 			params[child.params-1].Value = part
 			params[child.params-1].Key = child.id
 		}
 
-		return n, params
+		if n == nil && child.isSubrouter {
+			return child, params, part
+		}
+
+		return n, params, ""
 	}
 
-	return nil, nil
+	return nil, nil, ""
 }
 
 func newNode(root *node, id string) *node {

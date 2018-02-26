@@ -34,7 +34,9 @@ func Example() {
 	// Hello, guest!
 }
 
-func ExampleMiddlewareFunc_global() {
+func ExampleMiddlewareFunc() {
+	// Global middleware example
+	// applies to all routes
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := gorouter.FromContext(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
@@ -72,7 +74,9 @@ func ExampleMiddlewareFunc_global() {
 	// Hello, guest!
 }
 
-func ExampleMiddlewareFunc_route() {
+func ExampleMiddlewareFunc_second() {
+	// Route level middleware example
+	// applies to route and its lower tree
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := gorouter.FromContext(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
@@ -112,7 +116,9 @@ func ExampleMiddlewareFunc_route() {
 	// Hello, guest!
 }
 
-func ExampleMiddlewareFunc_method() {
+func ExampleMiddlewareFunc_third() {
+	// Http method middleware example
+	// applies to all routes under this method
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := gorouter.FromContext(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
@@ -160,6 +166,32 @@ func ExampleRouter_mount() {
 
 	subrouter := gorouter.New()
 	subrouter.GET("/{name}", http.HandlerFunc(hello))
+
+	router := gorouter.New()
+	router.Mount("/hello", subrouter)
+
+	// Normally you would call ListenAndServe starting an HTTP server
+	// with a given address and router as a handler
+	// log.Fatal(http.ListenAndServe(":8080", router))
+	// but for this example we will mock request
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(gorouter.GET, "/hello/guest", nil)
+	if err != nil {
+		return
+	}
+
+	router.ServeHTTP(w, req)
+
+	// Output:
+	// Hello, guest!
+}
+
+func ExampleRouter_mount_second() {
+	subrouter := http.NewServeMux()
+	subrouter.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		fmt.Println("Hello, guest!")
+	})
 
 	router := gorouter.New()
 	router.Mount("/hello", subrouter)

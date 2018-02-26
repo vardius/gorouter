@@ -93,9 +93,11 @@ func TestHandle(t *testing.T) {
 func TestHandleFunc(t *testing.T) {
 	t.Parallel()
 
-	handler := &mockHandler{}
+	served := false
 	router := New().(*router)
-	router.Handle(POST, "/x/y", handler)
+	router.HandleFunc(POST, "/x/y", func(w http.ResponseWriter, r *http.Request) {
+		served = true
+	})
 
 	checkIfHasRootRoute(t, router, POST)
 
@@ -104,7 +106,7 @@ func TestHandleFunc(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if handler.served != true {
+	if served != true {
 		t.Error("Handler has not been serverd")
 	}
 }
@@ -599,7 +601,7 @@ func TestMountSubRouter(t *testing.T) {
 
 	r.ServeHTTP(w, req)
 
-	if w.Body.String() != "rg1rg2sg1sg2r1r2s1s2s" {
+	if w.Body.String() != "rg1rg2r1r2sg1sg2s1s2s" {
 		t.Errorf("Router mount sub router middleware error: %s", w.Body.String())
 	}
 }

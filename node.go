@@ -45,10 +45,6 @@ func (n *node) setRoute(r *route) {
 	n.route = r
 }
 
-func (n *node) setChildren(children *tree) {
-	n.children = children
-}
-
 func (n *node) addChild(ids []string) *node {
 	if len(ids) > 0 && ids[0] != "" {
 		node := n.children.getByID(ids[0])
@@ -75,10 +71,6 @@ func (n *node) getChild(ids []string) (*node, Params) {
 		if child.isWildcard && params != nil {
 			params[child.params-1].Value = ids[0]
 			params[child.params-1].Key = child.id
-		}
-
-		if n == nil && child.isSubrouter {
-			return child, params
 		}
 
 		return n, params

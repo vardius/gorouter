@@ -174,6 +174,29 @@ func TestOPTIONS(t *testing.T) {
 	testBasicMethod(t, router, router.OPTIONS, OPTIONS)
 }
 
+func TestOPTIONSWithoutHandler(t *testing.T) {
+	t.Parallel()
+
+	router := New().(*router)
+	handler := &mockHandler{}
+	router.GET("/x/y", handler)
+	router.POST("/x/y", handler)
+
+	checkIfHasRootRoute(t, router, GET)
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(OPTIONS, "*", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	router.ServeHTTP(w, req)
+
+	if allow := w.Header().Get("Allow"); allow != "POST, GET, OPTIONS" {
+		t.Errorf("Allow header incorrect value: %s", allow)
+	}
+}
+
 func TestNotFound(t *testing.T) {
 	t.Parallel()
 
@@ -313,6 +336,26 @@ func TestRegexpParam(t *testing.T) {
 
 	if serverd != true {
 		t.Error("Handler has not been serverd")
+	}
+}
+
+func TestEmptyParam(t *testing.T) {
+	t.Parallel()
+
+	paniced := false
+	defer func() {
+		if rcv := recover(); rcv != nil {
+			paniced = true
+		}
+	}()
+
+	handler := &mockHandler{}
+	router := New().(*router)
+
+	router.GET("/x/{}", handler)
+
+	if paniced != true {
+		t.Error("Router should panic for empty wildcard path")
 	}
 }
 

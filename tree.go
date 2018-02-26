@@ -65,7 +65,7 @@ func (t *tree) getByID(id string) *node {
 		}
 
 		for _, child := range t.regexps {
-			if child.regexp.MatchString(id) {
+			if child.regexp != nil && child.regexp.MatchString(id) {
 				return child
 			}
 		}
@@ -96,7 +96,7 @@ func (t *tree) getByPath(path string) (*node, string, string) {
 	}
 
 	for _, child := range t.regexps {
-		if child.regexp.MatchString(part) {
+		if child.regexp != nil && child.regexp.MatchString(part) {
 			return child, part, path[len(part):]
 		}
 	}

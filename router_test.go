@@ -172,12 +172,7 @@ func TestOPTIONS(t *testing.T) {
 
 	router := New().(*router)
 	testBasicMethod(t, router, router.OPTIONS, OPTIONS)
-}
 
-func TestOPTIONSWithoutHandler(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
 	handler := &mockHandler{}
 	router.GET("/x/y", handler)
 	router.POST("/x/y", handler)
@@ -185,7 +180,21 @@ func TestOPTIONSWithoutHandler(t *testing.T) {
 	checkIfHasRootRoute(t, router, GET)
 
 	w := httptest.NewRecorder()
+
+	// test all routes "*" paths
 	req, err := http.NewRequest(OPTIONS, "*", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	router.ServeHTTP(w, req)
+
+	if allow := w.Header().Get("Allow"); allow != "POST, GET, OPTIONS" {
+		t.Errorf("Allow header incorrect value: %s", allow)
+	}
+
+	// test specific path
+	req, err = http.NewRequest(OPTIONS, "/x/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -483,7 +492,7 @@ func TestChainCalls(t *testing.T) {
 	router := New().(*router)
 
 	serverd := false
-	router.GET("/users/{user}/starred", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+	router.GET("/users/{user:[a-z0-9]+)}/starred", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
 		params, ok := FromContext(r.Context())

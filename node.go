@@ -34,11 +34,13 @@ func (n *node) regexpToString() string {
 
 func (n *node) setRegexp(exp string) {
 	reg, err := regexp.Compile(exp)
-	if err == nil {
-		n.regexp = reg
-		n.isRegexp = true
-		n.isWildcard = true
+	if err != nil {
+		panic(err)
 	}
+
+	n.regexp = reg
+	n.isRegexp = true
+	n.isWildcard = true
 }
 
 func (n *node) setRoute(r *route) {

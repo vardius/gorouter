@@ -164,37 +164,20 @@ func ExampleRouter_mount() {
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
+	// gorouter as subrouter
 	subrouter := gorouter.New()
 	subrouter.GET("/{name}", http.HandlerFunc(hello))
 
-	router := gorouter.New()
-	router.Mount("/hello", subrouter)
-
-	// Normally you would call ListenAndServe starting an HTTP server
-	// with a given address and router as a handler
-	// log.Fatal(http.ListenAndServe(":8080", router))
-	// but for this example we will mock request
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(gorouter.GET, "/hello/guest", nil)
-	if err != nil {
-		return
-	}
-
-	router.ServeHTTP(w, req)
-
-	// Output:
-	// Hello, guest!
-}
-
-func ExampleRouter_mount_second() {
-	subrouter := http.NewServeMux()
-	subrouter.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		fmt.Println("Hello, guest!")
+	// default mux as subrouter
+	// you can use eveything that implements http.Handler interface
+	unknownSubrouter := http.NewServeMux()
+	unknownSubrouter.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		fmt.Println("Hi, guest!")
 	})
 
 	router := gorouter.New()
 	router.Mount("/hello", subrouter)
+	router.Mount("/hi", unknownSubrouter)
 
 	// Normally you would call ListenAndServe starting an HTTP server
 	// with a given address and router as a handler
@@ -209,6 +192,14 @@ func ExampleRouter_mount_second() {
 
 	router.ServeHTTP(w, req)
 
+	req, err = http.NewRequest(gorouter.GET, "/hi/guest", nil)
+	if err != nil {
+		return
+	}
+
+	router.ServeHTTP(w, req)
+
 	// Output:
 	// Hello, guest!
+	// Hi, guest!
 }

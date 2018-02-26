@@ -51,7 +51,7 @@ func (n *node) setChildren(children *tree) {
 
 func (n *node) addChild(ids []string) *node {
 	if len(ids) > 0 && ids[0] != "" {
-		node := n.children.byID(ids[0])
+		node := n.children.getByID(ids[0])
 
 		if node == nil {
 			node = newNode(n, ids[0])
@@ -63,14 +63,14 @@ func (n *node) addChild(ids []string) *node {
 	return n
 }
 
-func (n *node) child(ids []string) (*node, Params) {
+func (n *node) getChild(ids []string) (*node, Params) {
 	if len(ids) == 0 {
 		return n, make(Params, n.params)
 	}
 
-	child := n.children.byID(ids[0])
+	child := n.children.getByID(ids[0])
 	if child != nil {
-		n, params := child.child(ids[1:])
+		n, params := child.getChild(ids[1:])
 
 		if child.isWildcard && params != nil {
 			params[child.params-1].Value = ids[0]
@@ -87,11 +87,11 @@ func (n *node) child(ids []string) (*node, Params) {
 	return nil, nil
 }
 
-// childByPath accepts string path then returns:
+// getChildByPath accepts string path then returns:
 // child node as a first arg,
 // parameters built from wildcards,
 // and part of path (this is used to strip request path for sub routers)
-func (n *node) childByPath(path string) (*node, Params, string) {
+func (n *node) getChildByPath(path string) (*node, Params, string) {
 	pathLen := len(path)
 	if pathLen > 0 && path[0] == '/' {
 		path = path[1:]
@@ -102,21 +102,21 @@ func (n *node) childByPath(path string) (*node, Params, string) {
 		return n, make(Params, n.params), ""
 	}
 
-	child, part, path := n.children.byPath(path)
+	child, part, path := n.children.getByPath(path)
 
 	if child != nil {
-		n, params, _ := child.childByPath(path)
+		grandChild, params, _ := child.getChildByPath(path)
 
 		if part != "" && params != nil {
 			params[child.params-1].Value = part
 			params[child.params-1].Key = child.id
 		}
 
-		if n == nil && child.isSubrouter {
-			return child, params, part
+		if grandChild == nil && child.isSubrouter {
+			return child, params, path
 		}
 
-		return n, params, ""
+		return grandChild, params, ""
 	}
 
 	return nil, nil, ""

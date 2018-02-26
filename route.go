@@ -9,7 +9,7 @@ type route struct {
 	handler    http.Handler
 }
 
-func (r *route) chain() http.Handler {
+func (r *route) getHandler() http.Handler {
 	if r.handler != nil {
 		return r.middleware.handle(r.handler)
 	}

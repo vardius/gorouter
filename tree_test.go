@@ -36,7 +36,7 @@ func TestTreeGetRegexNodeById(t *testing.T) {
 	tree := newTree()
 	tree.insert(n)
 
-	c := tree.byID("rego")
+	c := tree.getByID("rego")
 
 	if c != n {
 		t.Error("Tree should match regex node by ID")
@@ -45,7 +45,7 @@ func TestTreeGetRegexNodeById(t *testing.T) {
 
 func TestGetTreeNodeByEmptyPath(t *testing.T) {
 	tree := newTree()
-	n, _, _ := tree.byPath("")
+	n, _, _ := tree.getByPath("")
 
 	if n != nil {
 		t.Error("Tree should return nil node for empty path")

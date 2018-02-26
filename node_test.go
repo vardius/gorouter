@@ -66,7 +66,7 @@ func TestRegexNode(t *testing.T) {
 func TestUnknownNodesChild(t *testing.T) {
 	n := newRoot("")
 
-	node, params := n.child([]string{"a", "b", "c"})
+	node, params := n.getChild([]string{"a", "b", "c"})
 
 	if node != nil || params != nil {
 		t.Error("Node should return nil values for unknown path")

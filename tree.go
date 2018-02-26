@@ -54,7 +54,7 @@ func (t *tree) insert(n *node) {
 	}
 }
 
-func (t *tree) byID(id string) *node {
+func (t *tree) getByID(id string) *node {
 	if id != "" {
 		if t.idsLen > 0 {
 			for i, cID := range t.ids {
@@ -76,7 +76,7 @@ func (t *tree) byID(id string) *node {
 	return nil
 }
 
-func (t *tree) byPath(path string) (*node, string, string) {
+func (t *tree) getByPath(path string) (*node, string, string) {
 	if len(path) == 0 {
 		return nil, "", ""
 	}

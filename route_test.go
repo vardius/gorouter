@@ -18,7 +18,7 @@ func TestRouter(t *testing.T) {
 	r := newRoute(fn)
 	r.appendMiddleware(newMiddleware(m1, m2, m3))
 
-	h := r.chain()
+	h := r.getHandler()
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", "/", nil)
@@ -53,7 +53,7 @@ func TestInvalidParams(t *testing.T) {
 
 func TestNilHandler(t *testing.T) {
 	r := newRoute(nil)
-	if h := r.chain(); h != nil {
+	if h := r.getHandler(); h != nil {
 		t.Error("Handler hould be equal nil")
 	}
 }

@@ -2,6 +2,7 @@ package gorouter
 
 import (
 	"net/http"
+	"strings"
 )
 
 // HTTP methods constants
@@ -175,16 +176,16 @@ func (r *router) ServeFiles(root http.FileSystem, path string, strip bool) {
 }
 
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	root := r.routes.byID(req.Method)
+	root := r.routes.getByID(req.Method)
 	if root != nil {
-		node, params, subPath := root.childByPath(req.URL.Path)
+		node, params, subPath := root.getChildByPath(req.URL.Path)
 
 		if node != nil && node.route != nil {
-			if h := node.route.chain(); h != nil {
+			if h := node.route.getHandler(); h != nil {
 				req = req.WithContext(newContext(req, params))
 
 				if subPath != "" {
-					h = http.StripPrefix("/"+subPath, h)
+					h = http.StripPrefix(strings.TrimSuffix(req.URL.Path, subPath), h)
 				}
 
 				h.ServeHTTP(w, req)
@@ -236,7 +237,7 @@ func (r *router) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
 }
 
 func (r *router) addRoute(method, path string, f http.Handler) *node {
-	root := r.routes.byID(method)
+	root := r.routes.getByID(method)
 	if root == nil {
 		root = newRoot(method)
 		r.routes.insert(root)
@@ -274,7 +275,7 @@ func (r *router) addMiddleware(method, path string, fs ...MiddlewareFunc) {
 	// routes tree roots should be http method nodes only
 	for _, root := range r.routes.statics {
 		if method == "" || method == root.id {
-			node, _ := root.child(paths)
+			node, _ := root.getChild(paths)
 			if node != nil {
 				c(c, node, fs)
 			}
@@ -302,7 +303,7 @@ func (r *router) allowed(method, path string) (allow string) {
 				continue
 			}
 
-			n, _, _ := root.childByPath(path)
+			n, _, _ := root.getChildByPath(path)
 			if n != nil && n.route != nil {
 				if len(allow) == 0 {
 					allow = root.id

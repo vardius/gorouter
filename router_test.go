@@ -46,7 +46,7 @@ func mockServeHTTP(h http.Handler, method, path string) error {
 }
 
 func checkIfHasRootRoute(t *testing.T, router *router, method string) {
-	if rootRoute := router.routes.byID(method); rootRoute == nil {
+	if rootRoute := router.routes.getByID(method); rootRoute == nil {
 		t.Error("Route not found")
 	}
 }

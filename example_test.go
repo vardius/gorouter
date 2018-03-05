@@ -8,6 +8,13 @@ import (
 	"github.com/vardius/gorouter"
 )
 
+func handleRequest(method, path string, handler http.Handler) {
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(method, path, nil)
+
+	handler.ServeHTTP(w, req)
+}
+
 func Example() {
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := gorouter.FromContext(r.Context())
@@ -17,18 +24,8 @@ func Example() {
 	router := gorouter.New()
 	router.GET("/hello/{name}", http.HandlerFunc(hello))
 
-	// Normally you would call ListenAndServe starting an HTTP server
-	// with a given address and router as a handler
-	// log.Fatal(http.ListenAndServe(":8080", router))
-	// but for this example we will mock request
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(gorouter.GET, "/hello/guest", nil)
-	if err != nil {
-		return
-	}
-
-	router.ServeHTTP(w, req)
+	// for this example we will mock request
+	handleRequest("GET", "/hello/guest", router)
 
 	// Output:
 	// Hello, guest!
@@ -56,18 +53,8 @@ func ExampleMiddlewareFunc() {
 	router := gorouter.New(logger)
 	router.GET("/hello/{name}", http.HandlerFunc(hello))
 
-	// Normally you would call ListenAndServe starting an HTTP server
-	// with a given address and router as a handler
-	// log.Fatal(http.ListenAndServe(":8080", router))
-	// but for this example we will mock request
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(gorouter.GET, "/hello/guest", nil)
-	if err != nil {
-		return
-	}
-
-	router.ServeHTTP(w, req)
+	// for this example we will mock request
+	handleRequest("GET", "/hello/guest", router)
 
 	// Output:
 	// [GET] "/hello/guest"
@@ -98,18 +85,8 @@ func ExampleMiddlewareFunc_second() {
 	// can pass as many as you want
 	router.USE("GET", "/hello/{name}", logger)
 
-	// Normally you would call ListenAndServe starting an HTTP server
-	// with a given address and router as a handler
-	// log.Fatal(http.ListenAndServe(":8080", router))
-	// but for this example we will mock request
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(gorouter.GET, "/hello/guest", nil)
-	if err != nil {
-		return
-	}
-
-	router.ServeHTTP(w, req)
+	// for this example we will mock request
+	handleRequest("GET", "/hello/guest", router)
 
 	// Output:
 	// [GET] "/hello/guest"
@@ -140,18 +117,8 @@ func ExampleMiddlewareFunc_third() {
 	// can pass as many as you want
 	router.USE("GET", "", logger)
 
-	// Normally you would call ListenAndServe starting an HTTP server
-	// with a given address and router as a handler
-	// log.Fatal(http.ListenAndServe(":8080", router))
-	// but for this example we will mock request
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(gorouter.GET, "/hello/guest", nil)
-	if err != nil {
-		return
-	}
-
-	router.ServeHTTP(w, req)
+	// for this example we will mock request
+	handleRequest("GET", "/hello/guest", router)
 
 	// Output:
 	// [GET] "/hello/guest"
@@ -179,25 +146,9 @@ func ExampleRouter_mount() {
 	router.Mount("/hello", subrouter)
 	router.Mount("/hi", unknownSubrouter)
 
-	// Normally you would call ListenAndServe starting an HTTP server
-	// with a given address and router as a handler
-	// log.Fatal(http.ListenAndServe(":8080", router))
-	// but for this example we will mock request
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(gorouter.GET, "/hello/guest", nil)
-	if err != nil {
-		return
-	}
-
-	router.ServeHTTP(w, req)
-
-	req, err = http.NewRequest(gorouter.GET, "/hi/guest", nil)
-	if err != nil {
-		return
-	}
-
-	router.ServeHTTP(w, req)
+	// for this example we will mock request
+	handleRequest("GET", "/hello/guest", router)
+	handleRequest("GET", "/hi/guest", router)
 
 	// Output:
 	// Hello, guest!

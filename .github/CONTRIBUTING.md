@@ -24,8 +24,17 @@ Visit the [issue tracker](https://github.com/vardius/gorouter/issues) to find a 
 
 Fork, then clone the repo:
 
-```
+```bash
 git clone https://github.com/your-username/gorouter.git
+# or
+go get github.com/your-username/gorouter
+```
+
+[Dep](https://golang.github.io/dep/docs/introduction.html) is used to managing dependencies. Install instructions can be found [here](https://golang.github.io/dep/docs/installation.html).
+
+```bash
+# In the src dir get the dependencies by running
+dep ensure
 ```
 
 ### Docs

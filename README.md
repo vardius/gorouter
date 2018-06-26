@@ -59,6 +59,16 @@ func main() {
 }
 ```
 
+## Advanced examples
+- [Routing](https://github.com/vardius/gorouter/wiki/Routing)
+- [Middleware](https://github.com/vardius/gorouter/wiki/Middleware)
+- [Mounting Sub Router](https://github.com/vardius/gorouter/wiki/Mounting-Sub-Router)
+- [Serving Files](https://github.com/vardius/gorouter/wiki/Serving-Files)
+- [Authentication](https://github.com/vardius/gorouter/wiki/Authentication)
+- [Handling Errors](https://github.com/vardius/gorouter/wiki/Handling-Errors)
+- [HTTP2](https://github.com/vardius/gorouter/wiki/HTTP2)
+- [Multidomain](https://github.com/vardius/gorouter/wiki/Multidomain)
+
 License
 -------
 

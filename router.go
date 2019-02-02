@@ -166,7 +166,7 @@ func (r *router) NotAllowed(notAllowed http.Handler) {
 
 func (r *router) ServeFiles(root http.FileSystem, path string, strip bool) {
 	if path == "" {
-		panic("goapi.ServeFiles: empty path!")
+		panic("gorouter.ServeFiles: empty path!")
 	}
 	handler := http.FileServer(root)
 	if strip {

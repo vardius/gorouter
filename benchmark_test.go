@@ -4,13 +4,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/julienschmidt/httprouter"
 )
 
-//GoRouter benchmark tests functions
-
-func benchmarkGoRouterStaticCall(t int, b *testing.B) {
+func benchmarkStaticCall(t int, b *testing.B) {
 	var path string
 	part := "/x"
 	for i := 0; i < t; i++ {
@@ -32,7 +28,7 @@ func benchmarkGoRouterStaticCall(t int, b *testing.B) {
 	}
 }
 
-func benchmarkGoRouterStaticParallel(t int, b *testing.B) {
+func benchmarkStaticParallel(t int, b *testing.B) {
 	var path string
 	part := "/x"
 	for i := 0; i < t; i++ {
@@ -56,7 +52,7 @@ func benchmarkGoRouterStaticParallel(t int, b *testing.B) {
 	})
 }
 
-func benchmarkGoRouterWildcardCall(t int, b *testing.B) {
+func benchmarkWildcardCall(t int, b *testing.B) {
 	var path, rpath string
 	part := "/{x}"
 	rpart := "/x"
@@ -80,7 +76,7 @@ func benchmarkGoRouterWildcardCall(t int, b *testing.B) {
 	}
 }
 
-func benchmarkGoRouterWildcardParallel(t int, b *testing.B) {
+func benchmarkWildcardParallel(t int, b *testing.B) {
 	var path, rpath string
 	part := "/{x}"
 	rpart := "/x"
@@ -106,7 +102,7 @@ func benchmarkGoRouterWildcardParallel(t int, b *testing.B) {
 	})
 }
 
-func benchmarkGoRouterRegexpCall(t int, b *testing.B) {
+func benchmarkRegexpCall(t int, b *testing.B) {
 	var path, rpath string
 	part := "/{x:r([a-z]+)go}"
 	rpart := "/rxgo"
@@ -130,7 +126,7 @@ func benchmarkGoRouterRegexpCall(t int, b *testing.B) {
 	}
 }
 
-func benchmarkGoRouterRegexpParallel(t int, b *testing.B) {
+func benchmarkRegexpParallel(t int, b *testing.B) {
 	var path, rpath string
 	part := "/{x:r([a-z]+)go}"
 	rpart := "/rxgo"
@@ -156,172 +152,44 @@ func benchmarkGoRouterRegexpParallel(t int, b *testing.B) {
 	})
 }
 
-//HttpRouter benchmark tests functions
+func BenchmarkStatic1(b *testing.B)  { benchmarkStaticCall(1, b) }
+func BenchmarkStatic2(b *testing.B)  { benchmarkStaticCall(2, b) }
+func BenchmarkStatic3(b *testing.B)  { benchmarkStaticCall(3, b) }
+func BenchmarkStatic5(b *testing.B)  { benchmarkStaticCall(5, b) }
+func BenchmarkStatic10(b *testing.B) { benchmarkStaticCall(10, b) }
+func BenchmarkStatic20(b *testing.B) { benchmarkStaticCall(20, b) }
 
-func benchmarkHTTPRouterStaticCall(t int, b *testing.B) {
-	var path string
-	part := "/x"
-	for i := 0; i < t; i++ {
-		path += part
-	}
+func BenchmarkWildcard1(b *testing.B)  { benchmarkWildcardCall(1, b) }
+func BenchmarkWildcard2(b *testing.B)  { benchmarkWildcardCall(2, b) }
+func BenchmarkWildcard3(b *testing.B)  { benchmarkWildcardCall(3, b) }
+func BenchmarkWildcard5(b *testing.B)  { benchmarkWildcardCall(5, b) }
+func BenchmarkWildcard10(b *testing.B) { benchmarkWildcardCall(10, b) }
+func BenchmarkWildcard20(b *testing.B) { benchmarkWildcardCall(20, b) }
 
-	s := httprouter.New()
-	s.GET(path, func(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {})
+func BenchmarkRegexp1(b *testing.B)  { benchmarkRegexpCall(1, b) }
+func BenchmarkRegexp2(b *testing.B)  { benchmarkRegexpCall(2, b) }
+func BenchmarkRegexp3(b *testing.B)  { benchmarkRegexpCall(3, b) }
+func BenchmarkRegexp5(b *testing.B)  { benchmarkRegexpCall(5, b) }
+func BenchmarkRegexp10(b *testing.B) { benchmarkRegexpCall(10, b) }
+func BenchmarkRegexp20(b *testing.B) { benchmarkRegexpCall(20, b) }
 
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, path, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
+func BenchmarkStaticParallel1(b *testing.B)  { benchmarkStaticParallel(1, b) }
+func BenchmarkStaticParallel2(b *testing.B)  { benchmarkStaticParallel(2, b) }
+func BenchmarkStaticParallel3(b *testing.B)  { benchmarkStaticParallel(3, b) }
+func BenchmarkStaticParallel5(b *testing.B)  { benchmarkStaticParallel(5, b) }
+func BenchmarkStaticParallel10(b *testing.B) { benchmarkStaticParallel(10, b) }
+func BenchmarkStaticParallel20(b *testing.B) { benchmarkStaticParallel(20, b) }
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		s.ServeHTTP(w, req)
-	}
-}
+func BenchmarkWildcardParallel1(b *testing.B)  { benchmarkWildcardParallel(1, b) }
+func BenchmarkWildcardParallel2(b *testing.B)  { benchmarkWildcardParallel(2, b) }
+func BenchmarkWildcardParallel3(b *testing.B)  { benchmarkWildcardParallel(3, b) }
+func BenchmarkWildcardParallel5(b *testing.B)  { benchmarkWildcardParallel(5, b) }
+func BenchmarkWildcardParallel10(b *testing.B) { benchmarkWildcardParallel(10, b) }
+func BenchmarkWildcardParallel20(b *testing.B) { benchmarkWildcardParallel(20, b) }
 
-func benchmarkHTTPRouterStaticParallel(t int, b *testing.B) {
-	var path string
-	part := "/x"
-	for i := 0; i < t; i++ {
-		path += part
-	}
-
-	s := httprouter.New()
-	s.GET(path, func(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {})
-
-	req, err := http.NewRequest(GET, path, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		w := httptest.NewRecorder()
-		for pb.Next() {
-			s.ServeHTTP(w, req)
-		}
-	})
-}
-
-func benchmarkHTTPRouterWildcardCall(t int, b *testing.B) {
-	var path, rpath string
-	part := "/:x"
-	rpart := "/x"
-	for i := 0; i < t; i++ {
-		path += part
-		rpath += rpart
-	}
-
-	s := httprouter.New()
-	s.GET(path, func(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {})
-
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, rpath, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		s.ServeHTTP(w, req)
-	}
-}
-
-func benchmarkHTTPRouterWildcardParallel(t int, b *testing.B) {
-	var path, rpath string
-	part := "/:x"
-	rpart := "/x"
-	for i := 0; i < t; i++ {
-		path += part
-		rpath += rpart
-	}
-
-	s := httprouter.New()
-	s.GET(path, func(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {})
-
-	req, err := http.NewRequest(GET, rpath, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		w := httptest.NewRecorder()
-		for pb.Next() {
-			s.ServeHTTP(w, req)
-		}
-	})
-}
-
-//GoRouter benchmark tests
-func BenchmarkGoRouterStatic1(b *testing.B)  { benchmarkGoRouterStaticCall(1, b) }
-func BenchmarkGoRouterStatic2(b *testing.B)  { benchmarkGoRouterStaticCall(2, b) }
-func BenchmarkGoRouterStatic3(b *testing.B)  { benchmarkGoRouterStaticCall(3, b) }
-func BenchmarkGoRouterStatic5(b *testing.B)  { benchmarkGoRouterStaticCall(5, b) }
-func BenchmarkGoRouterStatic10(b *testing.B) { benchmarkGoRouterStaticCall(10, b) }
-func BenchmarkGoRouterStatic20(b *testing.B) { benchmarkGoRouterStaticCall(20, b) }
-
-func BenchmarkGoRouterWildcard1(b *testing.B)  { benchmarkGoRouterWildcardCall(1, b) }
-func BenchmarkGoRouterWildcard2(b *testing.B)  { benchmarkGoRouterWildcardCall(2, b) }
-func BenchmarkGoRouterWildcard3(b *testing.B)  { benchmarkGoRouterWildcardCall(3, b) }
-func BenchmarkGoRouterWildcard5(b *testing.B)  { benchmarkGoRouterWildcardCall(5, b) }
-func BenchmarkGoRouterWildcard10(b *testing.B) { benchmarkGoRouterWildcardCall(10, b) }
-func BenchmarkGoRouterWildcard20(b *testing.B) { benchmarkGoRouterWildcardCall(20, b) }
-
-func BenchmarkGoRouterRegexp1(b *testing.B)  { benchmarkGoRouterRegexpCall(1, b) }
-func BenchmarkGoRouterRegexp2(b *testing.B)  { benchmarkGoRouterRegexpCall(2, b) }
-func BenchmarkGoRouterRegexp3(b *testing.B)  { benchmarkGoRouterRegexpCall(3, b) }
-func BenchmarkGoRouterRegexp5(b *testing.B)  { benchmarkGoRouterRegexpCall(5, b) }
-func BenchmarkGoRouterRegexp10(b *testing.B) { benchmarkGoRouterRegexpCall(10, b) }
-func BenchmarkGoRouterRegexp20(b *testing.B) { benchmarkGoRouterRegexpCall(20, b) }
-
-func BenchmarkGoRouterStaticParallel1(b *testing.B)  { benchmarkGoRouterStaticParallel(1, b) }
-func BenchmarkGoRouterStaticParallel2(b *testing.B)  { benchmarkGoRouterStaticParallel(2, b) }
-func BenchmarkGoRouterStaticParallel3(b *testing.B)  { benchmarkGoRouterStaticParallel(3, b) }
-func BenchmarkGoRouterStaticParallel5(b *testing.B)  { benchmarkGoRouterStaticParallel(5, b) }
-func BenchmarkGoRouterStaticParallel10(b *testing.B) { benchmarkGoRouterStaticParallel(10, b) }
-func BenchmarkGoRouterStaticParallel20(b *testing.B) { benchmarkGoRouterStaticParallel(20, b) }
-
-func BenchmarkGoRouterWildcardParallel1(b *testing.B)  { benchmarkGoRouterWildcardParallel(1, b) }
-func BenchmarkGoRouterWildcardParallel2(b *testing.B)  { benchmarkGoRouterWildcardParallel(2, b) }
-func BenchmarkGoRouterWildcardParallel3(b *testing.B)  { benchmarkGoRouterWildcardParallel(3, b) }
-func BenchmarkGoRouterWildcardParallel5(b *testing.B)  { benchmarkGoRouterWildcardParallel(5, b) }
-func BenchmarkGoRouterWildcardParallel10(b *testing.B) { benchmarkGoRouterWildcardParallel(10, b) }
-func BenchmarkGoRouterWildcardParallel20(b *testing.B) { benchmarkGoRouterWildcardParallel(20, b) }
-
-func BenchmarkGoRouterRegexpParallel1(b *testing.B)  { benchmarkGoRouterRegexpParallel(1, b) }
-func BenchmarkGoRouterRegexpParallel2(b *testing.B)  { benchmarkGoRouterRegexpParallel(2, b) }
-func BenchmarkGoRouterRegexpParallel3(b *testing.B)  { benchmarkGoRouterRegexpParallel(3, b) }
-func BenchmarkGoRouterRegexpParallel5(b *testing.B)  { benchmarkGoRouterRegexpParallel(5, b) }
-func BenchmarkGoRouterRegexpParallel10(b *testing.B) { benchmarkGoRouterRegexpParallel(10, b) }
-func BenchmarkGoRouterRegexpParallel20(b *testing.B) { benchmarkGoRouterRegexpParallel(20, b) }
-
-//HttpRouter benchmark tests for comparison
-func BenchmarkHttpRouterStatic1(b *testing.B)  { benchmarkHTTPRouterStaticCall(1, b) }
-func BenchmarkHttpRouterStatic2(b *testing.B)  { benchmarkHTTPRouterStaticCall(2, b) }
-func BenchmarkHttpRouterStatic3(b *testing.B)  { benchmarkHTTPRouterStaticCall(3, b) }
-func BenchmarkHttpRouterStatic5(b *testing.B)  { benchmarkHTTPRouterStaticCall(5, b) }
-func BenchmarkHttpRouterStatic10(b *testing.B) { benchmarkHTTPRouterStaticCall(10, b) }
-func BenchmarkHttpRouterStatic20(b *testing.B) { benchmarkHTTPRouterStaticCall(20, b) }
-
-func BenchmarkHttpRouterWildcard1(b *testing.B)  { benchmarkHTTPRouterWildcardCall(1, b) }
-func BenchmarkHttpRouterWildcard2(b *testing.B)  { benchmarkHTTPRouterWildcardCall(2, b) }
-func BenchmarkHttpRouterWildcard3(b *testing.B)  { benchmarkHTTPRouterWildcardCall(3, b) }
-func BenchmarkHttpRouterWildcard5(b *testing.B)  { benchmarkHTTPRouterWildcardCall(5, b) }
-func BenchmarkHttpRouterWildcard10(b *testing.B) { benchmarkHTTPRouterWildcardCall(10, b) }
-func BenchmarkHttpRouterWildcard20(b *testing.B) { benchmarkHTTPRouterWildcardCall(20, b) }
-
-func BenchmarkHttpRouterStaticParallel1(b *testing.B)  { benchmarkHTTPRouterStaticParallel(1, b) }
-func BenchmarkHttpRouterStaticParallel2(b *testing.B)  { benchmarkHTTPRouterStaticParallel(2, b) }
-func BenchmarkHttpRouterStaticParallel3(b *testing.B)  { benchmarkHTTPRouterStaticParallel(3, b) }
-func BenchmarkHttpRouterStaticParallel5(b *testing.B)  { benchmarkHTTPRouterStaticParallel(5, b) }
-func BenchmarkHttpRouterStaticParallel10(b *testing.B) { benchmarkHTTPRouterStaticParallel(10, b) }
-func BenchmarkHttpRouterStaticParallel20(b *testing.B) { benchmarkHTTPRouterStaticParallel(20, b) }
-
-func BenchmarkHttpRouterWildcardParallel1(b *testing.B)  { benchmarkHTTPRouterWildcardParallel(1, b) }
-func BenchmarkHttpRouterWildcardParallel2(b *testing.B)  { benchmarkHTTPRouterWildcardParallel(2, b) }
-func BenchmarkHttpRouterWildcardParallel3(b *testing.B)  { benchmarkHTTPRouterWildcardParallel(3, b) }
-func BenchmarkHttpRouterWildcardParallel5(b *testing.B)  { benchmarkHTTPRouterWildcardParallel(5, b) }
-func BenchmarkHttpRouterWildcardParallel10(b *testing.B) { benchmarkHTTPRouterWildcardParallel(10, b) }
-func BenchmarkHttpRouterWildcardParallel20(b *testing.B) { benchmarkHTTPRouterWildcardParallel(20, b) }
+func BenchmarkRegexpParallel1(b *testing.B)  { benchmarkRegexpParallel(1, b) }
+func BenchmarkRegexpParallel2(b *testing.B)  { benchmarkRegexpParallel(2, b) }
+func BenchmarkRegexpParallel3(b *testing.B)  { benchmarkRegexpParallel(3, b) }
+func BenchmarkRegexpParallel5(b *testing.B)  { benchmarkRegexpParallel(5, b) }
+func BenchmarkRegexpParallel10(b *testing.B) { benchmarkRegexpParallel(10, b) }
+func BenchmarkRegexpParallel20(b *testing.B) { benchmarkRegexpParallel(20, b) }

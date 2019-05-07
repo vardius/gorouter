@@ -65,7 +65,7 @@ func main() {
 - [Mounting Sub Router](https://github.com/vardius/gorouter/wiki/Mounting-Sub-Router)
 - [Serving Files](https://github.com/vardius/gorouter/wiki/Serving-Files)
 - [Authentication](https://github.com/vardius/gorouter/wiki/Authentication)
-- [Handling Errors](https://github.com/vardius/gorouter/wiki/Handling-Errors)
+- [Handling Panic](https://github.com/vardius/gorouter/wiki/Handling-Panic)
 - [HTTP2](https://github.com/vardius/gorouter/wiki/HTTP2)
 - [Multidomain](https://github.com/vardius/gorouter/wiki/Multidomain)
 

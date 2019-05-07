@@ -38,7 +38,7 @@ import (
     "log"
     "net/http"
 	
-    "github.com/vardius/gorouter"
+    "github.com/vardius/gorouter/v4"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {

@@ -1,1 +1,1 @@
-module github.com/vardius/gorouter
+module github.com/vardius/gorouter/v4

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/vardius/gorouter"
+	"github.com/vardius/gorouter/v4"
 )
 
 func handleRequest(method, path string, handler http.Handler) {

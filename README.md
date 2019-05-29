@@ -5,8 +5,6 @@ Vardius - gorouter
 [![codecov](https://codecov.io/gh/vardius/gorouter/branch/master/graph/badge.svg)](https://codecov.io/gh/vardius/gorouter)
 [![](https://godoc.org/github.com/vardius/gorouter?status.svg)](http://godoc.org/github.com/vardius/gorouter)
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/vardius/gorouter/blob/master/LICENSE.md)
-[![Beerpay](https://beerpay.io/vardius/gorouter/badge.svg?style=beer-square)](https://beerpay.io/vardius/gorouter)
-[![Beerpay](https://beerpay.io/vardius/gorouter/make-wish.svg?style=flat-square)](https://beerpay.io/vardius/gorouter?focus=wish)
 
 Go Server/API micro framwework, HTTP request router, multiplexer, mux.
 

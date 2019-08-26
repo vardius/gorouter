@@ -1,15 +1,16 @@
-package gorouter
+package path
 
 import "strings"
 
-func splitPath(path string) (parts []string) {
+// Split splits URL path into parts
+func Split(path string) (parts []string) {
 	for {
 		if i := strings.IndexByte(path, '{'); i >= 0 {
-			if part := trimPath(path[:i]); part != "" {
+			if part := Trim(path[:i]); part != "" {
 				parts = append(parts, part)
 			}
 			if j := strings.IndexByte(path, '}') + 1; j > 0 {
-				if part := trimPath(path[i:j]); part != "" {
+				if part := Trim(path[i:j]); part != "" {
 					parts = append(parts, part)
 				}
 				i = j
@@ -23,7 +24,7 @@ func splitPath(path string) (parts []string) {
 	}
 
 	if len(path) != 0 && path != "/" {
-		if part := trimPath(path); part != "" {
+		if part := Trim(path); part != "" {
 			parts = append(parts, part)
 		}
 	}
@@ -31,7 +32,8 @@ func splitPath(path string) (parts []string) {
 	return
 }
 
-func trimPath(path string) string {
+// Trim trims '/' URL path
+func Trim(path string) string {
 	pathLen := len(path)
 	if pathLen > 0 && path[0] == '/' {
 		path = path[1:]

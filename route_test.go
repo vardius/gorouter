@@ -4,6 +4,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/vardius/gorouter/v4/context"
+	"github.com/vardius/gorouter/v4/middleware"
 )
 
 func TestRouter(t *testing.T) {
@@ -16,7 +19,7 @@ func TestRouter(t *testing.T) {
 	m3 := mockMiddleware("3")
 
 	r := newRoute(fn)
-	r.appendMiddleware(newMiddleware(m1, m2, m3))
+	r.appendMiddleware(middleware.New(m1, m2, m3))
 
 	h := r.getHandler()
 
@@ -34,8 +37,8 @@ func TestRouter(t *testing.T) {
 }
 
 func TestParams(t *testing.T) {
-	param := Param{"key", "value"}
-	params := Params{param}
+	param := context.Param{"key", "value"}
+	params := context.Params{param}
 
 	if params.Value("key") != "value" {
 		t.Error("Invalid params value")
@@ -43,8 +46,8 @@ func TestParams(t *testing.T) {
 }
 
 func TestInvalidParams(t *testing.T) {
-	param := Param{"key", "value"}
-	params := Params{param}
+	param := context.Param{"key", "value"}
+	params := context.Params{param}
 
 	if params.Value("invalid_key") != "" {
 		t.Error("Invalid params value")

@@ -1,10 +1,10 @@
-package gorouter
+package mux
 
 import "testing"
 
 func TestInsertNilNode(t *testing.T) {
-	tree := newTree()
-	tree.insert(nil)
+	tree := NewTree()
+	tree.Insert(nil)
 
 	if tree.idsLen > 0 || len(tree.regexps) > 0 || tree.wildcard != nil {
 		t.Error("Tree should not insert nil node")
@@ -18,25 +18,25 @@ func TestTreeInsertWildcardNodePanic(t *testing.T) {
 		}
 	}()
 
-	n1 := newRoot("")
+	n1 := NewRoot("")
 	n1.isWildcard = true
 
-	n2 := newRoot("")
+	n2 := NewRoot("")
 	n2.isWildcard = true
 
-	tree := newTree()
-	tree.insert(n1)
-	tree.insert(n2)
+	tree := NewTree()
+	tree.Insert(n1)
+	tree.Insert(n2)
 }
 
 func TestTreeGetRegexNodeById(t *testing.T) {
-	n := newRoot("")
-	n.setRegexp("r([a-z]+)go")
+	n := NewRoot("")
+	n.SetRegexp("r([a-z]+)go")
 
-	tree := newTree()
-	tree.insert(n)
+	tree := NewTree()
+	tree.Insert(n)
 
-	c := tree.getByID("rego")
+	c := tree.GetByID("rego")
 
 	if c != n {
 		t.Error("Tree should match regex node by ID")
@@ -44,8 +44,8 @@ func TestTreeGetRegexNodeById(t *testing.T) {
 }
 
 func TestGetTreeNodeByEmptyPath(t *testing.T) {
-	tree := newTree()
-	n, _, _ := tree.getByPath("")
+	tree := NewTree()
+	n, _, _ := tree.GetByPath("")
 
 	if n != nil {
 		t.Error("Tree should return nil node for empty path")

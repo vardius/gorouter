@@ -1,4 +1,4 @@
-package gorouter
+package context
 
 type (
 	// Param object to hold request parameter
@@ -6,11 +6,11 @@ type (
 		Key   string
 		Value string
 	}
-	//Params slice returned from request context
+	// Params slice returned from request context
 	Params []Param
 )
 
-//Value of the request parameter by name
+// Value of the request parameter by name
 func (p Params) Value(key string) string {
 	for i := range p {
 		if p[i].Key == key {

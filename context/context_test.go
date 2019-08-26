@@ -1,4 +1,4 @@
-package gorouter
+package context
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 )
 
 func TestContext(t *testing.T) {
-	req, err := http.NewRequest(GET, "/x", nil)
+	req, err := http.NewRequest("GET", "/x", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -14,8 +14,8 @@ func TestContext(t *testing.T) {
 	p := Param{"test", "test"}
 	params := Params{p}
 
-	req = req.WithContext(newContext(req, params))
-	cParams, ok := FromContext(req.Context())
+	req = req.WithContext(WithParams(req.Context(), params))
+	cParams, ok := Parameters(req.Context())
 	if !ok {
 		t.Fatal("Error while getting context")
 	}

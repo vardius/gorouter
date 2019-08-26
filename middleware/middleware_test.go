@@ -1,4 +1,4 @@
-package gorouter
+package middleware
 
 import (
 	"net/http"
@@ -7,9 +7,18 @@ import (
 	"testing"
 )
 
+func mockMiddleware(body string) func(h http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(body))
+			h.ServeHTTP(w, r)
+		})
+	}
+}
+
 func TestDefaultServeMux(t *testing.T) {
-	m := newMiddleware()
-	if m.handle(nil) != http.DefaultServeMux {
+	m := New()
+	if m.Handle(nil) != http.DefaultServeMux {
 		t.Error("nil is not DefaultServeMux")
 	}
 }
@@ -19,8 +28,8 @@ func TestHandlerFunc(t *testing.T) {
 		w.WriteHeader(200)
 	})
 
-	m := newMiddleware()
-	h := m.handleFunc(fn)
+	m := New()
+	h := m.HandleFunc(fn)
 
 	w := httptest.NewRecorder()
 
@@ -39,8 +48,8 @@ func TestOrders(t *testing.T) {
 		w.Write([]byte("4"))
 	})
 
-	m := newMiddleware(m1, m2, m3)
-	h := m.handleFunc(fn)
+	m := New(m1, m2, m3)
+	h := m.HandleFunc(fn)
 
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "/", nil)
@@ -63,9 +72,9 @@ func TestAppend(t *testing.T) {
 		w.Write([]byte("4"))
 	})
 
-	m := newMiddleware(m1)
-	m = m.append(m2, m3)
-	h := m.handleFunc(fn)
+	m := New(m1)
+	m = m.Append(m2, m3)
+	h := m.HandleFunc(fn)
 
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "/", nil)

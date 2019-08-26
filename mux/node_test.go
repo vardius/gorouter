@@ -1,4 +1,4 @@
-package gorouter
+package mux
 
 import (
 	"reflect"
@@ -43,19 +43,19 @@ func isNil(value interface{}) bool {
 }
 
 func TestRootNode(t *testing.T) {
-	n := newRoot("")
+	n := NewRoot("")
 
 	equal(t, "", n.id)
 	equal(t, "", n.regexpToString())
-	equal(t, true, n.isRoot())
-	equal(t, true, n.isLeaf())
+	equal(t, true, n.IsRoot())
+	equal(t, true, n.IsLeaf())
 }
 
 func TestRegexNode(t *testing.T) {
-	n := newRoot("")
+	n := NewRoot("")
 
 	regexp := "r([a-z]+)go"
-	n.setRegexp(regexp)
+	n.SetRegexp(regexp)
 	equal(t, regexp, n.regexpToString())
 
 	if !n.regexp.MatchString("rzgo") {
@@ -64,9 +64,9 @@ func TestRegexNode(t *testing.T) {
 }
 
 func TestUnknownNodesChild(t *testing.T) {
-	n := newRoot("")
+	n := NewRoot("")
 
-	node, params := n.getChild([]string{"a", "b", "c"})
+	node, params := n.GetChild([]string{"a", "b", "c"})
 
 	if node != nil || params != nil {
 		t.Error("Node should return nil values for unknown path")

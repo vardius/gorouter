@@ -1,18 +1,29 @@
-package gorouter
+package mux
 
 import (
 	"strings"
 )
 
-type tree struct {
+// Tree of routes
+type Tree struct {
 	idsLen   int
 	ids      []string
-	statics  map[int]*node
-	regexps  []*node
-	wildcard *node
+	statics  map[int]*Node
+	regexps  []*Node
+	wildcard *Node
 }
 
-func (t *tree) insert(n *node) {
+// NewTree provides new node tree
+func NewTree() *Tree {
+	return &Tree{
+		ids:     make([]string, 0),
+		statics: make(map[int]*Node),
+		regexps: make([]*Node, 0),
+	}
+}
+
+// Insert inserts node
+func (t *Tree) Insert(n *Node) {
 	if n == nil {
 		return
 	}
@@ -54,7 +65,8 @@ func (t *tree) insert(n *node) {
 	}
 }
 
-func (t *tree) getByID(id string) *node {
+// GetByID gets node by ID
+func (t *Tree) GetByID(id string) *Node {
 	if id != "" {
 		if t.idsLen > 0 {
 			for i, cID := range t.ids {
@@ -76,7 +88,8 @@ func (t *tree) getByID(id string) *node {
 	return nil
 }
 
-func (t *tree) getByPath(path string) (*node, string, string) {
+// GetByPath gets node by path
+func (t *Tree) GetByPath(path string) (*Node, string, string) {
 	if len(path) == 0 {
 		return nil, "", ""
 	}
@@ -108,10 +121,17 @@ func (t *tree) getByPath(path string) (*node, string, string) {
 	return nil, "", ""
 }
 
-func newTree() *tree {
-	return &tree{
-		ids:     make([]string, 0),
-		statics: make(map[int]*node),
-		regexps: make([]*node, 0),
-	}
+// StaticNodes returns tree static nodes
+func (t *Tree) StaticNodes() map[int]*Node {
+	return t.statics
+}
+
+// RegexpNodes returns tree regexp nodes
+func (t *Tree) RegexpNodes() []*Node {
+	return t.regexps
+}
+
+// WildcardNode returns tree wildcard node
+func (t *Tree) WildcardNode() *Node {
+	return t.wildcard
 }

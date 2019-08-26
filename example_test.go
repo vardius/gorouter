@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 
 	"github.com/vardius/gorouter/v4"
+	"github.com/vardius/gorouter/v4/context"
 )
 
 func handleRequest(method, path string, handler http.Handler) {
@@ -17,7 +18,7 @@ func handleRequest(method, path string, handler http.Handler) {
 
 func Example() {
 	hello := func(w http.ResponseWriter, r *http.Request) {
-		params, _ := gorouter.FromContext(r.Context())
+		params, _ := context.Parameters(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
@@ -35,7 +36,7 @@ func ExampleMiddlewareFunc() {
 	// Global middleware example
 	// applies to all routes
 	hello := func(w http.ResponseWriter, r *http.Request) {
-		params, _ := gorouter.FromContext(r.Context())
+		params, _ := context.Parameters(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
@@ -65,7 +66,7 @@ func ExampleMiddlewareFunc_second() {
 	// Route level middleware example
 	// applies to route and its lower tree
 	hello := func(w http.ResponseWriter, r *http.Request) {
-		params, _ := gorouter.FromContext(r.Context())
+		params, _ := context.Parameters(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
@@ -97,7 +98,7 @@ func ExampleMiddlewareFunc_third() {
 	// Http method middleware example
 	// applies to all routes under this method
 	hello := func(w http.ResponseWriter, r *http.Request) {
-		params, _ := gorouter.FromContext(r.Context())
+		params, _ := context.Parameters(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
@@ -127,7 +128,7 @@ func ExampleMiddlewareFunc_third() {
 
 func ExampleRouter_mount() {
 	hello := func(w http.ResponseWriter, r *http.Request) {
-		params, _ := gorouter.FromContext(r.Context())
+		params, _ := context.Parameters(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 

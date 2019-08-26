@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/vardius/gorouter/v4/context"
 )
 
 type mockHandler struct {
@@ -25,7 +27,7 @@ func (mfs *mockFileSystem) Open(name string) (http.File, error) {
 	return nil, errors.New("")
 }
 
-func mockMiddleware(body string) MiddlewareFunc {
+func mockMiddleware(body string) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(body))
@@ -47,7 +49,7 @@ func mockServeHTTP(h http.Handler, method, path string) error {
 }
 
 func checkIfHasRootRoute(t *testing.T, router *router, method string) {
-	if rootRoute := router.routes.getByID(method); rootRoute == nil {
+	if rootRoute := router.routes.GetByID(method); rootRoute == nil {
 		t.Error("Route not found")
 	}
 }
@@ -300,7 +302,7 @@ func TestParam(t *testing.T) {
 	router.GET("/x/{param}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
-		params, ok := FromContext(r.Context())
+		params, ok := context.Parameters(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
@@ -329,7 +331,7 @@ func TestRegexpParam(t *testing.T) {
 	router.GET("/x/{param:r([a-z]+)go}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
-		params, ok := FromContext(r.Context())
+		params, ok := context.Parameters(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
@@ -464,7 +466,7 @@ func TestNodeApplyMiddleware(t *testing.T) {
 	router := New().(*router)
 
 	router.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		params, ok := FromContext(r.Context())
+		params, ok := context.Parameters(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
@@ -496,7 +498,7 @@ func TestChainCalls(t *testing.T) {
 	router.GET("/users/{user:[a-z0-9]+)}/starred", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
-		params, ok := FromContext(r.Context())
+		params, ok := context.Parameters(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
@@ -509,7 +511,7 @@ func TestChainCalls(t *testing.T) {
 	router.GET("/applications/{client_id}/tokens", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
-		params, ok := FromContext(r.Context())
+		params, ok := context.Parameters(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
@@ -522,7 +524,7 @@ func TestChainCalls(t *testing.T) {
 	router.GET("/applications/{client_id}/tokens/{access_token}", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
-		params, ok := FromContext(r.Context())
+		params, ok := context.Parameters(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
@@ -539,7 +541,7 @@ func TestChainCalls(t *testing.T) {
 	router.GET("/users/{user}/received_events", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
-		params, ok := FromContext(r.Context())
+		params, ok := context.Parameters(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
@@ -552,7 +554,7 @@ func TestChainCalls(t *testing.T) {
 	router.GET("/users/{user}/received_events/public", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		serverd = true
 
-		params, ok := FromContext(r.Context())
+		params, ok := context.Parameters(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}

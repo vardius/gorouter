@@ -18,7 +18,7 @@ Route types
 Wildcards
 
 The values of *named parameter* or *regexp parameters* are accessible via *request context*
-`params, ok := gorouter.FromContext(req.Context())`.
+`params, ok := context.Parameters(req.Context())`.
 You can get the value of a parameter either by its index in the slice, or by using the `params.Value(name)` method:
 `:name` or `/{name:[a-z]+}` can be retrieved by `params.Value("name")`.
 
@@ -35,8 +35,10 @@ and can contain named wildcard placeholders *(e.g. {placeholder})* to match dyna
 
 Take the following example:
 
+	import "github.com/vardius/gorouter/v4/context"
+
 	router.GET("/hello/{name:r([a-z]+)go}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	  params, _ := gorouter.FromContext(r.Context())
+	  params, _ := context.Parameters(r.Context())
 	  fmt.Fprintf(w, "hello, %s!\n", params.Value("name"))
 	}))
 

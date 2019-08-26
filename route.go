@@ -2,31 +2,33 @@ package gorouter
 
 import (
 	"net/http"
+
+	"github.com/vardius/gorouter/v4/middleware"
 )
 
 type route struct {
-	middleware middleware
+	middleware middleware.Middleware
 	handler    http.Handler
 }
 
 func (r *route) getHandler() http.Handler {
 	if r.handler != nil {
-		return r.middleware.handle(r.handler)
+		return r.middleware.Handle(r.handler)
 	}
 	return nil
 }
 
-func (r *route) appendMiddleware(m middleware) {
-	r.middleware = r.middleware.merge(m)
+func (r *route) appendMiddleware(m middleware.Middleware) {
+	r.middleware = r.middleware.Merge(m)
 }
 
-func (r *route) prependMiddleware(m middleware) {
-	r.middleware = m.merge(r.middleware)
+func (r *route) prependMiddleware(m middleware.Middleware) {
+	r.middleware = m.Merge(r.middleware)
 }
 
 func newRoute(h http.Handler) *route {
 	return &route{
 		handler:    h,
-		middleware: newMiddleware(),
+		middleware: middleware.New(),
 	}
 }

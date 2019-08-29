@@ -3,41 +3,18 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 )
 
-func mockMiddleware(body string) func(h http.Handler) http.Handler {
-	return func(h http.Handler) http.Handler {
+func mockMiddleware(body string) MiddlewareFunc {
+	fn := func(h interface{}) interface{} {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(body))
-			h.ServeHTTP(w, r)
+			h.(http.Handler).ServeHTTP(w, r)
 		})
 	}
-}
 
-func TestDefaultServeMux(t *testing.T) {
-	m := New()
-	if m.Handle(nil) != http.DefaultServeMux {
-		t.Error("nil is not DefaultServeMux")
-	}
-}
-
-func TestHandlerFunc(t *testing.T) {
-	fn := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(200)
-	})
-
-	m := New()
-	h := m.HandleFunc(fn)
-
-	w := httptest.NewRecorder()
-
-	h.ServeHTTP(w, (*http.Request)(nil))
-
-	if reflect.TypeOf(h) != reflect.TypeOf((http.HandlerFunc)(nil)) {
-		t.Error("handleFunc does not construct HandlerFunc")
-	}
+	return fn
 }
 
 func TestOrders(t *testing.T) {
@@ -49,7 +26,7 @@ func TestOrders(t *testing.T) {
 	})
 
 	m := New(m1, m2, m3)
-	h := m.HandleFunc(fn)
+	h := m.Compose(fn).(http.Handler)
 
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "/", nil)
@@ -74,7 +51,7 @@ func TestAppend(t *testing.T) {
 
 	m := New(m1)
 	m = m.Append(m2, m3)
-	h := m.HandleFunc(fn)
+	h := m.Compose(fn).(http.Handler)
 
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "/", nil)

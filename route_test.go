@@ -10,18 +10,29 @@ import (
 )
 
 func TestRouter(t *testing.T) {
-	fn := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte("4"))
 	})
 
-	m1 := mockMiddleware("1")
-	m2 := mockMiddleware("2")
-	m3 := mockMiddleware("3")
+	buildMiddlewareFunc := func(body string) middleware.MiddlewareFunc {
+		fn := func(h interface{}) interface{} {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte(body))
+				h.(http.Handler).ServeHTTP(w, r)
+			})
+		}
 
-	r := newRoute(fn)
-	r.appendMiddleware(middleware.New(m1, m2, m3))
+		return fn
+	}
 
-	h := r.getHandler()
+	m1 := buildMiddlewareFunc("1")
+	m2 := buildMiddlewareFunc("2")
+	m3 := buildMiddlewareFunc("3")
+
+	r := newRoute(handler)
+	r.AppendMiddleware(middleware.New(m1, m2, m3))
+
+	h := r.Handler()
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", "/", nil)
@@ -29,7 +40,7 @@ func TestRouter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h.ServeHTTP(w, req)
+	h.(http.Handler).ServeHTTP(w, req)
 
 	if w.Body.String() != "1234" {
 		t.Errorf("The router doesn't work correctly. Expected 1234, Actual: %s", w.Body.String())
@@ -56,7 +67,7 @@ func TestInvalidParams(t *testing.T) {
 
 func TestNilHandler(t *testing.T) {
 	r := newRoute(nil)
-	if h := r.getHandler(); h != nil {
+	if h := r.Handler(); h != nil {
 		t.Error("Handler hould be equal nil")
 	}
 }

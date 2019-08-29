@@ -5,15 +5,24 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/valyala/fasthttp"
 	"github.com/vardius/gorouter/v4"
 	"github.com/vardius/gorouter/v4/context"
 )
 
-func handleRequest(method, path string, handler http.Handler) {
+func handleNetHTTPRequest(method, path string, handler http.Handler) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(method, path, nil)
 
 	handler.ServeHTTP(w, req)
+}
+
+func handleFastHTTPRequest(method, path string, handler fasthttp.RequestHandler) {
+	ctx := &fasthttp.RequestCtx{}
+	ctx.Request.Header.SetMethod(method)
+	ctx.URI().SetPath(path)
+
+	handler(ctx)
 }
 
 func Example() {
@@ -26,7 +35,7 @@ func Example() {
 	router.GET("/hello/{name}", http.HandlerFunc(hello))
 
 	// for this example we will mock request
-	handleRequest("GET", "/hello/guest", router)
+	handleNetHTTPRequest("GET", "/hello/guest", router)
 
 	// Output:
 	// Hello, guest!
@@ -55,7 +64,7 @@ func ExampleMiddlewareFunc() {
 	router.GET("/hello/{name}", http.HandlerFunc(hello))
 
 	// for this example we will mock request
-	handleRequest("GET", "/hello/guest", router)
+	handleNetHTTPRequest("GET", "/hello/guest", router)
 
 	// Output:
 	// [GET] "/hello/guest"
@@ -87,7 +96,7 @@ func ExampleMiddlewareFunc_second() {
 	router.USE("GET", "/hello/{name}", logger)
 
 	// for this example we will mock request
-	handleRequest("GET", "/hello/guest", router)
+	handleNetHTTPRequest("GET", "/hello/guest", router)
 
 	// Output:
 	// [GET] "/hello/guest"
@@ -119,7 +128,7 @@ func ExampleMiddlewareFunc_third() {
 	router.USE("GET", "", logger)
 
 	// for this example we will mock request
-	handleRequest("GET", "/hello/guest", router)
+	handleNetHTTPRequest("GET", "/hello/guest", router)
 
 	// Output:
 	// [GET] "/hello/guest"
@@ -148,8 +157,8 @@ func ExampleRouter_mount() {
 	router.Mount("/hi", unknownSubrouter)
 
 	// for this example we will mock request
-	handleRequest("GET", "/hello/guest", router)
-	handleRequest("GET", "/hi/guest", router)
+	handleNetHTTPRequest("GET", "/hello/guest", router)
+	handleNetHTTPRequest("GET", "/hi/guest", router)
 
 	// Output:
 	// Hello, guest!

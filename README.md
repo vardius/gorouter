@@ -29,6 +29,7 @@ HOW TO USE
 4. [Go Server/API boilerplate using best practices DDD CQRS ES](https://github.com/vardius/go-api-boilerplate)
 
 ## Basic example
+### [net/http](https://golang.org/pkg/net/http/)
 ```go
 package main
 
@@ -56,6 +57,34 @@ func main() {
     router.GET("/hello/{name}", http.HandlerFunc(Hello))
 
     log.Fatal(http.ListenAndServe(":8080", router))
+}
+```
+### [fasthttp](https://github.com/valyala/fasthttp)
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+
+	"github.com/valyala/fasthttp"
+    "github.com/vardius/gorouter/v4"
+)
+
+func Index(ctx *fasthttp.RequestCtx) {
+    fmt.Fprint(w, "Welcome!\n")
+}
+
+func Hello(ctx *fasthttp.RequestCtx) {
+    fmt.Fprintf(w, "hello, %s!\n", ctx.UserValue("name"))
+}
+
+func main() {
+    router := gorouter.NewFastHTTPRouter()
+    router.GET("/", Index)
+    router.GET("/hello/{name}", Hello)
+
+    log.Fatal(fasthttp.ListenAndServe(":8080", router.HandleFastHTTP))
 }
 ```
 

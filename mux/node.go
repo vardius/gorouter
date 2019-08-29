@@ -11,7 +11,7 @@ import (
 type Node struct {
 	id          string
 	regexp      *regexp.Regexp
-	route       interface{}
+	route       Route
 	parent      *Node
 	children    *Tree
 	params      uint8
@@ -154,7 +154,7 @@ func (n *Node) SetRegexp(exp string) {
 }
 
 // SetRoute sets node route value
-func (n *Node) SetRoute(r interface{}) {
+func (n *Node) SetRoute(r Route) {
 	n.route = r
 }
 
@@ -163,20 +163,13 @@ func (n *Node) TurnIntoSubrouter() {
 	n.isSubrouter = true
 }
 
-func (n *Node) regexpToString() string {
-	if n.regexp == nil {
-		return ""
-	}
-	return n.regexp.String()
-}
-
 // ID returns node's id
 func (n *Node) ID() string {
 	return n.id
 }
 
 // Route returns node's route
-func (n *Node) Route() interface{} {
+func (n *Node) Route() Route {
 	return n.route
 }
 
@@ -198,4 +191,11 @@ func (n *Node) IsRoot() bool {
 // IsLeaf returns true if node is root
 func (n *Node) IsLeaf() bool {
 	return n.children.idsLen == 0 && len(n.children.regexps) == 0 && n.children.wildcard == nil
+}
+
+func (n *Node) regexpToString() string {
+	if n.regexp == nil {
+		return ""
+	}
+	return n.regexp.String()
 }

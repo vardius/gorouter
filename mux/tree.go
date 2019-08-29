@@ -22,6 +22,21 @@ func NewTree() *Tree {
 	}
 }
 
+// StaticNodes returns tree static nodes
+func (t *Tree) StaticNodes() map[int]*Node {
+	return t.statics
+}
+
+// RegexpNodes returns tree regexp nodes
+func (t *Tree) RegexpNodes() []*Node {
+	return t.regexps
+}
+
+// WildcardNode returns tree wildcard node
+func (t *Tree) WildcardNode() *Node {
+	return t.wildcard
+}
+
 // Insert inserts node
 func (t *Tree) Insert(n *Node) {
 	if n == nil {
@@ -119,19 +134,4 @@ func (t *Tree) GetByPath(path string) (*Node, string, string) {
 	}
 
 	return nil, "", ""
-}
-
-// StaticNodes returns tree static nodes
-func (t *Tree) StaticNodes() map[int]*Node {
-	return t.statics
-}
-
-// RegexpNodes returns tree regexp nodes
-func (t *Tree) RegexpNodes() []*Node {
-	return t.regexps
-}
-
-// WildcardNode returns tree wildcard node
-func (t *Tree) WildcardNode() *Node {
-	return t.wildcard
 }

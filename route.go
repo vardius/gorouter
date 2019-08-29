@@ -1,34 +1,34 @@
 package gorouter
 
 import (
-	"net/http"
-
 	"github.com/vardius/gorouter/v4/middleware"
 )
 
 type route struct {
 	middleware middleware.Middleware
-	handler    http.Handler
+	handler    interface{}
+	// computedHandler is an optimization to improve performance
+	computedHandler interface{}
 }
 
-func (r *route) getHandler() http.Handler {
-	if r.handler != nil {
-		return r.middleware.Handle(r.handler)
-	}
-	return nil
-}
-
-func (r *route) appendMiddleware(m middleware.Middleware) {
-	r.middleware = r.middleware.Merge(m)
-}
-
-func (r *route) prependMiddleware(m middleware.Middleware) {
-	r.middleware = m.Merge(r.middleware)
-}
-
-func newRoute(h http.Handler) *route {
+func newRoute(h interface{}) *route {
 	return &route{
 		handler:    h,
 		middleware: middleware.New(),
 	}
+}
+
+func (r *route) Handler() interface{} {
+	// returns already cached computed handler
+	return r.computedHandler
+}
+
+func (r *route) AppendMiddleware(m middleware.Middleware) {
+	r.middleware = r.middleware.Merge(m)
+	r.computedHandler = r.middleware.Compose(r.handler)
+}
+
+func (r *route) PrependMiddleware(m middleware.Middleware) {
+	r.middleware = m.Merge(r.middleware)
+	r.computedHandler = r.middleware.Compose(r.handler)
 }

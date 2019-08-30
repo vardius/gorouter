@@ -223,5 +223,4 @@ func ExampleRouter_mount_second() {
 
 	// Output:
 	// Hello, guest!
-	// Hi, guest!
 }

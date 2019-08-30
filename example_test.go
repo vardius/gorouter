@@ -41,6 +41,21 @@ func Example() {
 	// Hello, guest!
 }
 
+func Example_second() {
+	hello := func(ctx *fasthttp.RequestCtx) {
+		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+	}
+
+	router := gorouter.NewFastHTTPRouter()
+	router.GET("/hello/{name}", hello)
+
+	// for this example we will mock request
+	handleFastHTTPRequest("GET", "/hello/guest", router.HandleFastHTTP)
+
+	// Output:
+	// Hello, guest!
+}
+
 func ExampleMiddlewareFunc() {
 	// Global middleware example
 	// applies to all routes
@@ -135,6 +150,33 @@ func ExampleMiddlewareFunc_third() {
 	// Hello, guest!
 }
 
+func ExampleFastHTTPMiddlewareFunc() {
+	// Global middleware example
+	// applies to all routes
+	hello := func(ctx *fasthttp.RequestCtx) {
+		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+	}
+
+	logger := func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+		fn := func(ctx *fasthttp.RequestCtx) {
+			fmt.Printf("[%s] %q\n", ctx.Method(), ctx.Path())
+			next(ctx)
+		}
+
+		return fn
+	}
+
+	router := gorouter.NewFastHTTPRouter(logger)
+	router.GET("/hello/{name}", hello)
+
+	// for this example we will mock request
+	handleFastHTTPRequest("GET", "/hello/guest", router.HandleFastHTTP)
+
+	// Output:
+	// [GET] "/hello/guest"
+	// Hello, guest!
+}
+
 func ExampleRouter_mount() {
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := context.Parameters(r.Context())
@@ -159,6 +201,25 @@ func ExampleRouter_mount() {
 	// for this example we will mock request
 	handleNetHTTPRequest("GET", "/hello/guest", router)
 	handleNetHTTPRequest("GET", "/hi/guest", router)
+
+	// Output:
+	// Hello, guest!
+	// Hi, guest!
+}
+
+func ExampleRouter_mount_second() {
+	hello := func(ctx *fasthttp.RequestCtx) {
+		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+	}
+
+	subrouter := gorouter.NewFastHTTPRouter()
+	subrouter.GET("/{name}", hello)
+
+	router := gorouter.NewFastHTTPRouter()
+	router.Mount("/hello", subrouter.HandleFastHTTP)
+
+	// for this example we will mock request
+	handleFastHTTPRequest("GET", "/hello/guest", router.HandleFastHTTP)
 
 	// Output:
 	// Hello, guest!

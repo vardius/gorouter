@@ -9,6 +9,14 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+func buildFastHTTPRequestContext(method, path string) *fasthttp.RequestCtx {
+	ctx := &fasthttp.RequestCtx{}
+	ctx.Request.Header.SetMethod(method)
+	ctx.URI().SetPath(path)
+
+	return ctx
+}
+
 func testBasicFastHTTPMethod(t *testing.T, router *fastHTTPRouter, h func(pattern string, handler fasthttp.RequestHandler), method string) {
 	handler := &mockHandler{}
 	h("/x/y", handler.HandleFastHTTP)
@@ -116,9 +124,7 @@ func TestFastHTTPOPTIONS(t *testing.T) {
 
 	checkIfHasRootRoute(t, router, GET)
 
-	ctx := &fasthttp.RequestCtx{}
-	ctx.Request.Header.SetMethod(OPTIONS)
-	ctx.URI().SetPath("*")
+	ctx := buildFastHTTPRequestContext(OPTIONS, "*")
 
 	router.HandleFastHTTP(ctx)
 
@@ -126,11 +132,9 @@ func TestFastHTTPOPTIONS(t *testing.T) {
 		t.Errorf("Allow header incorrect value: %s", allow)
 	}
 
-	ctx = &fasthttp.RequestCtx{}
-	ctx.Request.Header.SetMethod(OPTIONS)
-	ctx.URI().SetPath("/x/y")
+	ctx2 := buildFastHTTPRequestContext(OPTIONS, "/x/y")
 
-	router.HandleFastHTTP(ctx)
+	router.HandleFastHTTP(ctx2)
 
 	if allow := string(ctx.Response.Header.Peek("Allow")); !strings.Contains(allow, "POST") || !strings.Contains(allow, "GET") || !strings.Contains(allow, "OPTIONS") {
 		t.Errorf("Allow header incorrect value: %s", allow)
@@ -144,9 +148,7 @@ func TestFastHTTPNotFound(t *testing.T) {
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
 	router.GET("/x/y", handler.HandleFastHTTP)
 
-	ctx := &fasthttp.RequestCtx{}
-	ctx.Request.Header.SetMethod(POST)
-	ctx.URI().SetPath("/y/y")
+	ctx := buildFastHTTPRequestContext(POST, "/y/y")
 
 	router.HandleFastHTTP(ctx)
 
@@ -180,9 +182,7 @@ func TestFastHTTPNotAllowed(t *testing.T) {
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
 	router.GET("/x/y", handler.HandleFastHTTP)
 
-	ctx := &fasthttp.RequestCtx{}
-	ctx.Request.Header.SetMethod(POST)
-	ctx.URI().SetPath("/x/y")
+	ctx := buildFastHTTPRequestContext(POST, "/x/y")
 
 	router.HandleFastHTTP(ctx)
 
@@ -203,17 +203,15 @@ func TestFastHTTPNotAllowed(t *testing.T) {
 	router.HandleFastHTTP(ctx)
 
 	if string(ctx.Response.Body()) != "test" {
-		t.Error("Not found handler wasn't invoked")
+		t.Errorf("NotAllowed handler wasn't invoked (%s)", string(ctx.Response.Body()))
 	}
 
-	ctx = &fasthttp.RequestCtx{}
-	ctx.Request.Header.SetMethod(POST)
-	ctx.URI().SetPath("*")
+	ctx.ResetBody()
 
 	router.HandleFastHTTP(ctx)
 
 	if string(ctx.Response.Body()) != "test" {
-		t.Error("Not found handler wasn't invoked")
+		t.Errorf("NotAllowed handler wasn't invoked (%s)", string(ctx.Response.Body()))
 	}
 }
 
@@ -328,9 +326,7 @@ func TestFastHTTPNilMiddleware(t *testing.T) {
 		fmt.Fprintf(ctx, "test")
 	})
 
-	ctx := &fasthttp.RequestCtx{}
-	ctx.Request.Header.SetMethod(GET)
-	ctx.URI().SetPath("/x/y")
+	ctx := buildFastHTTPRequestContext(GET, "/x/y")
 
 	router.HandleFastHTTP(ctx)
 
@@ -384,9 +380,7 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 
 	router.USE(GET, "/x/{param}", mockFastHTTPMiddleware("m"))
 
-	ctx := &fasthttp.RequestCtx{}
-	ctx.Request.Header.SetMethod(GET)
-	ctx.URI().SetPath("/x/y")
+	ctx := buildFastHTTPRequestContext(GET, "/x/y")
 
 	router.HandleFastHTTP(ctx)
 
@@ -529,9 +523,7 @@ func TestFastHTTPMountSubRouter(t *testing.T) {
 	subRouter.USE(GET, "/y", s1)
 	subRouter.USE(GET, "/y", s2)
 
-	ctx := &fasthttp.RequestCtx{}
-	ctx.Request.Header.SetMethod(GET)
-	ctx.URI().SetPath("/x/y")
+	ctx := buildFastHTTPRequestContext(GET, "/x/y")
 
 	mainRouter.HandleFastHTTP(ctx)
 

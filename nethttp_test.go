@@ -211,7 +211,7 @@ func TestNotAllowed(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	if w.Body.String() != "test" {
-		t.Error("Not found handler wasn't invoked")
+		t.Error("NotAllowed handler wasn't invoked")
 	}
 
 	w = httptest.NewRecorder()
@@ -223,7 +223,7 @@ func TestNotAllowed(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	if w.Body.String() != "test" {
-		t.Error("Not found handler wasn't invoked")
+		t.Error("NotAllowed handler wasn't invoked")
 	}
 }
 

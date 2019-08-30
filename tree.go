@@ -1,6 +1,8 @@
 package gorouter
 
 import (
+	"strings"
+
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
 	path_utils "github.com/vardius/gorouter/v4/path"
@@ -51,6 +53,8 @@ func addMiddleware(t *mux.Tree, method, path string, mid middleware.Middleware) 
 }
 
 func allowed(t *mux.Tree, method, path string) (allow string) {
+	path = strings.Trim(path, "/")
+
 	if path == "*" {
 		// routes tree roots should be http method nodes only
 		for _, root := range t.StaticNodes() {

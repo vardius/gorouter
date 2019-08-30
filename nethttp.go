@@ -110,6 +110,7 @@ func (r *router) ServeFiles(fs http.FileSystem, root string, strip bool) {
 
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	root := r.routes.GetByID(req.Method)
+
 	if root != nil {
 		node, params, subPath := root.GetChildByPath(req.URL.Path)
 

@@ -1,8 +1,6 @@
 package gorouter
 
 import (
-	"bytes"
-
 	"github.com/valyala/fasthttp"
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
@@ -106,8 +104,8 @@ func (r *fastHTTPRouter) ServeFiles(root string, stripSlashes int) {
 func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 	path := string(ctx.Path())
 	method := string(ctx.Method())
-
 	root := r.routes.GetByID(method)
+
 	if root != nil {
 		node, params, subPath := root.GetChildByPath(path)
 
@@ -129,12 +127,12 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 	}
 
 	// Handle OPTIONS
-	if bytes.Equal(ctx.Method(), []byte(OPTIONS)) {
+	if method == OPTIONS {
 		if allow := allowed(r.routes, method, path); len(allow) > 0 {
 			ctx.Response.Header.Set("Allow", allow)
 			return
 		}
-	} else if bytes.Equal(ctx.Method(), []byte(GET)) && r.fileServer != nil {
+	} else if method == GET && r.fileServer != nil {
 		// Handle file serve
 		r.fileServer(ctx)
 		return

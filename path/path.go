@@ -42,7 +42,7 @@ func Trim(path string) string {
 
 	if pathLen > 0 && path[pathLen-1] == '/' {
 		path = path[:pathLen-1]
-		pathLen -= pathLen
+		pathLen--
 	}
 
 	return path

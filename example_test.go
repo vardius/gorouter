@@ -177,6 +177,68 @@ func ExampleFastHTTPMiddlewareFunc() {
 	// Hello, guest!
 }
 
+func ExampleFastHTTPMiddlewareFunc_second() {
+	// Route level middleware example
+	// applies to route and its lower tree
+	hello := func(ctx *fasthttp.RequestCtx) {
+		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+	}
+
+	logger := func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+		fn := func(ctx *fasthttp.RequestCtx) {
+			fmt.Printf("[%s] %q\n", ctx.Method(), ctx.Path())
+			next(ctx)
+		}
+
+		return fn
+	}
+
+	router := gorouter.NewFastHTTPRouter()
+	router.GET("/hello/{name}", hello)
+
+	// apply middlewares to route and all it children
+	// can pass as many as you want
+	router.USE("GET", "/hello/{name}", logger)
+
+	// for this example we will mock request
+	handleFastHTTPRequest("GET", "/hello/guest", router.HandleFastHTTP)
+
+	// Output:
+	// [GET] "/hello/guest"
+	// Hello, guest!
+}
+
+func ExampleFastHTTPMiddlewareFunc_third() {
+	// Http method middleware example
+	// applies to all routes under this method
+	hello := func(ctx *fasthttp.RequestCtx) {
+		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+	}
+
+	logger := func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+		fn := func(ctx *fasthttp.RequestCtx) {
+			fmt.Printf("[%s] %q\n", ctx.Method(), ctx.Path())
+			next(ctx)
+		}
+
+		return fn
+	}
+
+	router := gorouter.NewFastHTTPRouter()
+	router.GET("/hello/{name}", hello)
+
+	// apply middlewares to all routes with GET method
+	// can pass as many as you want
+	router.USE("GET", "", logger)
+
+	// for this example we will mock request
+	handleFastHTTPRequest("GET", "/hello/guest", router.HandleFastHTTP)
+
+	// Output:
+	// [GET] "/hello/guest"
+	// Hello, guest!
+}
+
 func ExampleRouter_mount() {
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := context.Parameters(r.Context())
@@ -207,7 +269,7 @@ func ExampleRouter_mount() {
 	// Hi, guest!
 }
 
-func ExampleRouter_mount_second() {
+func ExampleFastHTTPRouter_mount() {
 	hello := func(ctx *fasthttp.RequestCtx) {
 		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
 	}

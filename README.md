@@ -67,16 +67,16 @@ import (
     "fmt"
     "log"
 
-	"github.com/valyala/fasthttp"
+    "github.com/valyala/fasthttp"
     "github.com/vardius/gorouter/v4"
 )
 
 func Index(ctx *fasthttp.RequestCtx) {
-    fmt.Fprint(w, "Welcome!\n")
+    fmt.Print("Welcome!\n")
 }
 
 func Hello(ctx *fasthttp.RequestCtx) {
-    fmt.Fprintf(w, "hello, %s!\n", ctx.UserValue("name"))
+    fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
 }
 
 func main() {

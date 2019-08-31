@@ -7,7 +7,7 @@ gorouter
 [![](https://godoc.org/github.com/vardius/gorouter?status.svg)](http://godoc.org/github.com/vardius/gorouter)
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/vardius/gorouter/blob/master/LICENSE.md)
 
-Go Server/API micro framwework, HTTP request router, multiplexer, mux.
+Go Server/API micro framework, HTTP request router, multiplexer, mux.
 
 ABOUT
 ==================================================

@@ -429,7 +429,7 @@ func TestChainCalls(t *testing.T) {
 	router := New().(*router)
 
 	served := false
-	router.GET("/users/{user:[a-z0-9]+)}/starred", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+	router.GET("/users/{user:[a-z0-9]+}/starred", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		served = true
 
 		params, ok := context.Parameters(r.Context())
@@ -559,9 +559,6 @@ func TestMountSubRouter(t *testing.T) {
 	rGlobal1 := mockMiddleware("[rg1]")
 	rGlobal2 := mockMiddleware("[rg2]")
 	mainRouter := New(rGlobal1, rGlobal2).(*router)
-	mainRouter.GET("/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t.Fatal("Handler should be overtaken by subrouter")
-	}))
 
 	sGlobal1 := mockMiddleware("[sg1]")
 	sGlobal2 := mockMiddleware("[sg2]")

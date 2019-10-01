@@ -1,6 +1,8 @@
 package gorouter
 
 import (
+	"strings"
+
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
 	path_utils "github.com/vardius/gorouter/v4/path"
@@ -10,25 +12,15 @@ func addNode(t *mux.Tree, method, path string) *mux.Node {
 	root := t.Find(method)
 	if root == nil {
 		root = mux.NewNode(method, nil)
-
 		t.Insert(root)
 	}
 
-	parts := path_utils.Split(path)
+	path = path_utils.TrimSlash(path)
+	parts := strings.Split(path, "/")
 
-	var parent *mux.Node
-	for _, part := range parts {
-		if parent == nil {
-			parent = root
-		}
+	n := root.AddChild(parts)
 
-		node := mux.NewNode(part, parent)
-		parent.Tree().Insert(node)
-
-		parent = node
-	}
-
-	return parent
+	return n
 }
 
 func addMiddleware(t *mux.Tree, method, path string, mid middleware.Middleware) {
@@ -53,7 +45,7 @@ func addMiddleware(t *mux.Tree, method, path string, mid middleware.Middleware) 
 	for _, root := range t.StaticNodes() {
 		if method == "" || method == root.ID() {
 			if path != "" {
-				node, _, _ := root.Tree().FindByPath(path)
+				node, _, _ := root.FindByPath(path)
 				if node != nil {
 					c(c, node, mid)
 				}
@@ -65,8 +57,6 @@ func addMiddleware(t *mux.Tree, method, path string, mid middleware.Middleware) 
 }
 
 func allowed(t *mux.Tree, method, path string) (allow string) {
-	path = path_utils.TrimSlash(path)
-
 	if path == "*" {
 		// routes tree roots should be http method nodes only
 		for _, root := range t.StaticNodes() {
@@ -86,7 +76,7 @@ func allowed(t *mux.Tree, method, path string) (allow string) {
 				continue
 			}
 
-			n, _, _ := root.Tree().FindByPath(path)
+			n, _, _ := root.FindByPath(path)
 			if n != nil && n.Route() != nil {
 				if len(allow) == 0 {
 					allow = root.ID()

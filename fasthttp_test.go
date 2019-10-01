@@ -395,7 +395,7 @@ func TestFastHTTPChainCalls(t *testing.T) {
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
 
 	served := false
-	router.GET("/users/{user:[a-z0-9]+)}/starred", func(ctx *fasthttp.RequestCtx) {
+	router.GET("/users/{user:[a-z0-9]+}/starred", func(ctx *fasthttp.RequestCtx) {
 		served = true
 
 		if ctx.UserValue("user") != "x" {
@@ -500,9 +500,6 @@ func TestFastHTTPMountSubRouter(t *testing.T) {
 	rGlobal1 := mockFastHTTPMiddleware("[rg1]")
 	rGlobal2 := mockFastHTTPMiddleware("[rg2]")
 	mainRouter := NewFastHTTPRouter(rGlobal1, rGlobal2).(*fastHTTPRouter)
-	mainRouter.GET("/{param}", func(ctx *fasthttp.RequestCtx) {
-		t.Fatal("Handler should be overtaken by subrouter")
-	})
 
 	sGlobal1 := mockFastHTTPMiddleware("[sg1]")
 	sGlobal2 := mockFastHTTPMiddleware("[sg2]")

@@ -105,10 +105,10 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 	method := string(ctx.Method())
 	root := r.routes.Find(method)
 
+	path = path_utils.TrimSlash(path)
+
 	if root != nil {
-		path := path_utils.TrimSlash(path)
-		rootTree := root.Tree()
-		node, params, subPath := rootTree.FindByPath(path)
+		node, params, subPath := root.FindByPath(path)
 
 		if node != nil {
 			route := node.Route()

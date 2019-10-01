@@ -1,10 +1,5 @@
 package mux
 
-import (
-	"github.com/vardius/gorouter/v4/context"
-	path_utils "github.com/vardius/gorouter/v4/path"
-)
-
 // Tree of routes
 type Tree struct {
 	wildcard *Node
@@ -42,9 +37,39 @@ func (t *Tree) Insert(node *Node) {
 	}
 }
 
-// Find finds node by ID
-func (t *Tree) Find(id string) *Node {
+// GetByID gets node by ID
+// this method is used when inserting new nodes
+func (t *Tree) GetByID(id string) *Node {
 	if id == "" {
+		return nil
+	}
+
+	if t.statics.len > 0 {
+		for _, staticNode := range t.statics.nodes {
+			if staticNode.id == id {
+				return staticNode
+			}
+		}
+	}
+
+	if len(t.regexps) > 0 {
+		for _, regexpNode := range t.regexps {
+			if regexpNode.id == id {
+				return regexpNode
+			}
+		}
+	}
+
+	if t.wildcard != nil && t.wildcard.id == id {
+		return t.wildcard
+	}
+
+	return nil
+}
+
+// Find finds node by path part
+func (t *Tree) Find(pathPart string) *Node {
+	if pathPart == "" {
 		return nil
 	}
 
@@ -52,54 +77,18 @@ func (t *Tree) Find(id string) *Node {
 		return t.wildcard
 	}
 
-	staticNode := t.statics.Find(id)
+	staticNode := t.statics.Find(pathPart)
 	if staticNode != nil {
 		return staticNode
 	}
 
 	for _, regexpNode := range t.regexps {
-		if regexpNode.regexp.MatchString(id) {
+		if regexpNode.regexp.MatchString(pathPart) {
 			return regexpNode
 		}
 	}
 
 	return nil
-}
-
-func (t *Tree) FindByPath(path string) (*Node, context.Params, string) {
-	if path == "" || path == "/" {
-		return nil, nil, ""
-	}
-
-	path = path_utils.TrimSlash(path)
-	id, path := path_utils.GetPart(path)
-
-	node := t.Find(id)
-
-	if node == nil {
-		return nil, nil, path
-	}
-
-	if node.isSubrouter {
-		return node, nil, path
-	}
-
-	nextNode, params, subPath := node.children.FindByPath(path)
-
-	if params == nil {
-		params = make(context.Params, node.maxParamsSize)
-	}
-
-	if node.isRegexp || node.isWildcard {
-		params[node.maxParamsSize-1].Value = id
-		params[node.maxParamsSize-1].Key = node.id
-	}
-
-	if nextNode != nil {
-		node = nextNode
-	}
-
-	return node, params, subPath
 }
 
 func (t *Tree) StaticNodes() []*Node {

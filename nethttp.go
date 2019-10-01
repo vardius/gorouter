@@ -109,11 +109,10 @@ func (r *router) ServeFiles(fs http.FileSystem, root string, strip bool) {
 
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	root := r.routes.Find(req.Method)
+	path := path_utils.TrimSlash(req.URL.Path)
 
 	if root != nil {
-		path := path_utils.TrimSlash(req.URL.Path)
-		rootTree := root.Tree()
-		node, params, subPath := rootTree.FindByPath(path)
+		node, params, subPath := root.FindByPath(path)
 
 		if node != nil {
 			route := node.Route()
@@ -135,7 +134,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// Handle OPTIONS
 	if req.Method == OPTIONS {
-		if allow := allowed(r.routes, req.Method, req.URL.Path); len(allow) > 0 {
+		if allow := allowed(r.routes, req.Method, path); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			return
 		}
@@ -145,7 +144,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	} else {
 		// Handle 405
-		if allow := allowed(r.routes, req.Method, req.URL.Path); len(allow) > 0 {
+		if allow := allowed(r.routes, req.Method, path); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			r.serveNotAllowed(w, req)
 			return

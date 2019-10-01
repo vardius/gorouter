@@ -101,10 +101,6 @@ func (n *Node) GetByIDs(ids []string) *Node {
 }
 
 func (n *Node) FindByPath(path string) (*Node, context.Params, string) {
-	if path == "" || path == "/" {
-		return n, make(context.Params, n.maxParamsSize), ""
-	}
-
 	pathPart, path := path_utils.GetPart(path)
 
 	node := n.children.Find(pathPart)
@@ -150,23 +146,23 @@ func (n *Node) TurnIntoSubrouter() {
 	n.isSubrouter = true
 }
 
-func getIDFromPathPart(pathPart string) (string, string) {
+func getIDFromPathPart(pathPart string) (id string, exp string) {
+	id = pathPart
+
 	if pathPart[0] == '{' {
-		id := pathPart[1 : len(pathPart)-1]
+		id = pathPart[1 : len(pathPart)-1]
 
 		if parts := strings.Split(id, ":"); len(parts) == 2 {
 			id = parts[0]
-			exp := parts[1]
-
-			return id, exp
+			exp = parts[1]
 		}
 
 		if id == "" {
 			panic("Empty wildcard name")
 		}
 
-		return id, ""
+		return
 	}
 
-	return pathPart, ""
+	return
 }

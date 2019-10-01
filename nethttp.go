@@ -113,7 +113,6 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	if root != nil {
 		node, params, subPath := root.FindByPath(path)
-
 		if node != nil {
 			route := node.Route()
 			if route != nil {

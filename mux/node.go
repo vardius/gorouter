@@ -2,28 +2,10 @@ package mux
 
 import (
 	"regexp"
-	"strings"
 
 	"github.com/vardius/gorouter/v4/context"
 	path_utils "github.com/vardius/gorouter/v4/path"
 )
-
-// Node is route node
-type Node struct {
-	id     string
-	regexp *regexp.Regexp
-
-	parent   *Node
-	children *Tree
-
-	maxParamsSize uint8
-
-	isWildcard  bool
-	isRegexp    bool
-	isSubrouter bool
-
-	route Route
-}
 
 // NewNode provides new node
 func NewNode(pathPart string, parent *Node) *Node {
@@ -39,7 +21,7 @@ func NewNode(pathPart string, parent *Node) *Node {
 	isWildcard := false
 	isRegexp := false
 
-	id, exp := getIDFromPathPart(pathPart)
+	id, exp := path_utils.GetIDFromPart(pathPart)
 	if exp != "" {
 		compiledRegexp = regexp.MustCompile(exp)
 		isRegexp = true
@@ -68,13 +50,50 @@ func NewNode(pathPart string, parent *Node) *Node {
 	return node
 }
 
+// Node is route node
+type Node struct {
+	id     string
+	regexp *regexp.Regexp
+
+	parent   *Node
+	children *Tree
+
+	maxParamsSize uint8
+
+	isWildcard  bool
+	isRegexp    bool
+	isSubrouter bool
+
+	route Route
+}
+
+func (n *Node) ID() string {
+	return n.id
+}
+
+func (n *Node) Route() Route {
+	return n.route
+}
+
+func (n *Node) Tree() *Tree {
+	return n.children
+}
+
+func (n *Node) SetRoute(r Route) {
+	n.route = r
+}
+
+func (n *Node) TurnIntoSubrouter() {
+	n.isSubrouter = true
+}
+
 // AddChild adds child by ids
 func (n *Node) AddChild(parts []string) *Node {
 	if len(parts) == 0 {
 		return n
 	}
 
-	id, _ := getIDFromPathPart(parts[0])
+	id, _ := path_utils.GetIDFromPart(parts[0])
 
 	node := n.children.GetByID(id)
 	if node == nil {
@@ -101,68 +120,26 @@ func (n *Node) GetByIDs(ids []string) *Node {
 }
 
 func (n *Node) FindByPath(path string) (*Node, context.Params, string) {
+	var params context.Params
+
 	pathPart, path := path_utils.GetPart(path)
-
 	node := n.children.Find(pathPart)
-	if node == nil {
-		return n, make(context.Params, n.maxParamsSize), path
+
+	if node != nil {
+		if node.isSubrouter {
+			return node, nil, path
+		}
+
+		node, params, path = node.FindByPath(path)
+	} else {
+		node = n
+		params = make(context.Params, n.maxParamsSize)
 	}
 
-	if node.isSubrouter {
-		return node, nil, path
-	}
-
-	nextNode, params, subPath := node.FindByPath(path)
-
-	if params != nil && (node.isRegexp || node.isWildcard) {
+	if node.isRegexp || node.isWildcard {
 		params[node.maxParamsSize-1].Value = pathPart
 		params[node.maxParamsSize-1].Key = node.id
 	}
 
-	if nextNode != nil {
-		return nextNode, params, subPath
-	}
-
 	return node, params, path
-}
-
-func (n *Node) ID() string {
-	return n.id
-}
-
-func (n *Node) Route() Route {
-	return n.route
-}
-
-func (n *Node) Tree() *Tree {
-	return n.children
-}
-
-func (n *Node) SetRoute(r Route) {
-	n.route = r
-}
-
-func (n *Node) TurnIntoSubrouter() {
-	n.isSubrouter = true
-}
-
-func getIDFromPathPart(pathPart string) (id string, exp string) {
-	id = pathPart
-
-	if pathPart[0] == '{' {
-		id = pathPart[1 : len(pathPart)-1]
-
-		if parts := strings.Split(id, ":"); len(parts) == 2 {
-			id = parts[0]
-			exp = parts[1]
-		}
-
-		if id == "" {
-			panic("Empty wildcard name")
-		}
-
-		return
-	}
-
-	return
 }

@@ -29,3 +29,24 @@ func GetPart(path string) (part string, nextPath string) {
 
 	return
 }
+
+func GetIDFromPart(pathPart string) (id string, exp string) {
+	id = pathPart
+
+	if pathPart[0] == '{' {
+		id = pathPart[1 : len(pathPart)-1]
+
+		if parts := strings.Split(id, ":"); len(parts) == 2 {
+			id = parts[0]
+			exp = parts[1]
+		}
+
+		if id == "" {
+			panic("Empty wildcard name")
+		}
+
+		return
+	}
+
+	return
+}

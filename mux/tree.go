@@ -1,5 +1,13 @@
 package mux
 
+// NewTree provides new node tree
+func NewTree() *Tree {
+	return &Tree{
+		statics: NewNodeMap(),
+		regexps: make([]*Node, 0),
+	}
+}
+
 // Tree of routes
 type Tree struct {
 	wildcard *Node
@@ -7,12 +15,16 @@ type Tree struct {
 	regexps  []*Node
 }
 
-// NewTree provides new node tree
-func NewTree() *Tree {
-	return &Tree{
-		statics: NewNodeMap(),
-		regexps: make([]*Node, 0),
-	}
+func (t *Tree) StaticNodes() []*Node {
+	return t.statics.nodes
+}
+
+func (t *Tree) RegexpNodes() []*Node {
+	return t.regexps
+}
+
+func (t *Tree) WildcardNode() *Node {
+	return t.wildcard
 }
 
 func (t *Tree) Insert(node *Node) {
@@ -89,16 +101,4 @@ func (t *Tree) Find(pathPart string) *Node {
 	}
 
 	return nil
-}
-
-func (t *Tree) StaticNodes() []*Node {
-	return t.statics.nodes
-}
-
-func (t *Tree) RegexpNodes() []*Node {
-	return t.regexps
-}
-
-func (t *Tree) WildcardNode() *Node {
-	return t.wildcard
 }

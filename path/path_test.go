@@ -58,7 +58,7 @@ func TestTrim(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Trim(tt.args.path); got != tt.want {
+			if got := TrimSlash(tt.args.path); got != tt.want {
 				t.Errorf("[%s] Trim() = %v, want %v", tt.name, got, tt.want)
 			}
 		})

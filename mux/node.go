@@ -3,42 +3,49 @@ package mux
 import (
 	"regexp"
 	"strings"
-
-	"github.com/vardius/gorouter/v4/context"
 )
 
 // Node is route node
 type Node struct {
-	id          string
-	regexp      *regexp.Regexp
-	route       Route
-	parent      *Node
-	children    *Tree
-	params      uint8
+	id     string
+	regexp *regexp.Regexp
+
+	parent   *Node
+	children *Tree
+
+	maxParamsSize uint8
+
 	isWildcard  bool
 	isRegexp    bool
 	isSubrouter bool
+
+	route Route
 }
 
-// NewRoot create new tree root
-func NewRoot(id string) *Node {
-	return NewNode(nil, id)
-}
+// NewNode provides new node
+func NewNode(id string, parent *Node) *Node {
+	if len(id) == 0 {
+		return nil
+	}
 
-// NewNode creates new tre node
-func NewNode(root *Node, id string) *Node {
-	var regexp string
+	if parent != nil && parent.isSubrouter {
+		panic("Subrouter node can not be a parent")
+	}
+
+	var compiledRegexp *regexp.Regexp
 	isWildcard := false
 	isRegexp := false
 
-	if len(id) > 0 && id[0] == '{' {
+	if id[0] == '{' {
 		id = id[1 : len(id)-1]
 		isWildcard = true
 
 		if parts := strings.Split(id, ":"); len(parts) == 2 {
 			id = parts[0]
-			regexp = parts[1]
-			regexp = regexp[:len(regexp)-1]
+			exp := parts[1]
+			exp = exp[:len(exp)-1]
+
+			compiledRegexp = regexp.MustCompile(exp)
 			isRegexp = true
 		}
 
@@ -47,155 +54,42 @@ func NewNode(root *Node, id string) *Node {
 		}
 	}
 
-	n := &Node{
+	node := &Node{
 		id:         id,
-		parent:     root,
+		parent:     parent,
 		children:   NewTree(),
-		isWildcard: isWildcard,
+		regexp:     compiledRegexp,
+		isWildcard: isWildcard && !isRegexp,
 		isRegexp:   isRegexp,
 	}
 
-	if root != nil {
-		n.params = root.params
+	if parent != nil {
+		node.maxParamsSize = parent.maxParamsSize
 	}
 
-	if isWildcard {
-		n.params++
+	if node.isRegexp || node.isWildcard {
+		node.maxParamsSize++
 	}
 
-	if isRegexp {
-		n.SetRegexp(regexp)
-	}
-
-	return n
+	return node
 }
 
-// AddChild adds child by ids
-func (n *Node) AddChild(ids []string) *Node {
-	if len(ids) > 0 && ids[0] != "" {
-		node := n.children.GetByID(ids[0])
-
-		if node == nil {
-			node = NewNode(n, ids[0])
-			n.children.Insert(node)
-		}
-
-		return node.AddChild(ids[1:])
-	}
-	return n
-}
-
-// GetChild gets child by ids
-func (n *Node) GetChild(ids []string) (*Node, context.Params) {
-	if len(ids) == 0 {
-		return n, make(context.Params, n.params)
-	}
-
-	child := n.children.GetByID(ids[0])
-	if child != nil {
-		n, params := child.GetChild(ids[1:])
-
-		if child.isWildcard && params != nil {
-			params[child.params-1].Value = ids[0]
-			params[child.params-1].Key = child.id
-		}
-
-		return n, params
-	}
-
-	return nil, nil
-}
-
-// GetChildByPath accepts string path then returns:
-// child node as a first arg,
-// parameters built from wildcards,
-// and part of path (this is used to strip request path for sub routers)
-func (n *Node) GetChildByPath(path string) (*Node, context.Params, string) {
-	pathLen := len(path)
-	if pathLen > 0 && path[0] == '/' {
-		path = path[1:]
-		pathLen--
-	}
-
-	if pathLen == 0 {
-		return n, make(context.Params, n.params), ""
-	}
-
-	child, part, path := n.children.GetByPath(path)
-
-	if child != nil {
-		grandChild, params, _ := child.GetChildByPath(path)
-
-		if part != "" && params != nil {
-			params[child.params-1].Value = part
-			params[child.params-1].Key = child.id
-		}
-
-		if grandChild == nil && child.isSubrouter {
-			return child, params, path
-		}
-
-		return grandChild, params, ""
-	}
-
-	return nil, nil, ""
-}
-
-// SetRegexp sets node regexp value
-func (n *Node) SetRegexp(exp string) {
-	reg, err := regexp.Compile(exp)
-	if err != nil {
-		panic(err)
-	}
-
-	n.regexp = reg
-	n.isRegexp = true
-	n.isWildcard = true
-}
-
-// SetRoute sets node route value
-func (n *Node) SetRoute(r Route) {
-	n.route = r
-}
-
-// TurnIntoSubrouter sets node as subrouter
-func (n *Node) TurnIntoSubrouter() {
-	n.isSubrouter = true
-}
-
-// ID returns node's id
 func (n *Node) ID() string {
 	return n.id
 }
 
-// Route returns node's route
 func (n *Node) Route() Route {
 	return n.route
 }
 
-// Children returns node's children as tree
-func (n *Node) Children() *Tree {
+func (n *Node) Tree() *Tree {
 	return n.children
 }
 
-// IsSubrouter returns true if node is subrouter
-func (n *Node) IsSubrouter() bool {
-	return n.isSubrouter
+func (n *Node) SetRoute(r Route) {
+	n.route = r
 }
 
-// IsRoot returns true if node is root
-func (n *Node) IsRoot() bool {
-	return n.parent == nil
-}
-
-// IsLeaf returns true if node is root
-func (n *Node) IsLeaf() bool {
-	return n.children.idsLen == 0 && len(n.children.regexps) == 0 && n.children.wildcard == nil
-}
-
-func (n *Node) regexpToString() string {
-	if n.regexp == nil {
-		return ""
-	}
-	return n.regexp.String()
+func (n *Node) TurnIntoSubrouter() {
+	n.isSubrouter = true
 }

@@ -250,7 +250,7 @@ func ExampleRouter_mount() {
 	subrouter.GET("/{name}", http.HandlerFunc(hello))
 
 	// default mux as subrouter
-	// you can use eveything that implements http.Handler interface
+	// you can use everything that implements http.Handler interface
 	unknownSubrouter := http.NewServeMux()
 	unknownSubrouter.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		fmt.Println("Hi, guest!")

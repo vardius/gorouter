@@ -7,15 +7,14 @@ import (
 	"github.com/vardius/gorouter/v4/context"
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
+	path_utils "github.com/vardius/gorouter/v4/path"
 )
 
 // New creates new net/http Router instance, returns pointer
 func New(fs ...MiddlewareFunc) Router {
-	m := transformMiddlewareFunc(fs...)
-
 	return &router{
 		routes:     mux.NewTree(),
-		middleware: m,
+		middleware: transformMiddlewareFunc(fs...),
 	}
 }
 
@@ -75,7 +74,6 @@ func (r *router) Handle(method, p string, h http.Handler) {
 
 	node := addNode(r.routes, method, p)
 	node.SetRoute(route)
-	node.TurnIntoSubrouter()
 }
 
 func (r *router) Mount(path string, h http.Handler) {
@@ -84,6 +82,7 @@ func (r *router) Mount(path string, h http.Handler) {
 		route.PrependMiddleware(r.middleware)
 
 		node := addNode(r.routes, method, path)
+
 		node.SetRoute(route)
 		node.TurnIntoSubrouter()
 	}
@@ -109,21 +108,27 @@ func (r *router) ServeFiles(fs http.FileSystem, root string, strip bool) {
 }
 
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	root := r.routes.GetByID(req.Method)
+	root := r.routes.Find(req.Method)
 
 	if root != nil {
-		node, params, subPath := root.GetChildByPath(req.URL.Path)
+		path := path_utils.TrimSlash(req.URL.Path)
+		rootTree := root.Tree()
+		node, params, subPath := rootTree.FindByPath(path)
 
-		if node != nil && node.Route() != nil {
-			if h := node.Route().Handler().(http.Handler); h != nil {
-				req = req.WithContext(context.WithParams(req.Context(), params))
+		if node != nil {
+			route := node.Route()
+			if route != nil {
+				h := route.Handler().(http.Handler)
+				if h != nil {
+					req = req.WithContext(context.WithParams(req.Context(), params))
 
-				if subPath != "" {
-					h = http.StripPrefix(strings.TrimSuffix(req.URL.Path, subPath), h)
+					if subPath != "" {
+						h = http.StripPrefix(strings.TrimSuffix(req.URL.Path, "/"+subPath), h)
+					}
+
+					h.ServeHTTP(w, req)
+					return
 				}
-
-				h.ServeHTTP(w, req)
-				return
 			}
 		}
 	}

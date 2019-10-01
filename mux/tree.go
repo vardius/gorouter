@@ -1,137 +1,115 @@
 package mux
 
 import (
-	"strings"
+	"github.com/vardius/gorouter/v4/context"
+	path_utils "github.com/vardius/gorouter/v4/path"
 )
 
 // Tree of routes
 type Tree struct {
-	idsLen   int
-	ids      []string
-	statics  map[int]*Node
-	regexps  []*Node
 	wildcard *Node
+	statics  *NodeMap
+	regexps  []*Node
 }
 
 // NewTree provides new node tree
 func NewTree() *Tree {
 	return &Tree{
-		ids:     make([]string, 0),
-		statics: make(map[int]*Node),
+		statics: NewNodeMap(),
 		regexps: make([]*Node, 0),
 	}
 }
 
-// StaticNodes returns tree static nodes
-func (t *Tree) StaticNodes() map[int]*Node {
-	return t.statics
-}
-
-// RegexpNodes returns tree regexp nodes
-func (t *Tree) RegexpNodes() []*Node {
-	return t.regexps
-}
-
-// WildcardNode returns tree wildcard node
-func (t *Tree) WildcardNode() *Node {
-	return t.wildcard
-}
-
-// Insert inserts node
-func (t *Tree) Insert(n *Node) {
-	if n == nil {
+func (t *Tree) Insert(node *Node) {
+	if node == nil {
 		return
 	}
 
-	if n.isWildcard {
-		if n.isRegexp {
-			t.regexps = append(t.regexps, n)
-		} else {
-			if t.wildcard != nil {
-				panic("Tree already contains a wildcard child!")
-			}
-			t.wildcard = n
-		}
+	if t.wildcard != nil {
+		panic("Tree already contains a wildcard node!")
+	}
+
+	if node.isRegexp {
+		t.regexps = append(t.regexps, node)
+	} else if node.isWildcard {
+		t.wildcard = node
+
+		// wildcard node will match every case, reset other collections
+		t.statics = NewNodeMap()
+		t.regexps = make([]*Node, 0)
 	} else {
-		index := -1
-		for i, id := range t.ids {
-			if n.id > id {
-				index = i
-				break
-			}
-		}
-
-		if index > -1 {
-			t.ids = append(t.ids[:index], append([]string{n.id}, t.ids[index:]...)...)
-			for i := t.idsLen - 1; i >= 0; i-- {
-				if i < index {
-					break
-				} else {
-					t.statics[i+1] = t.statics[i]
-				}
-			}
-			t.statics[index] = n
-		} else {
-			t.ids = append(t.ids, n.id)
-			t.statics[t.idsLen] = n
-		}
-
-		t.idsLen++
+		t.statics.Append(node)
 	}
 }
 
-// GetByID gets node by ID
-func (t *Tree) GetByID(id string) *Node {
-	if id != "" {
-		if t.idsLen > 0 {
-			for i, cID := range t.ids {
-				if cID == id {
-					return t.statics[i]
-				}
-			}
-		}
+// Find finds node by ID
+func (t *Tree) Find(id string) *Node {
+	if id == "" {
+		return nil
+	}
 
-		for _, child := range t.regexps {
-			if child.regexp != nil && child.regexp.MatchString(id) {
-				return child
-			}
-		}
-
+	if t.wildcard != nil {
 		return t.wildcard
+	}
+
+	staticNode := t.statics.Find(id)
+	if staticNode != nil {
+		return staticNode
+	}
+
+	for _, regexpNode := range t.regexps {
+		if regexpNode.regexp.MatchString(id) {
+			return regexpNode
+		}
 	}
 
 	return nil
 }
 
-// GetByPath gets node by path
-func (t *Tree) GetByPath(path string) (*Node, string, string) {
-	if len(path) == 0 {
-		return nil, "", ""
+func (t *Tree) FindByPath(path string) (*Node, context.Params, string) {
+	if path == "" || path == "/" {
+		return nil, nil, ""
 	}
 
-	if t.idsLen > 0 {
-		for i, cID := range t.ids {
-			pLen := len(cID)
-			if len(path) >= pLen && cID == path[:pLen] {
-				return t.statics[i], "", path[pLen:]
-			}
-		}
+	path = path_utils.TrimSlash(path)
+	id, path := path_utils.GetPart(path)
+
+	node := t.Find(id)
+
+	if node == nil {
+		return nil, nil, path
 	}
 
-	part := path
-	if j := strings.IndexByte(path, '/'); j > 0 {
-		part = path[:j]
+	if node.isSubrouter {
+		return node, nil, path
 	}
 
-	for _, child := range t.regexps {
-		if child.regexp != nil && child.regexp.MatchString(part) {
-			return child, part, path[len(part):]
-		}
+	nextNode, params, subPath := node.children.FindByPath(path)
+
+	if params == nil {
+		params = make(context.Params, node.maxParamsSize)
 	}
 
-	if t.wildcard != nil {
-		return t.wildcard, part, path[len(part):]
+	if node.isRegexp || node.isWildcard {
+		params[node.maxParamsSize-1].Value = id
+		params[node.maxParamsSize-1].Key = node.id
 	}
 
-	return nil, "", ""
+	if nextNode != nil {
+		node = nextNode
+	}
+
+	return node, params, subPath
+}
+
+func (t *Tree) StaticNodes() []*Node {
+	return t.statics.nodes
+}
+
+func (t *Tree) RegexpNodes() []*Node {
+	return t.regexps
+}
+
+func (t *Tree) WildcardNode() *Node {
+	return t.wildcard
 }

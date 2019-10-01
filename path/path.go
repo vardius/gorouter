@@ -6,11 +6,11 @@ import "strings"
 func Split(path string) (parts []string) {
 	for {
 		if i := strings.IndexByte(path, '{'); i >= 0 {
-			if part := Trim(path[:i]); part != "" {
+			if part := TrimSlash(path[:i]); part != "" {
 				parts = append(parts, part)
 			}
 			if j := strings.IndexByte(path, '}') + 1; j > 0 {
-				if part := Trim(path[i:j]); part != "" {
+				if part := TrimSlash(path[i:j]); part != "" {
 					parts = append(parts, part)
 				}
 				i = j
@@ -24,7 +24,7 @@ func Split(path string) (parts []string) {
 	}
 
 	if len(path) != 0 && path != "/" {
-		if part := Trim(path); part != "" {
+		if part := TrimSlash(path); part != "" {
 			parts = append(parts, part)
 		}
 	}
@@ -32,8 +32,8 @@ func Split(path string) (parts []string) {
 	return
 }
 
-// Trim trims '/' URL path
-func Trim(path string) string {
+// TrimSlash trims '/' URL path
+func TrimSlash(path string) string {
 	pathLen := len(path)
 	if pathLen > 0 && path[0] == '/' {
 		path = path[1:]
@@ -42,8 +42,20 @@ func Trim(path string) string {
 
 	if pathLen > 0 && path[pathLen-1] == '/' {
 		path = path[:pathLen-1]
-		pathLen -= pathLen
 	}
 
 	return path
+}
+
+// GetPart returns first path part and next path as a second argument
+func GetPart(path string) (part string, nextPath string) {
+	if j := strings.IndexByte(path, '/'); j > 0 {
+		part = path[:j]
+		nextPath = path[j+1:]
+	} else {
+		part = path
+		nextPath = ""
+	}
+
+	return
 }

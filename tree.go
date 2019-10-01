@@ -1,24 +1,34 @@
 package gorouter
 
 import (
-	"strings"
-
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
 	path_utils "github.com/vardius/gorouter/v4/path"
 )
 
-func addNode(t *mux.Tree, id, path string) *mux.Node {
-	root := t.GetByID(id)
+func addNode(t *mux.Tree, method, path string) *mux.Node {
+	root := t.Find(method)
 	if root == nil {
-		root = mux.NewRoot(id)
+		root = mux.NewNode(method, nil)
+
 		t.Insert(root)
 	}
 
-	paths := path_utils.Split(path)
-	n := root.AddChild(paths)
+	parts := path_utils.Split(path)
 
-	return n
+	var parent *mux.Node
+	for _, part := range parts {
+		if parent == nil {
+			parent = root
+		}
+
+		node := mux.NewNode(part, parent)
+		parent.Tree().Insert(node)
+
+		parent = node
+	}
+
+	return parent
 }
 
 func addMiddleware(t *mux.Tree, method, path string, mid middleware.Middleware) {
@@ -28,32 +38,34 @@ func addMiddleware(t *mux.Tree, method, path string, mid middleware.Middleware) 
 		if n.Route() != nil {
 			n.Route().AppendMiddleware(m)
 		}
-		for _, child := range n.Children().StaticNodes() {
+		for _, child := range n.Tree().StaticNodes() {
 			c(c, child, m)
 		}
-		for _, child := range n.Children().RegexpNodes() {
+		for _, child := range n.Tree().RegexpNodes() {
 			c(c, child, m)
 		}
-		if n.Children().WildcardNode() != nil {
-			c(c, n.Children().WildcardNode(), m)
+		if n.Tree().WildcardNode() != nil {
+			c(c, n.Tree().WildcardNode(), m)
 		}
 	}
-
-	paths := path_utils.Split(path)
 
 	// routes tree roots should be http method nodes only
 	for _, root := range t.StaticNodes() {
 		if method == "" || method == root.ID() {
-			node, _ := root.GetChild(paths)
-			if node != nil {
-				c(c, node, mid)
+			if path != "" {
+				node, _, _ := root.Tree().FindByPath(path)
+				if node != nil {
+					c(c, node, mid)
+				}
+			} else {
+				c(c, root, mid)
 			}
 		}
 	}
 }
 
 func allowed(t *mux.Tree, method, path string) (allow string) {
-	path = strings.Trim(path, "/")
+	path = path_utils.TrimSlash(path)
 
 	if path == "*" {
 		// routes tree roots should be http method nodes only
@@ -74,7 +86,7 @@ func allowed(t *mux.Tree, method, path string) (allow string) {
 				continue
 			}
 
-			n, _, _ := root.GetChildByPath(path)
+			n, _, _ := root.Tree().FindByPath(path)
 			if n != nil && n.Route() != nil {
 				if len(allow) == 0 {
 					allow = root.ID()

@@ -120,25 +120,26 @@ func (n *Node) GetByIDs(ids []string) *Node {
 }
 
 func (n *Node) FindByPath(path string) (*Node, context.Params, string) {
-	var params context.Params
-
 	pathPart, path := path_utils.GetPart(path)
 	node := n.children.Find(pathPart)
 
-	if node != nil {
-		if node.isSubrouter {
-			return node, nil, path
-		}
-
-		node, params, path = node.FindByPath(path)
-	} else {
-		node = n
-		params = make(context.Params, n.maxParamsSize)
+	if node == nil {
+		return n, make(context.Params, n.maxParamsSize), path
 	}
+
+	if node.isSubrouter {
+		return node, nil, path
+	}
+
+	nextNode, params, path := node.FindByPath(path)
 
 	if node.isRegexp || node.isWildcard {
 		params[node.maxParamsSize-1].Value = pathPart
 		params[node.maxParamsSize-1].Key = node.id
+	}
+
+	if nextNode != nil {
+		node = nextNode
 	}
 
 	return node, params, path

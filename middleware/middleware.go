@@ -12,7 +12,7 @@ func New(fs ...MiddlewareFunc) Middleware {
 	return fs
 }
 
-// Append appends handlers to middlewares
+// Append appends handlers to middleware
 func (m Middleware) Append(fs ...MiddlewareFunc) Middleware {
 	for _, f := range fs {
 		m = append(m, f)
@@ -21,7 +21,7 @@ func (m Middleware) Append(fs ...MiddlewareFunc) Middleware {
 	return m
 }
 
-// Merge merges another middlewares
+// Merge merges another middleware
 func (m Middleware) Merge(n Middleware) Middleware {
 	return append(m, n...)
 }

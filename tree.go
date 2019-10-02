@@ -5,7 +5,7 @@ import (
 
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
-	path_utils "github.com/vardius/gorouter/v4/path"
+	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
 func addNode(t *mux.Tree, method, path string) *mux.Node {
@@ -15,7 +15,7 @@ func addNode(t *mux.Tree, method, path string) *mux.Node {
 		t.Insert(root)
 	}
 
-	path = path_utils.TrimSlash(path)
+	path = pathutils.TrimSlash(path)
 	parts := strings.Split(path, "/")
 
 	n := root.AddChild(parts)

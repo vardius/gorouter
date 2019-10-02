@@ -4,7 +4,7 @@ import (
 	"regexp"
 
 	"github.com/vardius/gorouter/v4/context"
-	path_utils "github.com/vardius/gorouter/v4/path"
+	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
 // NewNode provides new node
@@ -21,7 +21,7 @@ func NewNode(pathPart string, parent *Node) *Node {
 	isWildcard := false
 	isRegexp := false
 
-	id, exp := path_utils.GetIDFromPart(pathPart)
+	id, exp := pathutils.GetIDFromPart(pathPart)
 	if exp != "" {
 		compiledRegexp = regexp.MustCompile(exp)
 		isRegexp = true
@@ -93,7 +93,7 @@ func (n *Node) AddChild(parts []string) *Node {
 		return n
 	}
 
-	id, _ := path_utils.GetIDFromPart(parts[0])
+	id, _ := pathutils.GetIDFromPart(parts[0])
 
 	node := n.children.GetByID(id)
 	if node == nil {
@@ -120,7 +120,7 @@ func (n *Node) GetByIDs(ids []string) *Node {
 }
 
 func (n *Node) FindByPath(path string) (*Node, context.Params, string) {
-	pathPart, path := path_utils.GetPart(path)
+	pathPart, path := pathutils.GetPart(path)
 	node := n.children.Find(pathPart)
 
 	if node == nil {

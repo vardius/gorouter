@@ -288,10 +288,10 @@ func TestRegexpParam(t *testing.T) {
 func TestEmptyParam(t *testing.T) {
 	t.Parallel()
 
-	paniced := false
+	panicked := false
 	defer func() {
 		if rcv := recover(); rcv != nil {
-			paniced = true
+			panicked = true
 		}
 	}()
 
@@ -300,7 +300,7 @@ func TestEmptyParam(t *testing.T) {
 
 	router.GET("/x/{}", handler)
 
-	if paniced != true {
+	if panicked != true {
 		t.Error("Router should panic for empty wildcard path")
 	}
 }
@@ -363,12 +363,12 @@ func TestNilMiddleware(t *testing.T) {
 func TestPanicMiddleware(t *testing.T) {
 	t.Parallel()
 
-	paniced := false
+	panicked := false
 	panicMiddleware := func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if rcv := recover(); rcv != nil {
-					paniced = true
+					panicked = true
 				}
 			}()
 
@@ -389,7 +389,7 @@ func TestPanicMiddleware(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if paniced != true {
+	if panicked != true {
 		t.Error("Panic has not been handled")
 	}
 }

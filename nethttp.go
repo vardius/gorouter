@@ -7,7 +7,7 @@ import (
 	"github.com/vardius/gorouter/v4/context"
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
-	path_utils "github.com/vardius/gorouter/v4/path"
+	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
 // New creates new net/http Router instance, returns pointer
@@ -109,7 +109,7 @@ func (r *router) ServeFiles(fs http.FileSystem, root string, strip bool) {
 
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	root := r.routes.Find(req.Method)
-	path := path_utils.TrimSlash(req.URL.Path)
+	path := pathutils.TrimSlash(req.URL.Path)
 
 	if root != nil {
 		node, params, subPath := root.FindByPath(path)

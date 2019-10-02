@@ -4,7 +4,7 @@ import (
 	"github.com/valyala/fasthttp"
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
-	path_utils "github.com/vardius/gorouter/v4/path"
+	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
 // NewFastHTTPRouter creates new Router instance, returns pointer
@@ -105,7 +105,7 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 	method := string(ctx.Method())
 	root := r.routes.Find(method)
 
-	path = path_utils.TrimSlash(path)
+	path = pathutils.TrimSlash(path)
 
 	if root != nil {
 		node, params, subPath := root.FindByPath(path)

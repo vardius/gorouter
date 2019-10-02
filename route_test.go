@@ -48,7 +48,7 @@ func TestRouter(t *testing.T) {
 }
 
 func TestParams(t *testing.T) {
-	param := context.Param{"key", "value"}
+	param := context.Param{Key: "key", Value: "value"}
 	params := context.Params{param}
 
 	if params.Value("key") != "value" {

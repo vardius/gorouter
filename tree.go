@@ -12,13 +12,13 @@ func addNode(t *mux.Tree, method, path string) *mux.Node {
 	root := t.Find(method)
 	if root == nil {
 		root = mux.NewNode(method, nil)
-		t.Insert(root)
+		t.WithNode(root)
 	}
 
 	path = pathutils.TrimSlash(path)
 	parts := strings.Split(path, "/")
 
-	n := root.AddChild(parts)
+	n := root.WithChild(parts)
 
 	return n
 }
@@ -30,22 +30,16 @@ func addMiddleware(t *mux.Tree, method, path string, mid middleware.Middleware) 
 		if n.Route() != nil {
 			n.Route().AppendMiddleware(m)
 		}
-		for _, child := range n.Tree().StaticNodes() {
+		for _, child := range n.Tree() {
 			c(c, child, m)
-		}
-		for _, child := range n.Tree().RegexpNodes() {
-			c(c, child, m)
-		}
-		if n.Tree().WildcardNode() != nil {
-			c(c, n.Tree().WildcardNode(), m)
 		}
 	}
 
 	// routes tree roots should be http method nodes only
-	for _, root := range t.StaticNodes() {
-		if method == "" || method == root.ID() {
+	for _, root := range t {
+		if method == "" || method == root.Name() {
 			if path != "" {
-				node, _, _ := root.FindByPath(path)
+				node := root.Tree().Find(path)
 				if node != nil {
 					c(c, node, mid)
 				}
@@ -59,29 +53,29 @@ func addMiddleware(t *mux.Tree, method, path string, mid middleware.Middleware) 
 func allowed(t *mux.Tree, method, path string) (allow string) {
 	if path == "*" {
 		// routes tree roots should be http method nodes only
-		for _, root := range t.StaticNodes() {
-			if root.ID() == OPTIONS {
+		for _, root := range t {
+			if root.Name() == OPTIONS {
 				continue
 			}
 			if len(allow) == 0 {
-				allow = root.ID()
+				allow = root.Name()
 			} else {
-				allow += ", " + root.ID()
+				allow += ", " + root.Name()
 			}
 		}
 	} else {
 		// routes tree roots should be http method nodes only
-		for _, root := range t.StaticNodes() {
-			if root.ID() == method || root.ID() == OPTIONS {
+		for _, root := range t {
+			if root.Name() == method || root.Name() == OPTIONS {
 				continue
 			}
 
-			n, _, _ := root.FindByPath(path)
+			n := root.Tree().Find(path)
 			if n != nil && n.Route() != nil {
 				if len(allow) == 0 {
-					allow = root.ID()
+					allow = root.Name()
 				} else {
-					allow += ", " + root.ID()
+					allow += ", " + root.Name()
 				}
 			}
 		}

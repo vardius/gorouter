@@ -19,3 +19,9 @@ func (p Params) Value(key string) string {
 	}
 	return ""
 }
+
+// Set key value pair at index
+func (p Params) Set(index uint8, key string, value string) {
+	p[index].Value = value
+	p[index].Key = key
+}

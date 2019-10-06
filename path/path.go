@@ -30,7 +30,7 @@ func GetPart(path string) (part string, nextPath string) {
 	return
 }
 
-func GetIDFromPart(pathPart string) (id string, exp string) {
+func GetNameFromPart(pathPart string) (id string, exp string) {
 	id = pathPart
 
 	if pathPart[0] == '{' {

@@ -196,10 +196,18 @@ func (n *subrouterNode) WithChildren(t Tree) {
 }
 
 func (n *subrouterNode) WithChild(parts []string) Node {
+	if len(parts) == 0 {
+		return n
+	}
+
 	panic("Subrouter node can not be a parent.")
 }
 
 func (n *subrouterNode) WithSubrouter(parts []string) Node {
+	if len(parts) == 0 {
+		return n
+	}
+
 	panic("Can not mount another subrouter under subrouter.")
 }
 

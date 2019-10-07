@@ -72,7 +72,7 @@ func (r *router) Handle(method, p string, h http.Handler) {
 	route := newRoute(h)
 	route.PrependMiddleware(r.middleware)
 
-	tree, node := addNode(r.routes, method, p)
+	tree, node := addNode(r.routes, method, p, false)
 	node.WithRoute(route)
 
 	r.routes = tree
@@ -83,10 +83,9 @@ func (r *router) Mount(path string, h http.Handler) {
 		route := newRoute(h)
 		route.PrependMiddleware(r.middleware)
 
-		tree, node := addNode(r.routes, method, path)
+		tree, node := addNode(r.routes, method, path, true)
 
 		node.WithRoute(route)
-		node = mux.WithSubrouter(node)
 
 		r.routes = tree
 	}

@@ -8,7 +8,7 @@ import (
 	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
-func addNode(t mux.Tree, method, path string) (mux.Tree, mux.Node) {
+func addNode(t mux.Tree, method, path string, asSubrouter bool) (mux.Tree, mux.Node) {
 	root := t.Find(method)
 	if root == nil {
 		root = mux.NewNode(method, 0)
@@ -18,7 +18,12 @@ func addNode(t mux.Tree, method, path string) (mux.Tree, mux.Node) {
 	path = pathutils.TrimSlash(path)
 	parts := strings.Split(path, "/")
 
-	n := root.WithChild(parts)
+	var n mux.Node
+	if asSubrouter {
+		n = root.WithSubrouter(parts)
+	} else {
+		n = root.WithChild(parts)
+	}
 
 	return t, n
 }

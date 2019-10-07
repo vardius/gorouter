@@ -69,7 +69,7 @@ func (r *fastHTTPRouter) Handle(method, p string, h fasthttp.RequestHandler) {
 	route := newRoute(h)
 	route.PrependMiddleware(r.middleware)
 
-	tree, node := addNode(r.routes, method, p)
+	tree, node := addNode(r.routes, method, p, false)
 	node.WithRoute(route)
 
 	r.routes = tree
@@ -80,9 +80,9 @@ func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
 		route := newRoute(h)
 		route.PrependMiddleware(r.middleware)
 
-		tree, node := addNode(r.routes, method, path)
+		tree, node := addNode(r.routes, method, path, true)
+
 		node.WithRoute(route)
-		node = mux.WithSubrouter(node)
 
 		r.routes = tree
 	}

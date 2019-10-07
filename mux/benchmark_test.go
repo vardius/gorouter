@@ -5,21 +5,21 @@ import (
 )
 
 func BenchmarkStatic1(b *testing.B) {
-	root := NewNode("GET", nil)
+	root := NewNode("GET", 0)
 
-	lang := NewNode("{lang:en|pl}", root)
-	blog := NewNode("blog", lang)
-	/* search := */ NewNode("search", blog)
+	lang := NewNode("{lang:en|pl}", root.MaxParamsSize())
+	blog := NewNode("blog", lang.MaxParamsSize())
+	/* search := */ NewNode("search", blog.MaxParamsSize())
 
-	page := NewNode("page", blog)
-	/* pageID := */ NewNode(`{pageId:[^/]+}`, page)
+	page := NewNode("page", blog.MaxParamsSize())
+	/* pageID := */ NewNode(`{pageId:[^/]+}`, page.MaxParamsSize())
 
-	posts := NewNode("posts", blog)
-	/* postsID := */ NewNode(`{postsId:[^/]+}`, posts)
+	posts := NewNode("posts", blog.MaxParamsSize())
+	/* postsID := */ NewNode(`{postsId:[^/]+}`, posts.MaxParamsSize())
 
-	comments := NewNode("comments", blog)
-	commentID := NewNode(`{commentId:\d+}`, comments)
-	commentNew := NewNode("new", commentID)
+	comments := NewNode("comments", blog.MaxParamsSize())
+	commentID := NewNode(`{commentId:\d+}`, comments.MaxParamsSize())
+	commentNew := NewNode("new", commentID.MaxParamsSize())
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

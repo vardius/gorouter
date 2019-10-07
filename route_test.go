@@ -66,8 +66,19 @@ func TestInvalidParams(t *testing.T) {
 }
 
 func TestNilHandler(t *testing.T) {
+	panicked := false
+	defer func() {
+		if rcv := recover(); rcv != nil {
+			panicked = true
+		}
+	}()
+
 	r := newRoute(nil)
 	if h := r.Handler(); h != nil {
-		t.Error("Handler hould be equal nil")
+		t.Error("Handler should be equal nil")
+	}
+
+	if panicked != true {
+		t.Error("Router should panic if handler is nil")
 	}
 }

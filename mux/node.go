@@ -8,24 +8,16 @@ import (
 )
 
 // NewNode provides new node
-func NewNode(pathPart string, parent Node) Node {
+func NewNode(pathPart string, maxParamsSize uint8) Node {
 	if len(pathPart) == 0 {
 		return nil
 	}
 
-	switch parent.(type) {
-	case *subrouterNode:
-		panic("Subrouter node can not be a parent")
-	}
-
 	id, exp := pathutils.GetNameFromPart(pathPart)
 	static := &staticNode{
-		name:     id,
-		children: NewTree(),
-	}
-
-	if parent != nil {
-		static.maxParamsSize = parent.MaxParamsSize()
+		name:          id,
+		children:      NewTree(),
+		maxParamsSize: maxParamsSize,
 	}
 
 	var node Node
@@ -38,10 +30,6 @@ func NewNode(pathPart string, parent Node) Node {
 		node = WithWildcard(static)
 	} else {
 		node = static
-	}
-
-	if parent != nil {
-		parent.WithChildren(parent.Tree().WithNode(node))
 	}
 
 	return node
@@ -60,6 +48,7 @@ type Node interface {
 	WithRoute(r Route)
 	WithChildren(t Tree)
 	WithChild(parts []string) Node
+	WithSubrouter(parts []string) Node
 }
 
 type staticNode struct {
@@ -74,6 +63,14 @@ func (n *staticNode) WithChildren(t Tree) {
 }
 
 func (n *staticNode) WithChild(parts []string) Node {
+	return n.withNode(parts, false)
+}
+
+func (n *staticNode) WithSubrouter(parts []string) Node {
+	return n.withNode(parts, true)
+}
+
+func (n *staticNode) withNode(parts []string, asSubRouter bool) Node {
 	if len(parts) == 0 {
 		return n
 	}
@@ -81,8 +78,14 @@ func (n *staticNode) WithChild(parts []string) Node {
 	name, _ := pathutils.GetNameFromPart(parts[0])
 	node := n.Find([]string{name})
 
-	if node == nil {
-		node = NewNode(parts[0], n)
+	if node == n {
+		node = NewNode(parts[0], n.maxParamsSize)
+
+		if asSubRouter && len(parts) == 1 {
+			node = WithSubrouter(node)
+		}
+
+		n.WithChildren(n.children.WithNode(node))
 	}
 
 	return node.WithChild(parts[1:])
@@ -186,6 +189,18 @@ func (n *regexpNode) Match(pathPart string, subPath string) (Node, context.Param
 // WithSubrouter returns a copy of parent as a subrouter.
 func WithSubrouter(parent Node) Node {
 	return &subrouterNode{Node: parent}
+}
+
+func (n *subrouterNode) WithChildren(t Tree) {
+	panic("Subrouter node can not have children.")
+}
+
+func (n *subrouterNode) WithChild(parts []string) Node {
+	panic("Subrouter node can not be a parent.")
+}
+
+func (n *subrouterNode) WithSubrouter(parts []string) Node {
+	panic("Can not mount another subrouter under subrouter.")
 }
 
 type subrouterNode struct {

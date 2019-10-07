@@ -8,11 +8,11 @@ import (
 	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
-func addNode(t *mux.Tree, method, path string) *mux.Node {
+func addNode(t mux.Tree, method, path string) (mux.Tree, mux.Node) {
 	root := t.Find(method)
 	if root == nil {
-		root = mux.NewNode(method, nil)
-		t.WithNode(root)
+		root = mux.NewNode(method, 0)
+		t = t.WithNode(root)
 	}
 
 	path = pathutils.TrimSlash(path)
@@ -20,13 +20,13 @@ func addNode(t *mux.Tree, method, path string) *mux.Node {
 
 	n := root.WithChild(parts)
 
-	return n
+	return t, n
 }
 
-func addMiddleware(t *mux.Tree, method, path string, mid middleware.Middleware) {
-	type recFunc func(recFunc, *mux.Node, middleware.Middleware)
+func addMiddleware(t mux.Tree, method, path string, mid middleware.Middleware) {
+	type recFunc func(recFunc, mux.Node, middleware.Middleware)
 
-	c := func(c recFunc, n *mux.Node, m middleware.Middleware) {
+	c := func(c recFunc, n mux.Node, m middleware.Middleware) {
 		if n.Route() != nil {
 			n.Route().AppendMiddleware(m)
 		}
@@ -36,21 +36,19 @@ func addMiddleware(t *mux.Tree, method, path string, mid middleware.Middleware) 
 	}
 
 	// routes tree roots should be http method nodes only
-	for _, root := range t {
-		if method == "" || method == root.Name() {
-			if path != "" {
-				node := root.Tree().Find(path)
-				if node != nil {
-					c(c, node, mid)
-				}
-			} else {
-				c(c, root, mid)
+	if root := t.Find(method); root != nil {
+		if path != "" {
+			node := root.Tree().Find(path)
+			if node != nil {
+				c(c, node, mid)
 			}
+		} else {
+			c(c, root, mid)
 		}
 	}
 }
 
-func allowed(t *mux.Tree, method, path string) (allow string) {
+func allowed(t mux.Tree, method, path string) (allow string) {
 	if path == "*" {
 		// routes tree roots should be http method nodes only
 		for _, root := range t {
@@ -70,8 +68,7 @@ func allowed(t *mux.Tree, method, path string) (allow string) {
 				continue
 			}
 
-			n := root.Tree().Find(path)
-			if n != nil && n.Route() != nil {
+			if n, _, _ := root.Tree().Match(path); n != nil && n.Route() != nil {
 				if len(allow) == 0 {
 					allow = root.Name()
 				} else {

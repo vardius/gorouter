@@ -19,7 +19,7 @@ func New(fs ...MiddlewareFunc) Router {
 }
 
 type router struct {
-	routes     *mux.Tree
+	routes     mux.Tree
 	middleware middleware.Middleware
 	fileServer http.Handler
 	notFound   http.Handler
@@ -72,8 +72,10 @@ func (r *router) Handle(method, p string, h http.Handler) {
 	route := newRoute(h)
 	route.PrependMiddleware(r.middleware)
 
-	node := addNode(r.routes, method, p)
-	node.SetRoute(route)
+	tree, node := addNode(r.routes, method, p)
+	node.WithRoute(route)
+
+	r.routes = tree
 }
 
 func (r *router) Mount(path string, h http.Handler) {
@@ -81,10 +83,12 @@ func (r *router) Mount(path string, h http.Handler) {
 		route := newRoute(h)
 		route.PrependMiddleware(r.middleware)
 
-		node := addNode(r.routes, method, path)
+		tree, node := addNode(r.routes, method, path)
 
-		node.SetRoute(route)
-		node.TurnIntoSubrouter()
+		node.WithRoute(route)
+		node = mux.WithSubrouter(node)
+
+		r.routes = tree
 	}
 }
 
@@ -108,26 +112,19 @@ func (r *router) ServeFiles(fs http.FileSystem, root string, strip bool) {
 }
 
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	root := r.routes.Find(req.Method)
 	path := pathutils.TrimSlash(req.URL.Path)
 
-	if root != nil {
-		node, params, subPath := root.FindByPath(path)
-		if node != nil {
-			route := node.Route()
-			if route != nil {
-				h := route.Handler().(http.Handler)
-				if h != nil {
-					req = req.WithContext(context.WithParams(req.Context(), params))
+	if root := r.routes.Find(req.Method); root != nil {
+		if node, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
+			h := node.Route().Handler().(http.Handler)
+			req = req.WithContext(context.WithParams(req.Context(), params))
 
-					if subPath != "" {
-						h = http.StripPrefix(strings.TrimSuffix(req.URL.Path, "/"+subPath), h)
-					}
-
-					h.ServeHTTP(w, req)
-					return
-				}
+			if subPath != "" {
+				h = http.StripPrefix(strings.TrimSuffix(req.URL.Path, "/"+subPath), h)
 			}
+
+			h.ServeHTTP(w, req)
+			return
 		}
 	}
 

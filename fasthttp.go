@@ -16,7 +16,7 @@ func NewFastHTTPRouter(fs ...FastHTTPMiddlewareFunc) FastHTTPRouter {
 }
 
 type fastHTTPRouter struct {
-	routes     *mux.Tree
+	routes     mux.Tree
 	middleware middleware.Middleware
 	fileServer fasthttp.RequestHandler
 	notFound   fasthttp.RequestHandler
@@ -69,8 +69,10 @@ func (r *fastHTTPRouter) Handle(method, p string, h fasthttp.RequestHandler) {
 	route := newRoute(h)
 	route.PrependMiddleware(r.middleware)
 
-	node := addNode(r.routes, method, p)
-	node.SetRoute(route)
+	tree, node := addNode(r.routes, method, p)
+	node.WithRoute(route)
+
+	r.routes = tree
 }
 
 func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
@@ -78,9 +80,11 @@ func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
 		route := newRoute(h)
 		route.PrependMiddleware(r.middleware)
 
-		node := addNode(r.routes, method, path)
-		node.SetRoute(route)
-		node.TurnIntoSubrouter()
+		tree, node := addNode(r.routes, method, path)
+		node.WithRoute(route)
+		node = mux.WithSubrouter(node)
+
+		r.routes = tree
 	}
 }
 
@@ -101,32 +105,24 @@ func (r *fastHTTPRouter) ServeFiles(root string, stripSlashes int) {
 }
 
 func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
-	path := string(ctx.Path())
 	method := string(ctx.Method())
-	root := r.routes.Find(method)
-
+	path := string(ctx.Path())
 	path = pathutils.TrimSlash(path)
 
-	if root != nil {
-		node, params, subPath := root.FindByPath(path)
+	if root := r.routes.Find(method); root != nil {
+		if node, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
+			h := node.Route().Handler().(fasthttp.RequestHandler)
 
-		if node != nil {
-			route := node.Route()
-			if route != nil {
-				h := route.Handler().(fasthttp.RequestHandler)
-				if h != nil {
-					for _, param := range params {
-						ctx.SetUserValue(param.Key, param.Value)
-					}
-
-					if subPath != "" {
-						ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))
-					}
-
-					h(ctx)
-					return
-				}
+			for _, param := range params {
+				ctx.SetUserValue(param.Key, param.Value)
 			}
+
+			if subPath != "" {
+				ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))
+			}
+
+			h(ctx)
+			return
 		}
 	}
 

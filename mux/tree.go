@@ -16,6 +16,10 @@ type Tree []Node
 func (t Tree) Match(path string) (Node, context.Params, string) {
 	pathPart, subPath := pathutils.GetPart(path)
 
+	if pathPart == "" {
+		return nil, nil, path
+	}
+
 	for _, child := range t {
 		if node, params, subPath := child.Match(pathPart, subPath); node != nil {
 			return node, params, subPath

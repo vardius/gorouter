@@ -101,10 +101,6 @@ type wildcardNode struct {
 }
 
 func (n *wildcardNode) Match(pathPart string, subPath string) (Node, context.Params, string) {
-	if pathPart == "" {
-		return nil, nil, ""
-	}
-
 	if node, params, _ := n.Tree().Match(subPath); node != nil {
 		params.Set(n.MaxParamsSize()-1, n.Name(), pathPart)
 
@@ -160,10 +156,6 @@ func (n *subrouterNode) WithChildren(t Tree) {
 }
 
 func (n *subrouterNode) Match(pathPart string, subPath string) (Node, context.Params, string) {
-	if pathPart == "" {
-		return nil, nil, ""
-	}
-
 	if node, params, _ := n.Node.Match(pathPart, ""); node != nil {
 		return node, params, subPath
 	}

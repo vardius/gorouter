@@ -106,16 +106,18 @@ func (r *router) ServeFiles(fs http.FileSystem, root string, strip bool) {
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	path := pathutils.TrimSlash(req.URL.Path)
 
-	if node, params, subPath := r.routes.Match(req.Method + req.URL.Path); node != nil && node.Route() != nil {
-		h := node.Route().Handler().(http.Handler)
-		req = req.WithContext(context.WithParams(req.Context(), params))
+	if root := r.routes.Find(req.Method); root != nil {
+		if node, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
+			h := node.Route().Handler().(http.Handler)
+			req = req.WithContext(context.WithParams(req.Context(), params))
 
-		if subPath != "" {
-			h = http.StripPrefix(strings.TrimSuffix(req.URL.Path, "/"+subPath), h)
+			if subPath != "" {
+				h = http.StripPrefix(strings.TrimSuffix(req.URL.Path, "/"+subPath), h)
+			}
+
+			h.ServeHTTP(w, req)
+			return
 		}
-
-		h.ServeHTTP(w, req)
-		return
 	}
 
 	// Handle OPTIONS

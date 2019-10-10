@@ -146,9 +146,10 @@ func TestFastHTTPNotFound(t *testing.T) {
 
 	handler := &mockHandler{}
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
+	router.GET("/x", handler.HandleFastHTTP)
 	router.GET("/x/y", handler.HandleFastHTTP)
 
-	ctx := buildFastHTTPRequestContext(POST, "/y/y")
+	ctx := buildFastHTTPRequestContext(GET, "/x/x")
 
 	router.HandleFastHTTP(ctx)
 

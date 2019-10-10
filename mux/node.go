@@ -60,15 +60,17 @@ func (n *staticNode) WithChildren(t Tree) {
 }
 
 func (n *staticNode) Match(pathPart string, subPath string) (Node, context.Params, string) {
-	if n.name != pathPart {
-		return nil, nil, ""
+	if n.name == pathPart {
+		if subPath == "" {
+			return n, make(context.Params, n.maxParamsSize), ""
+		}
+
+		if node, params, _ := n.children.Match(subPath); node != nil {
+			return node, params, ""
+		}
 	}
 
-	if node, params, _ := n.children.Match(subPath); node != nil {
-		return node, params, ""
-	}
-
-	return n, make(context.Params, n.maxParamsSize), ""
+	return nil, nil, ""
 }
 
 func (n *staticNode) Name() string {
@@ -101,17 +103,21 @@ type wildcardNode struct {
 }
 
 func (n *wildcardNode) Match(pathPart string, subPath string) (Node, context.Params, string) {
+	if subPath == "" {
+		params := make(context.Params, n.MaxParamsSize())
+
+		params.Set(n.MaxParamsSize()-1, n.Name(), pathPart)
+
+		return n, params, ""
+	}
+
 	if node, params, _ := n.Tree().Match(subPath); node != nil {
 		params.Set(n.MaxParamsSize()-1, n.Name(), pathPart)
 
 		return node, params, ""
 	}
 
-	params := make(context.Params, n.MaxParamsSize())
-
-	params.Set(n.MaxParamsSize()-1, n.Name(), pathPart)
-
-	return n, params, ""
+	return nil, nil, ""
 }
 
 // WithRegexp returns a copy of parent with a regexp wildcard.
@@ -125,21 +131,23 @@ type regexpNode struct {
 }
 
 func (n *regexpNode) Match(pathPart string, subPath string) (Node, context.Params, string) {
-	if !n.regexp.MatchString(pathPart) {
-		return nil, nil, ""
+	if n.regexp.MatchString(pathPart) {
+		if subPath == "" {
+			params := make(context.Params, n.MaxParamsSize())
+
+			params.Set(n.MaxParamsSize()-1, n.Name(), pathPart)
+
+			return n, params, ""
+		}
+
+		if node, params, _ := n.Tree().Match(subPath); node != nil {
+			params.Set(n.MaxParamsSize()-1, n.Name(), pathPart)
+
+			return node, params, ""
+		}
 	}
 
-	if node, params, _ := n.Tree().Match(subPath); node != nil {
-		params.Set(n.MaxParamsSize()-1, n.Name(), pathPart)
-
-		return node, params, ""
-	}
-
-	params := make(context.Params, n.MaxParamsSize())
-
-	params.Set(n.MaxParamsSize()-1, n.Name(), pathPart)
-
-	return n, params, ""
+	return nil, nil, ""
 }
 
 // WithSubrouter returns a copy of parent as a subrouter.

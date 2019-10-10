@@ -148,10 +148,11 @@ func TestNotFound(t *testing.T) {
 
 	handler := &mockHandler{}
 	router := New().(*router)
+	router.GET("/x", handler)
 	router.GET("/x/y", handler)
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(POST, "/y/y", nil)
+	req, err := http.NewRequest(GET, "/x/x", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

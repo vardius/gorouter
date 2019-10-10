@@ -8,24 +8,28 @@ import (
 	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
-func addNode(t mux.Tree, method, path string, asSubrouter bool) (mux.Tree, mux.Node) {
+func withRoute(t mux.Tree, method, path string, route mux.Route) mux.Tree {
 	root := t.Find(method)
 	if root == nil {
 		root = mux.NewNode(method, 0)
 		t = t.WithNode(root)
 	}
 
-	path = pathutils.TrimSlash(path)
-	parts := strings.Split(path, "/")
+	root.WithChildren(root.Tree().WithRoute(path, route, 0))
 
-	var n mux.Node
-	if asSubrouter {
-		n = root.WithSubrouter(parts)
-	} else {
-		n = root.WithChild(parts)
+	return t
+}
+
+func withSubrouter(t mux.Tree, method, path string, route mux.Route) mux.Tree {
+	root := t.Find(method)
+	if root == nil {
+		root = mux.NewNode(method, 0)
+		t = t.WithNode(root)
 	}
 
-	return t, n
+	root.WithChildren(root.Tree().WithSubrouter(path, route, 0))
+
+	return t
 }
 
 func addMiddleware(t mux.Tree, method, path string, mid middleware.Middleware) {
@@ -43,7 +47,7 @@ func addMiddleware(t mux.Tree, method, path string, mid middleware.Middleware) {
 	// routes tree roots should be http method nodes only
 	if root := t.Find(method); root != nil {
 		if path != "" {
-			node := root.Tree().Find(path)
+			node := findNode(root, strings.Split(pathutils.TrimSlash(path), "/"))
 			if node != nil {
 				c(c, node, mid)
 			}
@@ -51,6 +55,20 @@ func addMiddleware(t mux.Tree, method, path string, mid middleware.Middleware) {
 			c(c, root, mid)
 		}
 	}
+}
+
+func findNode(n mux.Node, parts []string) mux.Node {
+	if len(parts) == 0 {
+		return n
+	}
+
+	name, _ := pathutils.GetNameFromPart(parts[0])
+
+	if node := n.Tree().Find(name); node != nil {
+		return findNode(node, parts[1:])
+	}
+
+	return n
 }
 
 func allowed(t mux.Tree, method, path string) (allow string) {

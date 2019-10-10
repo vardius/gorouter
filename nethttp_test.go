@@ -242,7 +242,7 @@ func TestParam(t *testing.T) {
 		}
 
 		if params.Value("param") != "y" {
-			t.Errorf("Wrong params value. Expected 'x', actual '%s'", params.Value("param"))
+			t.Errorf("Wrong params value. Expected 'y', actual '%s'", params.Value("param"))
 		}
 	}))
 

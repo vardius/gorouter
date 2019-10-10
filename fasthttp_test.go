@@ -225,7 +225,7 @@ func TestFastHTTPParam(t *testing.T) {
 		served = true
 
 		if ctx.UserValue("param") != "y" {
-			t.Errorf("Wrong params value. Expected 'x', actual '%s'", ctx.UserValue("param"))
+			t.Errorf("Wrong params value. Expected 'y', actual '%s'", ctx.UserValue("param"))
 		}
 	})
 

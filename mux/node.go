@@ -37,7 +37,6 @@ func NewNode(pathPart string, maxParamsSize uint8) Node {
 
 // Node is route node
 type Node interface {
-	Find(names []string) Node
 	Match(pathPart string, subPath string) (Node, context.Params, string)
 
 	Name() string
@@ -47,8 +46,6 @@ type Node interface {
 
 	WithRoute(r Route)
 	WithChildren(t Tree)
-	WithChild(parts []string) Node
-	WithSubrouter(parts []string) Node
 }
 
 type staticNode struct {
@@ -60,47 +57,6 @@ type staticNode struct {
 
 func (n *staticNode) WithChildren(t Tree) {
 	n.children = t
-}
-
-func (n *staticNode) WithChild(parts []string) Node {
-	return n.withNode(parts, false)
-}
-
-func (n *staticNode) WithSubrouter(parts []string) Node {
-	return n.withNode(parts, true)
-}
-
-func (n *staticNode) withNode(parts []string, asSubRouter bool) Node {
-	if len(parts) == 0 {
-		return n
-	}
-
-	name, _ := pathutils.GetNameFromPart(parts[0])
-	node := n.Find([]string{name})
-
-	if node == n {
-		node = NewNode(parts[0], n.maxParamsSize)
-
-		if asSubRouter && len(parts) == 1 {
-			node = WithSubrouter(node)
-		}
-
-		n.WithChildren(n.children.WithNode(node))
-	}
-
-	return node.WithChild(parts[1:])
-}
-
-func (n *staticNode) Find(names []string) Node {
-	if len(names) == 0 {
-		return n
-	}
-
-	if node := n.children.Find(names[0]); node != nil {
-		return node.Find(names[1:])
-	}
-
-	return n
 }
 
 func (n *staticNode) Match(pathPart string, subPath string) (Node, context.Params, string) {
@@ -145,6 +101,10 @@ type wildcardNode struct {
 }
 
 func (n *wildcardNode) Match(pathPart string, subPath string) (Node, context.Params, string) {
+	if pathPart == "" {
+		return nil, nil, ""
+	}
+
 	if node, params, _ := n.Tree().Match(subPath); node != nil {
 		params.Set(n.MaxParamsSize()-1, n.Name(), pathPart)
 
@@ -191,33 +151,20 @@ func WithSubrouter(parent Node) Node {
 	return &subrouterNode{Node: parent}
 }
 
-func (n *subrouterNode) WithChildren(t Tree) {
-	panic("Subrouter node can not have children.")
-}
-
-func (n *subrouterNode) WithChild(parts []string) Node {
-	if len(parts) == 0 {
-		return n
-	}
-
-	panic("Subrouter node can not be a parent.")
-}
-
-func (n *subrouterNode) WithSubrouter(parts []string) Node {
-	if len(parts) == 0 {
-		return n
-	}
-
-	panic("Can not mount another subrouter under subrouter.")
-}
-
 type subrouterNode struct {
 	Node
 }
 
-func (n *subrouterNode) Match(pathPart string, subPath string) (Node, context.Params, string) {
-	if node, params, _ := n.Node.Match(pathPart, ""); node != nil {
+func (n *subrouterNode) WithChildren(t Tree) {
+	panic("Subrouter node can not have children.")
+}
 
+func (n *subrouterNode) Match(pathPart string, subPath string) (Node, context.Params, string) {
+	if pathPart == "" {
+		return nil, nil, ""
+	}
+
+	if node, params, _ := n.Node.Match(pathPart, ""); node != nil {
 		return node, params, subPath
 	}
 

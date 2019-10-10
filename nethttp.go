@@ -68,14 +68,11 @@ func (r *router) USE(method, p string, fs ...MiddlewareFunc) {
 	addMiddleware(r.routes, method, p, m)
 }
 
-func (r *router) Handle(method, p string, h http.Handler) {
+func (r *router) Handle(method, path string, h http.Handler) {
 	route := newRoute(h)
 	route.PrependMiddleware(r.middleware)
 
-	tree, node := addNode(r.routes, method, p, false)
-	node.WithRoute(route)
-
-	r.routes = tree
+	r.routes = withRoute(r.routes, method, path, route)
 }
 
 func (r *router) Mount(path string, h http.Handler) {
@@ -83,11 +80,7 @@ func (r *router) Mount(path string, h http.Handler) {
 		route := newRoute(h)
 		route.PrependMiddleware(r.middleware)
 
-		tree, node := addNode(r.routes, method, path, true)
-
-		node.WithRoute(route)
-
-		r.routes = tree
+		r.routes = withSubrouter(r.routes, method, path, route)
 	}
 }
 

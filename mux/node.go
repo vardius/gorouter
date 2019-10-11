@@ -64,22 +64,20 @@ type staticNode struct {
 	maxParamsSize uint8
 }
 
-func (n *staticNode) WithChildren(t Tree) {
-	n.children = t
-}
-
 func (n *staticNode) Match(pathPart string, subPath string) (Node, context.Params, string) {
 	if n.name == pathPart {
 		if subPath == "" {
 			return n, make(context.Params, n.maxParamsSize), ""
 		}
 
-		if node, params, subPath := n.children.Match(subPath); node != nil {
-			return node, params, subPath
-		}
+		return n.children.Match(subPath)
 	}
 
 	return nil, nil, ""
+}
+
+func (n *staticNode) WithChildren(t Tree) {
+	n.children = t
 }
 
 func (n *staticNode) Name() string {
@@ -119,7 +117,7 @@ func (n *wildcardNode) Match(pathPart string, subPath string) (Node, context.Par
 		return n, params, ""
 	}
 
-	if node, params, subPath := n.Tree().Match(subPath); node != nil {
+	if node, params, subPath := n.staticNode.children.Match(subPath); node != nil {
 		params.Set(n.maxParamsSize-1, n.staticNode.name, pathPart)
 
 		return node, params, subPath
@@ -153,14 +151,14 @@ type subrouterNode struct {
 	Node
 }
 
-func (n *subrouterNode) WithChildren(t Tree) {
-	panic("Subrouter node can not have children.")
-}
-
 func (n *subrouterNode) Match(pathPart string, subPath string) (Node, context.Params, string) {
 	if node, params, _ := n.Node.Match(pathPart, ""); node != nil {
 		return node, params, subPath
 	}
 
 	return nil, nil, ""
+}
+
+func (n *subrouterNode) WithChildren(t Tree) {
+	panic("Subrouter node can not have children.")
 }

@@ -48,8 +48,6 @@ func findNode(n mux.Node, parts []string) mux.Node {
 }
 
 func allowed(t mux.Tree, method, path string) (allow string) {
-	path = pathutils.TrimSlash(path)
-
 	if path == "*" {
 		// routes tree roots should be http method nodes only
 		for _, root := range t {

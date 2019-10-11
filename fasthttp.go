@@ -4,6 +4,7 @@ import (
 	"github.com/valyala/fasthttp"
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
+	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
 // NewFastHTTPRouter creates new Router instance, returns pointer
@@ -98,21 +99,29 @@ func (r *fastHTTPRouter) ServeFiles(root string, stripSlashes int) {
 
 func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 	method := string(ctx.Method())
-	path := string(ctx.Path())
+	pathAsString := string(ctx.Path())
+	path := pathutils.TrimSlash(pathAsString)
 
-	if node, params, subPath := r.routes.Match(method + path); node != nil && node.Route() != nil {
-		h := node.Route().Handler().(fasthttp.RequestHandler)
+	if root := r.routes.Find(method); root != nil {
+		if node, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
+			h := node.Route().Handler().(fasthttp.RequestHandler)
 
-		for _, param := range params {
-			ctx.SetUserValue(param.Key, param.Value)
+			for _, param := range params {
+				ctx.SetUserValue(param.Key, param.Value)
+			}
+
+			if subPath != "" {
+				ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))
+			}
+
+			h(ctx)
+			return
 		}
 
-		if subPath != "" {
-			ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))
+		if pathAsString == "/" && root.Route() != nil {
+			root.Route().Handler().(fasthttp.RequestHandler)(ctx)
+			return
 		}
-
-		h(ctx)
-		return
 	}
 
 	// Handle OPTIONS

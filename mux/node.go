@@ -114,13 +114,13 @@ func (n *wildcardNode) Match(pathPart string, subPath string) (Node, context.Par
 	if subPath == "" {
 		params := make(context.Params, n.maxParamsSize)
 
-		params.Set(n.maxParamsSize-1, n.Name(), pathPart)
+		params.Set(n.maxParamsSize-1, n.staticNode.name, pathPart)
 
 		return n, params, ""
 	}
 
 	if node, params, subPath := n.Tree().Match(subPath); node != nil {
-		params.Set(n.maxParamsSize-1, n.Name(), pathPart)
+		params.Set(n.maxParamsSize-1, n.staticNode.name, pathPart)
 
 		return node, params, subPath
 	}

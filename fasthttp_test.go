@@ -498,28 +498,27 @@ func TestFastHTTPChainCalls(t *testing.T) {
 func TestFastHTTPMountSubRouter(t *testing.T) {
 	t.Parallel()
 
-	rGlobal1 := mockFastHTTPMiddleware("[rg1]")
-	rGlobal2 := mockFastHTTPMiddleware("[rg2]")
-	mainRouter := NewFastHTTPRouter(rGlobal1, rGlobal2).(*fastHTTPRouter)
+	mainRouter := NewFastHTTPRouter(
+		mockFastHTTPMiddleware("[rg1]"),
+		mockFastHTTPMiddleware("[rg2]"),
+	).(*fastHTTPRouter)
 
-	sGlobal1 := mockFastHTTPMiddleware("[sg1]")
-	sGlobal2 := mockFastHTTPMiddleware("[sg2]")
-	subRouter := NewFastHTTPRouter(sGlobal1, sGlobal2).(*fastHTTPRouter)
+	subRouter := NewFastHTTPRouter(
+		mockFastHTTPMiddleware("[sg1]"),
+		mockFastHTTPMiddleware("[sg2]"),
+	).(*fastHTTPRouter)
+
 	subRouter.GET("/y", func(ctx *fasthttp.RequestCtx) {
 		fmt.Fprintf(ctx, "[s]")
 	})
 
 	mainRouter.Mount("/{param}", subRouter.HandleFastHTTP)
 
-	r1 := mockFastHTTPMiddleware("[r1]")
-	r2 := mockFastHTTPMiddleware("[r2]")
-	mainRouter.USE(GET, "/{param}", r1)
-	mainRouter.USE(GET, "/{param}", r2)
+	mainRouter.USE(GET, "/{param}", mockFastHTTPMiddleware("[r1]"))
+	mainRouter.USE(GET, "/{param}", mockFastHTTPMiddleware("[r2]"))
 
-	s1 := mockFastHTTPMiddleware("[s1]")
-	s2 := mockFastHTTPMiddleware("[s2]")
-	subRouter.USE(GET, "/y", s1)
-	subRouter.USE(GET, "/y", s2)
+	subRouter.USE(GET, "/y", mockFastHTTPMiddleware("[s1]"))
+	subRouter.USE(GET, "/y", mockFastHTTPMiddleware("[s2]"))
 
 	ctx := buildFastHTTPRequestContext(GET, "/x/y")
 

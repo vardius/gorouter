@@ -26,18 +26,25 @@ func handleFastHTTPRequest(method, path string, handler fasthttp.RequestHandler)
 }
 
 func Example() {
-	hello := func(w http.ResponseWriter, r *http.Request) {
+	index := func(_ http.ResponseWriter, _ *http.Request) {
+		fmt.Printf("Hello\n")
+	}
+
+	hello := func(_ http.ResponseWriter, r *http.Request) {
 		params, _ := context.Parameters(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
 	router := gorouter.New()
+	router.GET("/", http.HandlerFunc(index))
 	router.GET("/hello/{name}", http.HandlerFunc(hello))
 
 	// for this example we will mock request
+	handleNetHTTPRequest("GET", "/", router)
 	handleNetHTTPRequest("GET", "/hello/guest", router)
 
 	// Output:
+	// Hello
 	// Hello, guest!
 }
 

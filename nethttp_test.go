@@ -557,28 +557,27 @@ func TestChainCalls(t *testing.T) {
 func TestMountSubRouter(t *testing.T) {
 	t.Parallel()
 
-	rGlobal1 := mockMiddleware("[rg1]")
-	rGlobal2 := mockMiddleware("[rg2]")
-	mainRouter := New(rGlobal1, rGlobal2).(*router)
+	mainRouter := New(
+		mockMiddleware("[rg1]"),
+		mockMiddleware("[rg2]"),
+	).(*router)
 
-	sGlobal1 := mockMiddleware("[sg1]")
-	sGlobal2 := mockMiddleware("[sg2]")
-	subRouter := New(sGlobal1, sGlobal2).(*router)
+	subRouter := New(
+		mockMiddleware("[sg1]"),
+		mockMiddleware("[sg2]"),
+	).(*router)
+
 	subRouter.GET("/y", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("[s]"))
 	}))
 
 	mainRouter.Mount("/{param}", subRouter)
 
-	r1 := mockMiddleware("[r1]")
-	r2 := mockMiddleware("[r2]")
-	mainRouter.USE(GET, "/{param}", r1)
-	mainRouter.USE(GET, "/{param}", r2)
+	mainRouter.USE(GET, "/{param}", mockMiddleware("[r1]"))
+	mainRouter.USE(GET, "/{param}", mockMiddleware("[r2]"))
 
-	s1 := mockMiddleware("[s1]")
-	s2 := mockMiddleware("[s2]")
-	subRouter.USE(GET, "/y", s1)
-	subRouter.USE(GET, "/y", s2)
+	subRouter.USE(GET, "/y", mockMiddleware("[s1]"))
+	subRouter.USE(GET, "/y", mockMiddleware("[s2]"))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(GET, "/x/y", nil)

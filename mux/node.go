@@ -65,8 +65,8 @@ func (n *staticNode) Match(pathPart string, subPath string) (Node, context.Param
 			return n, make(context.Params, n.maxParamsSize), ""
 		}
 
-		if node, params, _ := n.children.Match(subPath); node != nil {
-			return node, params, ""
+		if node, params, subPath := n.children.Match(subPath); node != nil {
+			return node, params, subPath
 		}
 	}
 
@@ -111,10 +111,10 @@ func (n *wildcardNode) Match(pathPart string, subPath string) (Node, context.Par
 		return n, params, ""
 	}
 
-	if node, params, _ := n.Tree().Match(subPath); node != nil {
+	if node, params, subPath := n.Tree().Match(subPath); node != nil {
 		params.Set(n.MaxParamsSize()-1, n.Name(), pathPart)
 
-		return node, params, ""
+		return node, params, subPath
 	}
 
 	return nil, nil, ""
@@ -140,10 +140,10 @@ func (n *regexpNode) Match(pathPart string, subPath string) (Node, context.Param
 			return n, params, ""
 		}
 
-		if node, params, _ := n.Tree().Match(subPath); node != nil {
+		if node, params, subPath := n.Tree().Match(subPath); node != nil {
 			params.Set(n.MaxParamsSize()-1, n.Name(), pathPart)
 
-			return node, params, ""
+			return node, params, subPath
 		}
 	}
 

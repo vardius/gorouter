@@ -30,6 +30,7 @@ func GetPart(path string) (part string, nextPath string) {
 	return
 }
 
+// GetNameFromPart gets node name from path part
 func GetNameFromPart(pathPart string) (id string, exp string) {
 	id = pathPart
 

@@ -8,30 +8,6 @@ import (
 	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
-func withRoute(t mux.Tree, method, path string, route mux.Route) mux.Tree {
-	root := t.Find(method)
-	if root == nil {
-		root = mux.NewNode(method, 0)
-		t = t.WithNode(root)
-	}
-
-	root.WithChildren(root.Tree().WithRoute(path, route, 0))
-
-	return t
-}
-
-func withSubrouter(t mux.Tree, method, path string, route mux.Route) mux.Tree {
-	root := t.Find(method)
-	if root == nil {
-		root = mux.NewNode(method, 0)
-		t = t.WithNode(root)
-	}
-
-	root.WithChildren(root.Tree().WithSubrouter(path, route, 0))
-
-	return t
-}
-
 func addMiddleware(t mux.Tree, method, path string, mid middleware.Middleware) {
 	type recFunc func(recFunc, mux.Node, middleware.Middleware)
 
@@ -72,6 +48,8 @@ func findNode(n mux.Node, parts []string) mux.Node {
 }
 
 func allowed(t mux.Tree, method, path string) (allow string) {
+	path = pathutils.TrimSlash(path)
+
 	if path == "*" {
 		// routes tree roots should be http method nodes only
 		for _, root := range t {

@@ -7,7 +7,6 @@ import (
 	"github.com/vardius/gorouter/v4/context"
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
-	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
 // New creates new net/http Router instance, returns pointer
@@ -72,15 +71,15 @@ func (r *router) Handle(method, path string, h http.Handler) {
 	route := newRoute(h)
 	route.PrependMiddleware(r.middleware)
 
-	r.routes = withRoute(r.routes, method, path, route)
+	r.routes = r.routes.WithRoute(method+path, route, 0)
 }
 
 func (r *router) Mount(path string, h http.Handler) {
-	for _, method := range []string{GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD, CONNECT, TRACE} {
+	for _, method := range []string{GET} { //, POST, PUT, DELETE, PATCH, OPTIONS, HEAD, CONNECT, TRACE} {
 		route := newRoute(h)
 		route.PrependMiddleware(r.middleware)
 
-		r.routes = withSubrouter(r.routes, method, path, route)
+		r.routes = r.routes.WithSubrouter(method+path, route, 0)
 	}
 }
 
@@ -104,25 +103,21 @@ func (r *router) ServeFiles(fs http.FileSystem, root string, strip bool) {
 }
 
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	path := pathutils.TrimSlash(req.URL.Path)
+	if node, params, subPath := r.routes.Match(req.Method + req.URL.Path); node != nil && node.Route() != nil {
+		h := node.Route().Handler().(http.Handler)
+		req = req.WithContext(context.WithParams(req.Context(), params))
 
-	if root := r.routes.Find(req.Method); root != nil {
-		if node, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
-			h := node.Route().Handler().(http.Handler)
-			req = req.WithContext(context.WithParams(req.Context(), params))
-
-			if subPath != "" {
-				h = http.StripPrefix(strings.TrimSuffix(req.URL.Path, "/"+subPath), h)
-			}
-
-			h.ServeHTTP(w, req)
-			return
+		if subPath != "" {
+			h = http.StripPrefix(strings.TrimSuffix(req.URL.Path, "/"+subPath), h)
 		}
+
+		h.ServeHTTP(w, req)
+		return
 	}
 
 	// Handle OPTIONS
 	if req.Method == OPTIONS {
-		if allow := allowed(r.routes, req.Method, path); len(allow) > 0 {
+		if allow := allowed(r.routes, req.Method, req.URL.Path); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			return
 		}
@@ -132,7 +127,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	} else {
 		// Handle 405
-		if allow := allowed(r.routes, req.Method, path); len(allow) > 0 {
+		if allow := allowed(r.routes, req.Method, req.URL.Path); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			r.serveNotAllowed(w, req)
 			return

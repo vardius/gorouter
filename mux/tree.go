@@ -16,17 +16,13 @@ type Tree []Node
 func (t Tree) Match(path string) (Node, context.Params, string) {
 	pathPart, subPath := pathutils.GetPart(path)
 
-	if pathPart == "" {
-		return nil, nil, path
-	}
-
 	for _, child := range t {
 		if node, params, subPath := child.Match(pathPart, subPath); node != nil {
 			return node, params, subPath
 		}
 	}
 
-	return nil, nil, path
+	return nil, nil, ""
 }
 
 func (t Tree) Find(name string) Node {
@@ -78,14 +74,17 @@ func (t Tree) WithSubrouter(path string, route Route, maxParamsSize uint8) Tree 
 	node := t.Find(name)
 
 	if node == nil {
-		node = WithSubrouter(NewNode(parts[0], maxParamsSize))
+		node = NewNode(parts[0], maxParamsSize)
+		if len(parts) == 1 {
+			node = WithSubrouter(node)
+		}
 		t = t.WithNode(node)
 	}
 
 	if len(parts) == 1 {
 		node.WithRoute(route)
 	} else {
-		node.WithChildren(node.Tree().WithRoute(strings.Join(parts[1:], "/"), route, node.MaxParamsSize()))
+		node.WithChildren(node.Tree().WithSubrouter(strings.Join(parts[1:], "/"), route, node.MaxParamsSize()))
 	}
 
 	return t

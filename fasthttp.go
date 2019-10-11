@@ -72,7 +72,7 @@ func (r *fastHTTPRouter) Handle(method, path string, h fasthttp.RequestHandler) 
 }
 
 func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
-	for _, method := range []string{GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD, CONNECT, TRACE} {
+	for _, method := range []string{TRACE, CONNECT, HEAD, OPTIONS, PATCH, DELETE, PUT, POST, GET} {
 		route := newRoute(h)
 		route.PrependMiddleware(r.middleware)
 

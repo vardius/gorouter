@@ -76,7 +76,7 @@ func (t Tree) WithSubrouter(path string, route Route, maxParamsSize uint8) Tree 
 	if node == nil {
 		node = NewNode(parts[0], maxParamsSize)
 		if len(parts) == 1 {
-			node = WithSubrouter(node)
+			node = withSubrouter(node)
 		}
 		t = t.WithNode(node)
 	}

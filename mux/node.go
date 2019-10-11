@@ -24,12 +24,21 @@ func NewNode(pathPart string, maxParamsSize uint8) Node {
 
 	if exp != "" {
 		static.maxParamsSize++
-		node = WithRegexp(static, regexp.MustCompile(exp))
+		node = withRegexp(withWildcard(static), regexp.MustCompile(exp))
 	} else if id != pathPart {
 		static.maxParamsSize++
-		node = WithWildcard(static)
+		node = withWildcard(static)
 	} else {
 		node = static
+	}
+
+	if id != pathPart {
+		static.maxParamsSize++
+		node = withWildcard(static)
+
+		if exp != "" {
+			node = withRegexp(withWildcard(static), regexp.MustCompile(exp))
+		}
 	}
 
 	return node
@@ -93,26 +102,25 @@ func (n *staticNode) WithRoute(r Route) {
 	n.route = r
 }
 
-// WithWildcard returns a copy of parent with a wildcard.
-func WithWildcard(parent Node) Node {
-	return &wildcardNode{Node: parent}
+func withWildcard(parent *staticNode) *wildcardNode {
+	return &wildcardNode{staticNode: parent}
 }
 
 type wildcardNode struct {
-	Node
+	*staticNode
 }
 
 func (n *wildcardNode) Match(pathPart string, subPath string) (Node, context.Params, string) {
 	if subPath == "" {
-		params := make(context.Params, n.MaxParamsSize())
+		params := make(context.Params, n.maxParamsSize)
 
-		params.Set(n.MaxParamsSize()-1, n.Name(), pathPart)
+		params.Set(n.maxParamsSize-1, n.Name(), pathPart)
 
 		return n, params, ""
 	}
 
 	if node, params, subPath := n.Tree().Match(subPath); node != nil {
-		params.Set(n.MaxParamsSize()-1, n.Name(), pathPart)
+		params.Set(n.maxParamsSize-1, n.Name(), pathPart)
 
 		return node, params, subPath
 	}
@@ -120,38 +128,24 @@ func (n *wildcardNode) Match(pathPart string, subPath string) (Node, context.Par
 	return nil, nil, ""
 }
 
-// WithRegexp returns a copy of parent with a regexp wildcard.
-func WithRegexp(parent Node, regexp *regexp.Regexp) Node {
-	return &regexpNode{Node: parent, regexp: regexp}
+func withRegexp(parent *wildcardNode, regexp *regexp.Regexp) *regexpNode {
+	return &regexpNode{wildcardNode: parent, regexp: regexp}
 }
 
 type regexpNode struct {
-	Node
+	*wildcardNode
 	regexp *regexp.Regexp
 }
 
 func (n *regexpNode) Match(pathPart string, subPath string) (Node, context.Params, string) {
 	if n.regexp.MatchString(pathPart) {
-		if subPath == "" {
-			params := make(context.Params, n.MaxParamsSize())
-
-			params.Set(n.MaxParamsSize()-1, n.Name(), pathPart)
-
-			return n, params, ""
-		}
-
-		if node, params, subPath := n.Tree().Match(subPath); node != nil {
-			params.Set(n.MaxParamsSize()-1, n.Name(), pathPart)
-
-			return node, params, subPath
-		}
+		return n.wildcardNode.Match(pathPart, subPath)
 	}
 
 	return nil, nil, ""
 }
 
-// WithSubrouter returns a copy of parent as a subrouter.
-func WithSubrouter(parent Node) Node {
+func withSubrouter(parent Node) *subrouterNode {
 	return &subrouterNode{Node: parent}
 }
 

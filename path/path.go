@@ -31,18 +31,18 @@ func GetPart(path string) (part string, nextPath string) {
 }
 
 // GetNameFromPart gets node name from path part
-func GetNameFromPart(pathPart string) (id string, exp string) {
-	id = pathPart
+func GetNameFromPart(pathPart string) (name string, exp string) {
+	name = pathPart
 
 	if pathPart[0] == '{' {
-		id = pathPart[1 : len(pathPart)-1]
+		name = pathPart[1 : len(pathPart)-1]
 
-		if parts := strings.Split(id, ":"); len(parts) == 2 {
-			id = parts[0]
+		if parts := strings.Split(name, ":"); len(parts) == 2 {
+			name = parts[0]
 			exp = parts[1]
 		}
 
-		if id == "" {
+		if name == "" {
 			panic("Empty wildcard name")
 		}
 

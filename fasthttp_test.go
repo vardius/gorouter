@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/valyala/fasthttp"
+	"github.com/vardius/gorouter/v4/context"
 )
 
 func buildFastHTTPRequestContext(method, path string) *fasthttp.RequestCtx {
@@ -225,8 +226,9 @@ func TestFastHTTPParam(t *testing.T) {
 	router.GET("/x/{param}", func(ctx *fasthttp.RequestCtx) {
 		served = true
 
-		if ctx.UserValue("param") != "y" {
-			t.Errorf("Wrong params value. Expected 'y', actual '%s'", ctx.UserValue("param"))
+		params := ctx.UserValue("params").(context.Params)
+		if params.Value("param") != "y" {
+			t.Errorf("Wrong params value. Expected 'y', actual '%s'", params.Value("param"))
 		}
 	})
 
@@ -249,8 +251,9 @@ func TestFastHTTPRegexpParam(t *testing.T) {
 	router.GET("/x/{param:r([a-z]+)go}", func(ctx *fasthttp.RequestCtx) {
 		served = true
 
-		if ctx.UserValue("param") != "rxgo" {
-			t.Errorf("Wrong params value. Expected 'rxgo', actual '%s'", ctx.UserValue("param"))
+		params := ctx.UserValue("params").(context.Params)
+		if params.Value("param") != "rxgo" {
+			t.Errorf("Wrong params value. Expected 'rxgo', actual '%s'", params.Value("param"))
 		}
 	})
 
@@ -376,7 +379,8 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
 
 	router.GET("/x/{param}", func(ctx *fasthttp.RequestCtx) {
-		fmt.Fprintf(ctx, ctx.UserValue("param").(string))
+		params := ctx.UserValue("params").(context.Params)
+		fmt.Fprintf(ctx, params.Value("param"))
 	})
 
 	router.USE(GET, "/x/{param}", mockFastHTTPMiddleware("m"))
@@ -399,44 +403,49 @@ func TestFastHTTPChainCalls(t *testing.T) {
 	router.GET("/users/{user:[a-z0-9]+}/starred", func(ctx *fasthttp.RequestCtx) {
 		served = true
 
-		if ctx.UserValue("user") != "x" {
-			t.Errorf("Wrong params value. Expected 'x', actual '%s'", ctx.UserValue("user"))
+		params := ctx.UserValue("params").(context.Params)
+		if params.Value("user") != "x" {
+			t.Errorf("Wrong params value. Expected 'x', actual '%s'", params.Value("user"))
 		}
 	})
 
 	router.GET("/applications/{client_id}/tokens", func(ctx *fasthttp.RequestCtx) {
 		served = true
 
-		if ctx.UserValue("client_id") != "client_id" {
-			t.Errorf("Wrong params value. Expected 'client_id', actual '%s'", ctx.UserValue("client_id"))
+		params := ctx.UserValue("params").(context.Params)
+		if params.Value("client_id") != "client_id" {
+			t.Errorf("Wrong params value. Expected 'client_id', actual '%s'", params.Value("client_id"))
 		}
 	})
 
 	router.GET("/applications/{client_id}/tokens/{access_token}", func(ctx *fasthttp.RequestCtx) {
 		served = true
 
-		if ctx.UserValue("client_id") != "client_id" {
-			t.Errorf("Wrong params value. Expected 'client_id', actual '%s'", ctx.UserValue("client_id"))
+		params := ctx.UserValue("params").(context.Params)
+		if params.Value("client_id") != "client_id" {
+			t.Errorf("Wrong params value. Expected 'client_id', actual '%s'", params.Value("client_id"))
 		}
 
-		if ctx.UserValue("access_token") != "access_token" {
-			t.Errorf("Wrong params value. Expected 'access_token', actual '%s'", ctx.UserValue("access_token"))
+		if params.Value("access_token") != "access_token" {
+			t.Errorf("Wrong params value. Expected 'access_token', actual '%s'", params.Value("access_token"))
 		}
 	})
 
 	router.GET("/users/{user}/received_events", func(ctx *fasthttp.RequestCtx) {
 		served = true
 
-		if ctx.UserValue("user") != "user1" {
-			t.Errorf("Wrong params value. Expected 'user1', actual '%s'", ctx.UserValue("user"))
+		params := ctx.UserValue("params").(context.Params)
+		if params.Value("user") != "user1" {
+			t.Errorf("Wrong params value. Expected 'user1', actual '%s'", params.Value("user"))
 		}
 	})
 
 	router.GET("/users/{user}/received_events/public", func(ctx *fasthttp.RequestCtx) {
 		served = true
 
-		if ctx.UserValue("user") != "user2" {
-			t.Errorf("Wrong params value. Expected 'user2', actual '%s'", ctx.UserValue("user"))
+		params := ctx.UserValue("params").(context.Params)
+		if params.Value("user") != "user2" {
+			t.Errorf("Wrong params value. Expected 'user2', actual '%s'", params.Value("user"))
 		}
 	})
 

@@ -106,9 +106,7 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 		if node, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
 			h := node.Route().Handler().(fasthttp.RequestHandler)
 
-			for _, param := range params {
-				ctx.SetUserValue(param.Key, param.Value)
-			}
+			ctx.SetUserValue("params", params)
 
 			if subPath != "" {
 				ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))

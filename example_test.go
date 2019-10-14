@@ -50,7 +50,8 @@ func Example() {
 
 func Example_second() {
 	hello := func(ctx *fasthttp.RequestCtx) {
-		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+		params := ctx.UserValue("params").(context.Params)
+		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
 	router := gorouter.NewFastHTTPRouter()
@@ -161,7 +162,8 @@ func ExampleFastHTTPMiddlewareFunc() {
 	// Global middleware example
 	// applies to all routes
 	hello := func(ctx *fasthttp.RequestCtx) {
-		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+		params := ctx.UserValue("params").(context.Params)
+		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
 	logger := func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
@@ -188,7 +190,8 @@ func ExampleFastHTTPMiddlewareFunc_second() {
 	// Route level middleware example
 	// applies to route and its lower tree
 	hello := func(ctx *fasthttp.RequestCtx) {
-		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+		params := ctx.UserValue("params").(context.Params)
+		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
 	logger := func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
@@ -219,7 +222,8 @@ func ExampleFastHTTPMiddlewareFunc_third() {
 	// Http method middleware example
 	// applies to all routes under this method
 	hello := func(ctx *fasthttp.RequestCtx) {
-		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+		params := ctx.UserValue("params").(context.Params)
+		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
 	logger := func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
@@ -278,7 +282,8 @@ func ExampleRouter_mount() {
 
 func ExampleFastHTTPRouter_mount() {
 	hello := func(ctx *fasthttp.RequestCtx) {
-		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+		params := ctx.UserValue("params").(context.Params)
+		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
 	subrouter := gorouter.NewFastHTTPRouter()

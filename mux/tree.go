@@ -1,6 +1,8 @@
 package mux
 
 import (
+	"bytes"
+	"fmt"
 	"strings"
 
 	"github.com/vardius/gorouter/v4/context"
@@ -13,11 +15,44 @@ func NewTree() Tree {
 
 type Tree []Node
 
-func (t Tree) Match(path string) (Node, context.Params, string) {
-	pathPart, subPath := pathutils.GetPart(path)
+func (t Tree) PrettyPrint() string {
+	buff := &bytes.Buffer{}
 
 	for _, child := range t {
-		if node, params, subPath := child.Match(pathPart, subPath); node != nil {
+		switch node := child.(type) {
+		case *subrouterNode:
+			fmt.Fprintf(buff, "\t_%s\n", node.Name())
+		case *staticNode:
+			fmt.Fprintf(buff, "\t%s\n", node.Name())
+		case *wildcardNode:
+			fmt.Fprintf(buff, "\t{%s}\n", node.Name())
+		case *regexpNode:
+			fmt.Fprintf(buff, "\t{%s:%s}\n", node.Name(), node.regexp.String())
+		}
+
+		if len(child.Tree()) > 0 {
+			fmt.Fprintf(buff, "\t%s", child.Tree().PrettyPrint())
+		}
+	}
+
+	return buff.String()
+}
+
+func (t Tree) Compile() Tree {
+	for i, child := range t {
+		child.WithChildren(child.Tree().Compile())
+
+		if len(child.Tree()) == 1 {
+			t[i] = child.Merge(child.Tree()[0])
+		}
+	}
+
+	return t
+}
+
+func (t Tree) Match(path string) (Node, context.Params, string) {
+	for _, child := range t {
+		if node, params, subPath := child.Match(path); node != nil {
 			return node, params, subPath
 		}
 	}

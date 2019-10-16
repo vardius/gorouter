@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func BenchmarkStatic1(b *testing.B) {
+func BenchmarkMux(b *testing.B) {
 	root := NewNode("GET", 0)
 
 	lang := NewNode("{lang:en|pl}", root.MaxParamsSize())
@@ -31,6 +31,8 @@ func BenchmarkStatic1(b *testing.B) {
 	posts.WithChildren(posts.Tree().WithNode(postsID))
 	comments.WithChildren(comments.Tree().WithNode(commentID))
 	commentID.WithChildren(commentID.Tree().WithNode(commentNew))
+
+	root.WithChildren(root.Tree().Compile())
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

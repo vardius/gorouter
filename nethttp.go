@@ -27,39 +27,39 @@ type router struct {
 }
 
 func (r *router) POST(p string, f http.Handler) {
-	r.Handle(POST, p, f)
+	r.Handle(http.MethodPost, p, f)
 }
 
 func (r *router) GET(p string, f http.Handler) {
-	r.Handle(GET, p, f)
+	r.Handle(http.MethodGet, p, f)
 }
 
 func (r *router) PUT(p string, f http.Handler) {
-	r.Handle(PUT, p, f)
+	r.Handle(http.MethodPut, p, f)
 }
 
 func (r *router) DELETE(p string, f http.Handler) {
-	r.Handle(DELETE, p, f)
+	r.Handle(http.MethodDelete, p, f)
 }
 
 func (r *router) PATCH(p string, f http.Handler) {
-	r.Handle(PATCH, p, f)
+	r.Handle(http.MethodPatch, p, f)
 }
 
 func (r *router) OPTIONS(p string, f http.Handler) {
-	r.Handle(OPTIONS, p, f)
+	r.Handle(http.MethodOptions, p, f)
 }
 
 func (r *router) HEAD(p string, f http.Handler) {
-	r.Handle(HEAD, p, f)
+	r.Handle(http.MethodHead, p, f)
 }
 
 func (r *router) CONNECT(p string, f http.Handler) {
-	r.Handle(CONNECT, p, f)
+	r.Handle(http.MethodConnect, p, f)
 }
 
 func (r *router) TRACE(p string, f http.Handler) {
-	r.Handle(TRACE, p, f)
+	r.Handle(http.MethodTrace, p, f)
 }
 
 func (r *router) USE(method, p string, fs ...MiddlewareFunc) {
@@ -76,7 +76,17 @@ func (r *router) Handle(method, path string, h http.Handler) {
 }
 
 func (r *router) Mount(path string, h http.Handler) {
-	for _, method := range []string{TRACE, CONNECT, HEAD, OPTIONS, PATCH, DELETE, PUT, POST, GET} {
+	for _, method := range []string{
+		http.MethodGet,
+		http.MethodHead,
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodPatch,
+		http.MethodDelete,
+		http.MethodConnect,
+		http.MethodOptions,
+		http.MethodTrace,
+	} {
 		route := newRoute(h)
 		route.PrependMiddleware(r.middleware)
 
@@ -129,12 +139,12 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Handle OPTIONS
-	if req.Method == OPTIONS {
+	if req.Method == http.MethodOptions {
 		if allow := allowed(r.routes, req.Method, path); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			return
 		}
-	} else if req.Method == GET && r.fileServer != nil {
+	} else if req.Method == http.MethodGet && r.fileServer != nil {
 		// Handle file serve
 		r.fileServer.ServeHTTP(w, req)
 		return

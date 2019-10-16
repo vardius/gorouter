@@ -42,21 +42,20 @@ func Example() {
 	fmt.Print(root.Tree().PrettyPrint())
 
 	// Output:
-	// {lang:en|pl}
-	// 		blog
+	// {lang:^(?P<lang>en|pl)}
+	// 	blog
 	// 		comments
-	// 		{commentId:\d+}
+	// 		{commentId:^(?P<commentId>\d+)}
 	// 		new
 	// 	posts
-	// 		{postsId:[^/]+}
+	// 		{postsId:^(?P<postsId>[^/]+)}
 	// 	page
-	// 		{pageId:[^/]+}
+	// 		{pageId:^(?P<pageId>[^/]+)}
 	// 	search
 	//
-	//
-	// {lang:en|pl}/blog
-	//     comments/{commentId:\d+}/{new:\d+}
-	// 	   posts/{postsId:[^/]+}
-	// 	   page/{pageId:[^/]+}
-	// 	   search
+	// 	{lang-blog:^(?P<lang>en|pl)\/blog}
+	// 		{comments-commentId-new:^comments\/(?P<commentId>\d+)\/new}
+	// 		{posts-postsId:^posts\/(?P<postsId>[/]+)}
+	// 		{page-pageId:^page\/(?P<pageId>[/]+)}
+	// 		search
 }

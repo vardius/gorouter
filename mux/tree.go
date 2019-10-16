@@ -99,7 +99,7 @@ func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
 
 	if node == nil {
 		node = NewNode(parts[0], maxParamsSize)
-		t = t.WithNode(node)
+		t = t.withNode(node)
 	}
 
 	if len(parts) == 1 {
@@ -128,7 +128,7 @@ func (t Tree) WithSubrouter(path string, route Route, maxParamsSize uint8) Tree 
 		if len(parts) == 1 {
 			node = withSubrouter(node)
 		}
-		t = t.WithNode(node)
+		t = t.withNode(node)
 	}
 
 	if len(parts) == 1 {
@@ -140,9 +140,9 @@ func (t Tree) WithSubrouter(path string, route Route, maxParamsSize uint8) Tree 
 	return t
 }
 
-// WithNode inserts node to Tree
+// withNode inserts node to Tree
 // Nodes are sorted static, regexp, wildcard
-func (t Tree) WithNode(node Node) Tree {
+func (t Tree) withNode(node Node) Tree {
 	if node == nil {
 		return t
 	}
@@ -150,6 +150,7 @@ func (t Tree) WithNode(node Node) Tree {
 	t = append(t, node)
 
 	// @TODO: sort tree
+	// monkey patch
 
 	return t
 }

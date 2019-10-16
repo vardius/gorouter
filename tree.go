@@ -1,6 +1,7 @@
 package gorouter
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/vardius/gorouter/v4/middleware"
@@ -51,7 +52,7 @@ func allowed(t mux.Tree, method, path string) (allow string) {
 	if path == "*" {
 		// routes tree roots should be http method nodes only
 		for _, root := range t {
-			if root.Name() == OPTIONS {
+			if root.Name() == http.MethodOptions {
 				continue
 			}
 			if len(allow) == 0 {
@@ -63,7 +64,7 @@ func allowed(t mux.Tree, method, path string) (allow string) {
 	} else {
 		// routes tree roots should be http method nodes only
 		for _, root := range t {
-			if root.Name() == method || root.Name() == OPTIONS {
+			if root.Name() == method || root.Name() == http.MethodOptions {
 				continue
 			}
 
@@ -77,7 +78,7 @@ func allowed(t mux.Tree, method, path string) (allow string) {
 		}
 	}
 	if len(allow) > 0 {
-		allow += ", " + OPTIONS
+		allow += ", " + http.MethodOptions
 	}
 	return allow
 }

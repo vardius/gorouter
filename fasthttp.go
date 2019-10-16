@@ -1,6 +1,8 @@
 package gorouter
 
 import (
+	"net/http"
+
 	"github.com/valyala/fasthttp"
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
@@ -24,39 +26,39 @@ type fastHTTPRouter struct {
 }
 
 func (r *fastHTTPRouter) POST(p string, f fasthttp.RequestHandler) {
-	r.Handle(POST, p, f)
+	r.Handle(http.MethodPost, p, f)
 }
 
 func (r *fastHTTPRouter) GET(p string, f fasthttp.RequestHandler) {
-	r.Handle(GET, p, f)
+	r.Handle(http.MethodGet, p, f)
 }
 
 func (r *fastHTTPRouter) PUT(p string, f fasthttp.RequestHandler) {
-	r.Handle(PUT, p, f)
+	r.Handle(http.MethodPut, p, f)
 }
 
 func (r *fastHTTPRouter) DELETE(p string, f fasthttp.RequestHandler) {
-	r.Handle(DELETE, p, f)
+	r.Handle(http.MethodDelete, p, f)
 }
 
 func (r *fastHTTPRouter) PATCH(p string, f fasthttp.RequestHandler) {
-	r.Handle(PATCH, p, f)
+	r.Handle(http.MethodPatch, p, f)
 }
 
 func (r *fastHTTPRouter) OPTIONS(p string, f fasthttp.RequestHandler) {
-	r.Handle(OPTIONS, p, f)
+	r.Handle(http.MethodOptions, p, f)
 }
 
 func (r *fastHTTPRouter) HEAD(p string, f fasthttp.RequestHandler) {
-	r.Handle(HEAD, p, f)
+	r.Handle(http.MethodHead, p, f)
 }
 
 func (r *fastHTTPRouter) CONNECT(p string, f fasthttp.RequestHandler) {
-	r.Handle(CONNECT, p, f)
+	r.Handle(http.MethodConnect, p, f)
 }
 
 func (r *fastHTTPRouter) TRACE(p string, f fasthttp.RequestHandler) {
-	r.Handle(TRACE, p, f)
+	r.Handle(http.MethodTrace, p, f)
 }
 
 func (r *fastHTTPRouter) USE(method, p string, fs ...FastHTTPMiddlewareFunc) {
@@ -73,7 +75,17 @@ func (r *fastHTTPRouter) Handle(method, path string, h fasthttp.RequestHandler) 
 }
 
 func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
-	for _, method := range []string{TRACE, CONNECT, HEAD, OPTIONS, PATCH, DELETE, PUT, POST, GET} {
+	for _, method := range []string{
+		http.MethodGet,
+		http.MethodHead,
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodPatch,
+		http.MethodDelete,
+		http.MethodConnect,
+		http.MethodOptions,
+		http.MethodTrace,
+	} {
 		route := newRoute(h)
 		route.PrependMiddleware(r.middleware)
 
@@ -123,12 +135,12 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 	}
 
 	// Handle OPTIONS
-	if method == OPTIONS {
+	if method == http.MethodOptions {
 		if allow := allowed(r.routes, method, path); len(allow) > 0 {
 			ctx.Response.Header.Set("Allow", allow)
 			return
 		}
-	} else if method == GET && r.fileServer != nil {
+	} else if method == http.MethodGet && r.fileServer != nil {
 		// Handle file serve
 		r.fileServer(ctx)
 		return

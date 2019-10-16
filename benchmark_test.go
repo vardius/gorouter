@@ -19,7 +19,7 @@ func benchmarkStatic(t int, b *testing.B) {
 	s.GET(path, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, path, nil)
+	req, err := http.NewRequest(http.MethodGet, path, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -45,7 +45,7 @@ func benchmarkWildcard(t int, b *testing.B) {
 	s.GET(path, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, rpath, nil)
+	req, err := http.NewRequest(http.MethodGet, rpath, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func benchmarkRegexp(t int, b *testing.B) {
 	s.GET(path, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, rpath, nil)
+	req, err := http.NewRequest(http.MethodGet, rpath, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -115,7 +115,7 @@ func benchmarkFastHTTPStatic(t int, b *testing.B) {
 	s := NewFastHTTPRouter()
 	s.GET(path, func(_ *fasthttp.RequestCtx) {})
 
-	ctx := buildFastHTTPRequestContext(GET, path)
+	ctx := buildFastHTTPRequestContext(http.MethodGet, path)
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -137,7 +137,7 @@ func benchmarkFastHTTPWildcard(t int, b *testing.B) {
 	s := NewFastHTTPRouter()
 	s.GET(path, func(_ *fasthttp.RequestCtx) {})
 
-	ctx := buildFastHTTPRequestContext(GET, rpath)
+	ctx := buildFastHTTPRequestContext(http.MethodGet, rpath)
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -159,7 +159,7 @@ func benchmarkFastHTTPRegexp(t int, b *testing.B) {
 	s := NewFastHTTPRouter()
 	s.GET(path, func(_ *fasthttp.RequestCtx) {})
 
-	ctx := buildFastHTTPRequestContext(GET, rpath)
+	ctx := buildFastHTTPRequestContext(http.MethodGet, rpath)
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

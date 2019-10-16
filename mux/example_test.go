@@ -45,23 +45,23 @@ func Example() {
 	// Raw tree:
 	// 	{lang:en|pl}
 	// 		blog
-	// 		search
-	// 		author
-	// 	page
+	// 		page
 	// 		{pageId:[^/]+}
 	// 	posts
 	// 		{postsId:[^/]+}
+	// 	search
+	// 		author
 	// 	comments
 	// 		{commentId:\d+}
 	// 		new
 	// Compiled tree:
 	// 	{lang:en|pl}
 	// 		blog
-	// 		search/author
-	// 	page
+	// 		page
 	// 		{pageId:[^/]+}
 	// 	posts
 	// 		{postsId:[^/]+}
+	// 	search/author
 	// 	comments
 	// 		{commentId:\d+}
 	// 		new

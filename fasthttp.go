@@ -104,15 +104,15 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 
 	if root := r.routes.Find(method); root != nil {
 		if node, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
-			h := node.Route().Handler().(fasthttp.RequestHandler)
-
-			ctx.SetUserValue("params", params)
+			if len(params) > 0 {
+				ctx.SetUserValue("params", params)
+			}
 
 			if subPath != "" {
 				ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))
 			}
 
-			h(ctx)
+			node.Route().Handler().(fasthttp.RequestHandler)(ctx)
 			return
 		}
 

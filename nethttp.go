@@ -109,7 +109,10 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if root := r.routes.Find(req.Method); root != nil {
 		if node, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
 			h := node.Route().Handler().(http.Handler)
-			req = req.WithContext(context.WithParams(req.Context(), params))
+
+			if len(params) > 0 {
+				req = req.WithContext(context.WithParams(req.Context(), params))
+			}
 
 			if subPath != "" {
 				h = http.StripPrefix(strings.TrimSuffix(req.URL.Path, "/"+subPath), h)

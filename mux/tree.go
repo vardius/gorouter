@@ -56,12 +56,10 @@ func (t Tree) Compile() Tree {
 
 					t[i] = node
 				}
-			case *wildcardNode:
 				// skip
-			case *regexpNode:
-				// skip
-			case *subrouterNode:
-				// skip
+				// case *wildcardNode:
+				// case *regexpNode:
+				// case *subrouterNode:
 			}
 		}
 	}
@@ -190,8 +188,7 @@ func isMoreImportant(left Node, right Node) bool {
 			return len(leftNode.regexp.String()) < len(rightNode.regexp.String())
 		}
 		return false
-	case *wildcardNode:
-		return false
+		// case *wildcardNode:
 	}
 
 	return false

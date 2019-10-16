@@ -1,24 +1,21 @@
 package mux
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/vardius/gorouter/v4/context"
 	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
-const wildcardRegexp = "\\w+"
-
-// NewNode provides new node
+// NewNode provides new mux Node
 func NewNode(pathPart string, maxParamsSize uint8) Node {
 	if len(pathPart) == 0 {
 		return nil
 	}
 
-	id, exp := pathutils.GetNameFromPart(pathPart)
+	name, exp := pathutils.GetNameFromPart(pathPart)
 	static := &staticNode{
-		name:          id,
+		name:          name,
 		children:      NewTree(),
 		maxParamsSize: maxParamsSize,
 	}
@@ -28,7 +25,7 @@ func NewNode(pathPart string, maxParamsSize uint8) Node {
 	if exp != "" {
 		static.maxParamsSize++
 		node = withRegexp(static, regexp.MustCompile(exp))
-	} else if id != pathPart {
+	} else if name != pathPart {
 		static.maxParamsSize++
 		node = withWildcard(static)
 	} else {
@@ -38,18 +35,24 @@ func NewNode(pathPart string, maxParamsSize uint8) Node {
 	return node
 }
 
-// Node is route node
+// Node represents mux Node
+// Can match path and provide routes
 type Node interface {
+	// Match matches given path to Node within Node and its Tree
 	Match(path string) (Node, context.Params, string)
-	Merge(node Node) Node
 
+	// Name privides Node name
 	Name() string
+	// Name privides maximum number of parameters Route can have for given Node
 	MaxParamsSize() uint8
+	// Tree provides next level Node Tree
 	Tree() Tree
+	// Route provides Node's Route if assigned
 	Route() Route
 
-	Rename(string)
+	// WithRoute assigns Route to given Node
 	WithRoute(r Route)
+	// WithChildren sets Node's Tree
 	WithChildren(t Tree)
 }
 
@@ -58,29 +61,6 @@ type staticNode struct {
 	route         Route
 	children      Tree
 	maxParamsSize uint8
-}
-
-func (n *staticNode) Merge(node Node) Node {
-	var newNode Node
-	name := n.name
-
-	n.WithChildren(node.Tree())
-
-	switch castedNode := node.(type) {
-	case *subrouterNode:
-		newNode = n.Merge(castedNode.Node)
-	case *staticNode:
-		n.name = fmt.Sprintf("%s/%s", name, node.Name())
-		newNode = n
-	case *wildcardNode:
-		n.name = fmt.Sprintf("%s/{%s}", name, node.Name())
-		newNode = withRegexp(n, regexp.MustCompile(fmt.Sprintf("^%s\\/(?P<%s>%s)", name, castedNode.Name(), wildcardRegexp)))
-	case *regexpNode:
-		n.name = fmt.Sprintf("%s/{%s}", name, node.Name())
-		newNode = withRegexp(n, regexp.MustCompile(fmt.Sprintf("^%s\\/(?P<%s>%s)", name, castedNode.Name(), castedNode.regexp.String())))
-	}
-
-	return newNode
 }
 
 func (n *staticNode) Match(path string) (Node, context.Params, string) {
@@ -96,10 +76,6 @@ func (n *staticNode) Match(path string) (Node, context.Params, string) {
 	}
 
 	return nil, nil, ""
-}
-
-func (n *staticNode) Rename(name string) {
-	n.name = name
 }
 
 func (n *staticNode) WithChildren(t Tree) {
@@ -126,35 +102,16 @@ func (n *staticNode) WithRoute(r Route) {
 	n.route = r
 }
 
-func withWildcard(parent Node) *wildcardNode {
-	return &wildcardNode{Node: parent}
+func withWildcard(parent *staticNode) *wildcardNode {
+	return &wildcardNode{staticNode: parent}
 }
 
 type wildcardNode struct {
-	Node
+	*staticNode
 }
 
 func (n *wildcardNode) Merge(node Node) Node {
-	var newNode Node
-	name := n.Name()
-
-	n.WithChildren(node.Tree())
-
-	switch castedNode := node.(type) {
-	case *subrouterNode:
-		newNode = n.Merge(castedNode.Node)
-	case *staticNode:
-		n.Rename(fmt.Sprintf("{%s}/%s", name, castedNode.name))
-		newNode = withRegexp(n, regexp.MustCompile(fmt.Sprintf("^(?P<%s>%s)\\/(?P<%s>%s)", name, wildcardRegexp, castedNode.name, castedNode.name)))
-	case *wildcardNode:
-		n.Rename(fmt.Sprintf("{%s}/{%s}", name, castedNode.Name()))
-		newNode = withRegexp(n, regexp.MustCompile(fmt.Sprintf("^(?P<%s>%s)\\/(?P<%s>%s)", name, wildcardRegexp, castedNode.Name(), wildcardRegexp)))
-	case *regexpNode:
-		n.Rename(fmt.Sprintf("{%s}/{%s}", name, castedNode.Name()))
-		newNode = withRegexp(n, regexp.MustCompile(fmt.Sprintf("^(?P<%s>%s)\\/(?P<%s>%s)", name, wildcardRegexp, castedNode.Name(), castedNode.regexp.String())))
-	}
-
-	return newNode
+	return n
 }
 
 func (n *wildcardNode) Match(path string) (Node, context.Params, string) {
@@ -168,86 +125,58 @@ func (n *wildcardNode) Match(path string) (Node, context.Params, string) {
 		node = n
 		params = make(context.Params, maxParamsSize)
 	} else {
-		node, params, subPath = n.Node.Tree().Match(subPath)
+		node, params, subPath = n.children.Match(subPath)
 
 		if node == nil {
 			return nil, nil, ""
 		}
 	}
 
-	params.Set(maxParamsSize-1, n.Node.Name(), pathPart)
+	params.Set(maxParamsSize-1, n.name, pathPart)
 
 	return node, params, subPath
 }
 
-func withRegexp(parent Node, regexp *regexp.Regexp) *regexpNode {
+func withRegexp(parent *staticNode, regexp *regexp.Regexp) *regexpNode {
 	return &regexpNode{
-		Node:   parent,
-		regexp: regexp,
+		staticNode: parent,
+		regexp:     regexp,
 	}
 }
 
 type regexpNode struct {
-	Node
+	*staticNode
 
 	regexp *regexp.Regexp
 }
 
 func (n *regexpNode) Merge(node Node) Node {
-	var newNode Node
-
-	n.WithChildren(node.Tree())
-
-	switch castedNode := node.(type) {
-	case *subrouterNode:
-		newNode = n.Merge(castedNode.Node)
-	case *staticNode:
-		n.regexp = regexp.MustCompile(fmt.Sprintf("^(?P<%s>%s)\\/(?P<%s>%s)", n.Name(), n.regexp.String(), castedNode.name, castedNode.name))
-		n.Rename(fmt.Sprintf("{%s}/%s", n.Name(), castedNode.name))
-		newNode = n
-	case *wildcardNode:
-		n.regexp = regexp.MustCompile(fmt.Sprintf("^(?P<%s>%s)\\/(?P<%s>%s)", n.Name(), n.regexp.String(), castedNode.Name(), wildcardRegexp))
-		n.Rename(fmt.Sprintf("{%s}/{%s}", n.Name(), castedNode.Name()))
-		newNode = n
-	case *regexpNode:
-		n.regexp = regexp.MustCompile(fmt.Sprintf("^(?P<%s>%s)\\/(?P<%s>%s)", n.Name(), n.regexp.String(), castedNode.Name(), castedNode.regexp.String()))
-		n.Rename(fmt.Sprintf("{%s}/{%s}", n.Name(), castedNode.Name()))
-		newNode = n
-	}
-
-	return newNode
+	return n
 }
 
 func (n *regexpNode) Match(path string) (Node, context.Params, string) {
-	match := n.regexp.FindStringSubmatch(path)
-
-	if len(match) == 0 {
+	pathPart, subPath := pathutils.GetPart(path)
+	if !n.regexp.MatchString(pathPart) {
 		return nil, nil, ""
 	}
 
+	maxParamsSize := n.MaxParamsSize()
+
 	var node Node
 	var params context.Params
-
-	subPath := path[len(match[0])+1:]
-	maxParamsSize := n.MaxParamsSize()
 
 	if subPath == "" {
 		node = n
 		params = make(context.Params, maxParamsSize)
 	} else {
-		node, params, subPath = n.Node.Tree().Match(subPath)
+		node, params, subPath = n.children.Match(subPath)
 
 		if node == nil {
 			return nil, nil, ""
 		}
 	}
 
-	names := n.regexp.SubexpNames()
-	numSubexp := uint8(n.regexp.NumSubexp())
-
-	for i, value := range match[1:] {
-		params.Set(maxParamsSize-numSubexp+uint8(i), names[i+1], value)
-	}
+	params.Set(maxParamsSize-1, n.name, pathPart)
 
 	return node, params, subPath
 }

@@ -9,12 +9,15 @@ import (
 	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
+// NewTree provides new empty Tree
 func NewTree() Tree {
 	return make([]Node, 0)
 }
 
+// Tree slice of mux Nodes
 type Tree []Node
 
+// PrettyPrint prints the tree text representation to console
 func (t Tree) PrettyPrint() string {
 	buff := &bytes.Buffer{}
 
@@ -38,18 +41,25 @@ func (t Tree) PrettyPrint() string {
 	return buff.String()
 }
 
+// Compile optimizes Tree nodes reducing static nodes depth when possible
 func (t Tree) Compile() Tree {
 	for i, child := range t {
 		child.WithChildren(child.Tree().Compile())
 
-		if len(child.Tree()) == 1 {
-			t[i] = child.Merge(child.Tree()[0])
+		if staticNode, ok := child.(*staticNode); ok && len(child.Tree()) == 1 {
+			node := child.Tree()[0]
+
+			staticNode.WithChildren(node.Tree())
+			staticNode.name = fmt.Sprintf("%s/%s", staticNode.name, node.Name())
+
+			t[i] = staticNode
 		}
 	}
 
 	return t
 }
 
+// Match path to Node
 func (t Tree) Match(path string) (Node, context.Params, string) {
 	for _, child := range t {
 		if node, params, subPath := child.Match(path); node != nil {
@@ -60,6 +70,7 @@ func (t Tree) Match(path string) (Node, context.Params, string) {
 	return nil, nil, ""
 }
 
+// Find Node inside a tree by name
 func (t Tree) Find(name string) Node {
 	if name == "" {
 		return nil
@@ -74,6 +85,8 @@ func (t Tree) Find(name string) Node {
 	return nil
 }
 
+// WithRoute returns new Tree with Route set to Node
+// Route is set to Node under the give path, ff Node does not exist it is created
 func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
 	path = pathutils.TrimSlash(path)
 	if path == "" {
@@ -98,6 +111,8 @@ func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
 	return t
 }
 
+// WithSubrouter returns new Tree with new Route set to Subrouter Node
+// Route is set to Node under the give path, ff Node does not exist it is created
 func (t Tree) WithSubrouter(path string, route Route, maxParamsSize uint8) Tree {
 	path = pathutils.TrimSlash(path)
 	if path == "" {
@@ -125,28 +140,16 @@ func (t Tree) WithSubrouter(path string, route Route, maxParamsSize uint8) Tree 
 	return t
 }
 
+// WithNode inserts node to Tree
+// Nodes are sorted static, regexp, wildcard
 func (t Tree) WithNode(node Node) Tree {
 	if node == nil {
 		return t
 	}
 
-	if len(t) > 0 {
-		switch (t)[0].(type) {
-		case *wildcardNode:
-			panic("Tree already contains wildcard node")
-		}
-	}
+	t = append(t, node)
 
-	switch n := node.(type) {
-	case *wildcardNode:
-		return append(append(NewTree(), n), t...)
-	case *staticNode:
-		return append(append(NewTree(), n), t...)
-	case *regexpNode:
-		return append(t, n)
-	case *subrouterNode:
-		return append(t, n)
-	default:
-		return append(t, n)
-	}
+	// @TODO: sort tree
+
+	return t
 }

@@ -3,6 +3,7 @@ package mux
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/vardius/gorouter/v4/context"
@@ -158,8 +159,40 @@ func (t Tree) withNode(node Node) Tree {
 
 	t = append(t, node)
 
-	// @TODO: sort tree
-	// monkey patch
+	// Sort Nodes in order [statics, regexps, wildcards]
+	sort.Slice(t, func(i, j int) bool {
+		return isMoreImportant(t[i], t[j])
+	})
 
 	return t
+}
+
+func isMoreImportant(left Node, right Node) bool {
+	if leftNode, ok := left.(*subrouterNode); ok {
+		return isMoreImportant(leftNode.Node, right)
+	}
+
+	if rightNode, ok := right.(*subrouterNode); ok {
+		return isMoreImportant(left, rightNode.Node)
+	}
+
+	switch leftNode := left.(type) {
+	case *staticNode:
+		if rightNode, ok := right.(*staticNode); ok {
+			return len(leftNode.name) < len(rightNode.name)
+		}
+		return true
+	case *regexpNode:
+		if _, ok := right.(*wildcardNode); ok {
+			return true
+		}
+		if rightNode, ok := right.(*regexpNode); ok {
+			return len(leftNode.regexp.String()) < len(rightNode.regexp.String())
+		}
+		return false
+	case *wildcardNode:
+		return false
+	}
+
+	return false
 }

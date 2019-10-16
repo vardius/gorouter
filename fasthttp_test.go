@@ -380,7 +380,7 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 
 	router.GET("/x/{param}", func(ctx *fasthttp.RequestCtx) {
 		params := ctx.UserValue("params").(context.Params)
-		fmt.Fprintf(ctx, params.Value("param"))
+		fmt.Fprintf(ctx, "%s", params.Value("param"))
 	})
 
 	router.USE(http.MethodGet, "/x/{param}", mockFastHTTPMiddleware("m"))

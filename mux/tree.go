@@ -1,137 +1,195 @@
 package mux
 
 import (
+	"bytes"
+	"fmt"
+	"sort"
 	"strings"
+
+	"github.com/vardius/gorouter/v4/context"
+	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
-// Tree of routes
-type Tree struct {
-	idsLen   int
-	ids      []string
-	statics  map[int]*Node
-	regexps  []*Node
-	wildcard *Node
+// NewTree provides new empty Tree
+func NewTree() Tree {
+	return make([]Node, 0)
 }
 
-// NewTree provides new node tree
-func NewTree() *Tree {
-	return &Tree{
-		ids:     make([]string, 0),
-		statics: make(map[int]*Node),
-		regexps: make([]*Node, 0),
-	}
-}
+// Tree slice of mux Nodes
+type Tree []Node
 
-// StaticNodes returns tree static nodes
-func (t *Tree) StaticNodes() map[int]*Node {
-	return t.statics
-}
+// PrettyPrint prints the tree text representation to console
+func (t Tree) PrettyPrint() string {
+	buff := &bytes.Buffer{}
 
-// RegexpNodes returns tree regexp nodes
-func (t *Tree) RegexpNodes() []*Node {
-	return t.regexps
-}
-
-// WildcardNode returns tree wildcard node
-func (t *Tree) WildcardNode() *Node {
-	return t.wildcard
-}
-
-// Insert inserts node
-func (t *Tree) Insert(n *Node) {
-	if n == nil {
-		return
-	}
-
-	if n.isWildcard {
-		if n.isRegexp {
-			t.regexps = append(t.regexps, n)
-		} else {
-			if t.wildcard != nil {
-				panic("Tree already contains a wildcard child!")
-			}
-			t.wildcard = n
-		}
-	} else {
-		index := -1
-		for i, id := range t.ids {
-			if n.id > id {
-				index = i
-				break
-			}
+	for _, child := range t {
+		switch node := child.(type) {
+		case *staticNode:
+			fmt.Fprintf(buff, "\t%s\n", node.Name())
+		case *wildcardNode:
+			fmt.Fprintf(buff, "\t{%s}\n", node.Name())
+		case *regexpNode:
+			fmt.Fprintf(buff, "\t{%s:%s}\n", node.Name(), node.regexp.String())
+		case *subrouterNode:
+			fmt.Fprintf(buff, "\t_%s\n", node.Name())
 		}
 
-		if index > -1 {
-			t.ids = append(t.ids[:index], append([]string{n.id}, t.ids[index:]...)...)
-			for i := t.idsLen - 1; i >= 0; i-- {
-				if i < index {
-					break
-				} else {
-					t.statics[i+1] = t.statics[i]
+		if len(child.Tree()) > 0 {
+			fmt.Fprintf(buff, "\t%s", child.Tree().PrettyPrint())
+		}
+	}
+
+	return buff.String()
+}
+
+// Compile optimizes Tree nodes reducing static nodes depth when possible
+func (t Tree) Compile() Tree {
+	for i, child := range t {
+		child.WithChildren(child.Tree().Compile())
+
+		if len(child.Tree()) == 1 {
+			switch node := child.(type) {
+			case *staticNode:
+				if staticNode, ok := node.Tree()[0].(*staticNode); ok {
+					node.WithChildren(staticNode.Tree())
+					node.name = fmt.Sprintf("%s/%s", node.name, staticNode.name)
+
+					t[i] = node
 				}
+				// skip
+				// case *wildcardNode:
+				// case *regexpNode:
+				// case *subrouterNode:
 			}
-			t.statics[index] = n
-		} else {
-			t.ids = append(t.ids, n.id)
-			t.statics[t.idsLen] = n
 		}
-
-		t.idsLen++
 	}
+
+	return t
 }
 
-// GetByID gets node by ID
-func (t *Tree) GetByID(id string) *Node {
-	if id != "" {
-		if t.idsLen > 0 {
-			for i, cID := range t.ids {
-				if cID == id {
-					return t.statics[i]
-				}
-			}
+// Match path to Node
+func (t Tree) Match(path string) (Node, context.Params, string) {
+	for _, child := range t {
+		if node, params, subPath := child.Match(path); node != nil {
+			return node, params, subPath
 		}
+	}
 
-		for _, child := range t.regexps {
-			if child.regexp != nil && child.regexp.MatchString(id) {
-				return child
-			}
+	return nil, nil, ""
+}
+
+// Find Node inside a tree by name
+func (t Tree) Find(name string) Node {
+	if name == "" {
+		return nil
+	}
+
+	for _, child := range t {
+		if child.Name() == name {
+			return child
 		}
-
-		return t.wildcard
 	}
 
 	return nil
 }
 
-// GetByPath gets node by path
-func (t *Tree) GetByPath(path string) (*Node, string, string) {
-	if len(path) == 0 {
-		return nil, "", ""
+// WithRoute returns new Tree with Route set to Node
+// Route is set to Node under the give path, ff Node does not exist it is created
+func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
+	path = pathutils.TrimSlash(path)
+	if path == "" {
+		return t
 	}
 
-	if t.idsLen > 0 {
-		for i, cID := range t.ids {
-			pLen := len(cID)
-			if len(path) >= pLen && cID == path[:pLen] {
-				return t.statics[i], "", path[pLen:]
-			}
+	parts := strings.Split(path, "/")
+	name, _ := pathutils.GetNameFromPart(parts[0])
+	node := t.Find(name)
+
+	if node == nil {
+		node = NewNode(parts[0], maxParamsSize)
+		t = t.withNode(node)
+	}
+
+	if len(parts) == 1 {
+		node.WithRoute(route)
+	} else {
+		node.WithChildren(node.Tree().WithRoute(strings.Join(parts[1:], "/"), route, node.MaxParamsSize()))
+	}
+
+	return t
+}
+
+// WithSubrouter returns new Tree with new Route set to Subrouter Node
+// Route is set to Node under the give path, ff Node does not exist it is created
+func (t Tree) WithSubrouter(path string, route Route, maxParamsSize uint8) Tree {
+	path = pathutils.TrimSlash(path)
+	if path == "" {
+		return t
+	}
+
+	parts := strings.Split(path, "/")
+	name, _ := pathutils.GetNameFromPart(parts[0])
+	node := t.Find(name)
+
+	if node == nil {
+		node = NewNode(parts[0], maxParamsSize)
+		if len(parts) == 1 {
+			node = withSubrouter(node)
 		}
+		t = t.withNode(node)
 	}
 
-	part := path
-	if j := strings.IndexByte(path, '/'); j > 0 {
-		part = path[:j]
+	if len(parts) == 1 {
+		node.WithRoute(route)
+	} else {
+		node.WithChildren(node.Tree().WithSubrouter(strings.Join(parts[1:], "/"), route, node.MaxParamsSize()))
 	}
 
-	for _, child := range t.regexps {
-		if child.regexp != nil && child.regexp.MatchString(part) {
-			return child, part, path[len(part):]
+	return t
+}
+
+// withNode inserts node to Tree
+// Nodes are sorted static, regexp, wildcard
+func (t Tree) withNode(node Node) Tree {
+	if node == nil {
+		return t
+	}
+
+	t = append(t, node)
+
+	// Sort Nodes in order [statics, regexps, wildcards]
+	sort.Slice(t, func(i, j int) bool {
+		return isMoreImportant(t[i], t[j])
+	})
+
+	return t
+}
+
+func isMoreImportant(left Node, right Node) bool {
+	if leftNode, ok := left.(*subrouterNode); ok {
+		return isMoreImportant(leftNode.Node, right)
+	}
+
+	if rightNode, ok := right.(*subrouterNode); ok {
+		return isMoreImportant(left, rightNode.Node)
+	}
+
+	switch leftNode := left.(type) {
+	case *staticNode:
+		if rightNode, ok := right.(*staticNode); ok {
+			return len(leftNode.name) < len(rightNode.name)
 		}
+		return true
+	case *regexpNode:
+		if _, ok := right.(*wildcardNode); ok {
+			return true
+		}
+		if rightNode, ok := right.(*regexpNode); ok {
+			return len(leftNode.regexp.String()) < len(rightNode.regexp.String())
+		}
+		return false
+		// case *wildcardNode:
 	}
 
-	if t.wildcard != nil {
-		return t.wildcard, part, path[len(part):]
-	}
-
-	return nil, "", ""
+	return false
 }

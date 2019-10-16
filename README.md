@@ -76,7 +76,8 @@ func Index(ctx *fasthttp.RequestCtx) {
 }
 
 func Hello(ctx *fasthttp.RequestCtx) {
-    fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+    params := ctx.UserValue("params").(context.Params)
+    fmt.Printf("Hello, %s!\n", params.Value("name"))
 }
 
 func main() {

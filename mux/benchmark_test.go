@@ -4,14 +4,12 @@ import (
 	"testing"
 )
 
-func TestTreeMatch(t *testing.T) {
+func BenchmarkMux(b *testing.B) {
 	root := NewNode("GET", 0)
 
 	lang := NewNode("{lang:en|pl}", root.MaxParamsSize())
 	blog := NewNode("blog", lang.MaxParamsSize())
-
 	search := NewNode("search", blog.MaxParamsSize())
-	searchAuthor := NewNode("author", search.MaxParamsSize())
 
 	page := NewNode("page", blog.MaxParamsSize())
 	pageID := NewNode(`{pageId:[^/]+}`, page.MaxParamsSize())
@@ -29,7 +27,6 @@ func TestTreeMatch(t *testing.T) {
 	blog.WithChildren(blog.Tree().withNode(page))
 	blog.WithChildren(blog.Tree().withNode(posts))
 	blog.WithChildren(blog.Tree().withNode(comments))
-	search.WithChildren(search.Tree().withNode(searchAuthor))
 	page.WithChildren(page.Tree().withNode(pageID))
 	posts.WithChildren(posts.Tree().withNode(postsID))
 	comments.WithChildren(comments.Tree().withNode(commentID))
@@ -37,13 +34,18 @@ func TestTreeMatch(t *testing.T) {
 
 	root.WithChildren(root.Tree().Compile())
 
-	n, _, _ := root.Tree().Match("pl/blog/comments/123/new")
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			n, _, _ := root.Tree().Match("pl/blog/comments/123/new")
 
-	if n == nil {
-		t.Fatalf("%v", n)
-	}
+			if n == nil {
+				b.Fatalf("%v", n)
+			}
 
-	if n.Name() != commentNew.Name() {
-		t.Fatalf("%s != %s", n.Name(), commentNew.Name())
-	}
+			if n.Name() != commentNew.Name() {
+				b.Fatalf("%s != %s", n.Name(), commentNew.Name())
+			}
+		}
+	})
 }

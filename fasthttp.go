@@ -1,23 +1,24 @@
 package gorouter
 
 import (
+	"net/http"
+
 	"github.com/valyala/fasthttp"
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
+	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
 // NewFastHTTPRouter creates new Router instance, returns pointer
 func NewFastHTTPRouter(fs ...FastHTTPMiddlewareFunc) FastHTTPRouter {
-	m := transformFastHTTPMiddlewareFunc(fs...)
-
 	return &fastHTTPRouter{
 		routes:     mux.NewTree(),
-		middleware: m,
+		middleware: transformFastHTTPMiddlewareFunc(fs...),
 	}
 }
 
 type fastHTTPRouter struct {
-	routes     *mux.Tree
+	routes     mux.Tree
 	middleware middleware.Middleware
 	fileServer fasthttp.RequestHandler
 	notFound   fasthttp.RequestHandler
@@ -25,39 +26,39 @@ type fastHTTPRouter struct {
 }
 
 func (r *fastHTTPRouter) POST(p string, f fasthttp.RequestHandler) {
-	r.Handle(POST, p, f)
+	r.Handle(http.MethodPost, p, f)
 }
 
 func (r *fastHTTPRouter) GET(p string, f fasthttp.RequestHandler) {
-	r.Handle(GET, p, f)
+	r.Handle(http.MethodGet, p, f)
 }
 
 func (r *fastHTTPRouter) PUT(p string, f fasthttp.RequestHandler) {
-	r.Handle(PUT, p, f)
+	r.Handle(http.MethodPut, p, f)
 }
 
 func (r *fastHTTPRouter) DELETE(p string, f fasthttp.RequestHandler) {
-	r.Handle(DELETE, p, f)
+	r.Handle(http.MethodDelete, p, f)
 }
 
 func (r *fastHTTPRouter) PATCH(p string, f fasthttp.RequestHandler) {
-	r.Handle(PATCH, p, f)
+	r.Handle(http.MethodPatch, p, f)
 }
 
 func (r *fastHTTPRouter) OPTIONS(p string, f fasthttp.RequestHandler) {
-	r.Handle(OPTIONS, p, f)
+	r.Handle(http.MethodOptions, p, f)
 }
 
 func (r *fastHTTPRouter) HEAD(p string, f fasthttp.RequestHandler) {
-	r.Handle(HEAD, p, f)
+	r.Handle(http.MethodHead, p, f)
 }
 
 func (r *fastHTTPRouter) CONNECT(p string, f fasthttp.RequestHandler) {
-	r.Handle(CONNECT, p, f)
+	r.Handle(http.MethodConnect, p, f)
 }
 
 func (r *fastHTTPRouter) TRACE(p string, f fasthttp.RequestHandler) {
-	r.Handle(TRACE, p, f)
+	r.Handle(http.MethodTrace, p, f)
 }
 
 func (r *fastHTTPRouter) USE(method, p string, fs ...FastHTTPMiddlewareFunc) {
@@ -66,23 +67,34 @@ func (r *fastHTTPRouter) USE(method, p string, fs ...FastHTTPMiddlewareFunc) {
 	addMiddleware(r.routes, method, p, m)
 }
 
-func (r *fastHTTPRouter) Handle(method, p string, h fasthttp.RequestHandler) {
+func (r *fastHTTPRouter) Handle(method, path string, h fasthttp.RequestHandler) {
 	route := newRoute(h)
 	route.PrependMiddleware(r.middleware)
 
-	node := addNode(r.routes, method, p)
-	node.SetRoute(route)
+	r.routes = r.routes.WithRoute(method+path, route, 0)
 }
 
 func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
-	for _, method := range []string{GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD, CONNECT, TRACE} {
+	for _, method := range []string{
+		http.MethodGet,
+		http.MethodHead,
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodPatch,
+		http.MethodDelete,
+		http.MethodConnect,
+		http.MethodOptions,
+		http.MethodTrace,
+	} {
 		route := newRoute(h)
 		route.PrependMiddleware(r.middleware)
 
-		node := addNode(r.routes, method, path)
-		node.SetRoute(route)
-		node.TurnIntoSubrouter()
+		r.routes = r.routes.WithSubrouter(method+path, route, 0)
 	}
+}
+
+func (r *fastHTTPRouter) Compile() {
+	r.routes = r.routes.Compile()
 }
 
 func (r *fastHTTPRouter) NotFound(notFound fasthttp.RequestHandler) {
@@ -102,37 +114,37 @@ func (r *fastHTTPRouter) ServeFiles(root string, stripSlashes int) {
 }
 
 func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
-	path := string(ctx.Path())
 	method := string(ctx.Method())
-	root := r.routes.GetByID(method)
+	pathAsString := string(ctx.Path())
+	path := pathutils.TrimSlash(pathAsString)
 
-	if root != nil {
-		node, params, subPath := root.GetChildByPath(path)
-
-		if node != nil && node.Route() != nil {
-			if h := node.Route().Handler().(fasthttp.RequestHandler); h != nil {
-
-				for _, param := range params {
-					ctx.SetUserValue(param.Key, param.Value)
-				}
-
-				if subPath != "" {
-					ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len(subPath))(ctx))
-				}
-
-				h(ctx)
-				return
+	if root := r.routes.Find(method); root != nil {
+		if node, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
+			if len(params) > 0 {
+				ctx.SetUserValue("params", params)
 			}
+
+			if subPath != "" {
+				ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))
+			}
+
+			node.Route().Handler().(fasthttp.RequestHandler)(ctx)
+			return
+		}
+
+		if pathAsString == "/" && root.Route() != nil {
+			root.Route().Handler().(fasthttp.RequestHandler)(ctx)
+			return
 		}
 	}
 
 	// Handle OPTIONS
-	if method == OPTIONS {
+	if method == http.MethodOptions {
 		if allow := allowed(r.routes, method, path); len(allow) > 0 {
 			ctx.Response.Header.Set("Allow", allow)
 			return
 		}
-	} else if method == GET && r.fileServer != nil {
+	} else if method == http.MethodGet && r.fileServer != nil {
 		// Handle file serve
 		r.fileServer(ctx)
 		return

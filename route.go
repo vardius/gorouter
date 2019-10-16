@@ -12,6 +12,10 @@ type route struct {
 }
 
 func newRoute(h interface{}) *route {
+	if h == nil {
+		panic("Handler can not be nil.")
+	}
+
 	return &route{
 		handler:    h,
 		middleware: middleware.New(),

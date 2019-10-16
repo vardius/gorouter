@@ -1,10 +1,8 @@
 package mux
 
-import (
-	"testing"
-)
+import "fmt"
 
-func TestTreeMatch(t *testing.T) {
+func Example() {
 	root := NewNode("GET", 0)
 
 	lang := NewNode("{lang:en|pl}", root.MaxParamsSize())
@@ -35,15 +33,36 @@ func TestTreeMatch(t *testing.T) {
 	comments.WithChildren(comments.Tree().withNode(commentID))
 	commentID.WithChildren(commentID.Tree().withNode(commentNew))
 
+	fmt.Printf("Raw tree:\n")
+	fmt.Print(root.Tree().PrettyPrint())
+
 	root.WithChildren(root.Tree().Compile())
 
-	n, _, _ := root.Tree().Match("pl/blog/comments/123/new")
+	fmt.Printf("Compiled tree:\n")
+	fmt.Print(root.Tree().PrettyPrint())
 
-	if n == nil {
-		t.Fatalf("%v", n)
-	}
-
-	if n.Name() != commentNew.Name() {
-		t.Fatalf("%s != %s", n.Name(), commentNew.Name())
-	}
+	// Output:
+	// Raw tree:
+	// 	{lang:en|pl}
+	// 		blog
+	// 		page
+	// 		{pageId:[^/]+}
+	// 	posts
+	// 		{postsId:[^/]+}
+	// 	search
+	// 		author
+	// 	comments
+	// 		{commentId:\d+}
+	// 		new
+	// Compiled tree:
+	// 	{lang:en|pl}
+	// 		blog
+	// 		page
+	// 		{pageId:[^/]+}
+	// 	posts
+	// 		{postsId:[^/]+}
+	// 	search/author
+	// 	comments
+	// 		{commentId:\d+}
+	// 		new
 }

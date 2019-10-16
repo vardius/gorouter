@@ -6,19 +6,6 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// HTTP methods constants
-const (
-	GET     = "GET"
-	POST    = "POST"
-	PUT     = "PUT"
-	DELETE  = "DELETE"
-	PATCH   = "PATCH"
-	OPTIONS = "OPTIONS"
-	HEAD    = "HEAD"
-	CONNECT = "CONNECT"
-	TRACE   = "TRACE"
-)
-
 // MiddlewareFunc is a http middleware function type
 type MiddlewareFunc func(http.Handler) http.Handler
 
@@ -73,6 +60,9 @@ type Router interface {
 
 	// Mount another handler as a subrouter
 	Mount(pattern string, handler http.Handler)
+
+	// Compile optimizes Tree nodes reducing static nodes depth when possible
+	Compile()
 
 	// ServeHTTP dispatches the request to the route handler
 	// whose pattern matches the request URL
@@ -139,6 +129,9 @@ type FastHTTPRouter interface {
 
 	// Mount another handler as a subrouter
 	Mount(pattern string, handler fasthttp.RequestHandler)
+
+	// Compile optimizes Tree nodes reducing static nodes depth when possible
+	Compile()
 
 	// HandleFastHTTP dispatches the request to the route handler
 	// whose pattern matches the request URL

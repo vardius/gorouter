@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/valyala/fasthttp"
+	"github.com/vardius/gorouter/v4/context"
 )
 
 func buildFastHTTPRequestContext(method, path string) *fasthttp.RequestCtx {
@@ -42,11 +43,11 @@ func TestFastHTTPHandle(t *testing.T) {
 
 	handler := &mockHandler{}
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	router.Handle(POST, "/x/y", handler.HandleFastHTTP)
+	router.Handle(http.MethodPost, "/x/y", handler.HandleFastHTTP)
 
-	checkIfHasRootRoute(t, router, POST)
+	checkIfHasRootRoute(t, router, http.MethodPost)
 
-	err := mockHandleFastHTTP(router.HandleFastHTTP, POST, "/x/y")
+	err := mockHandleFastHTTP(router.HandleFastHTTP, http.MethodPost, "/x/y")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,71 +61,71 @@ func TestFastHTTPPOST(t *testing.T) {
 	t.Parallel()
 
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.POST, POST)
+	testBasicFastHTTPMethod(t, router, router.POST, http.MethodPost)
 }
 
 func TestFastHTTPGET(t *testing.T) {
 	t.Parallel()
 
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.GET, GET)
+	testBasicFastHTTPMethod(t, router, router.GET, http.MethodGet)
 }
 
 func TestFastHTTPPUT(t *testing.T) {
 	t.Parallel()
 
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.PUT, PUT)
+	testBasicFastHTTPMethod(t, router, router.PUT, http.MethodPut)
 }
 
 func TestFastHTTPDELETE(t *testing.T) {
 	t.Parallel()
 
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.DELETE, DELETE)
+	testBasicFastHTTPMethod(t, router, router.DELETE, http.MethodDelete)
 }
 
 func TestFastHTTPPATCH(t *testing.T) {
 	t.Parallel()
 
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.PATCH, PATCH)
+	testBasicFastHTTPMethod(t, router, router.PATCH, http.MethodPatch)
 }
 
 func TestFastHTTPHEAD(t *testing.T) {
 	t.Parallel()
 
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.HEAD, HEAD)
+	testBasicFastHTTPMethod(t, router, router.HEAD, http.MethodHead)
 }
 
 func TestFastHTTPCONNECT(t *testing.T) {
 	t.Parallel()
 
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.CONNECT, CONNECT)
+	testBasicFastHTTPMethod(t, router, router.CONNECT, http.MethodConnect)
 }
 
 func TestFastHTTPTRACE(t *testing.T) {
 	t.Parallel()
 
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.TRACE, TRACE)
+	testBasicFastHTTPMethod(t, router, router.TRACE, http.MethodTrace)
 }
 
 func TestFastHTTPOPTIONS(t *testing.T) {
 	t.Parallel()
 
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.OPTIONS, OPTIONS)
+	testBasicFastHTTPMethod(t, router, router.OPTIONS, http.MethodOptions)
 
 	handler := &mockHandler{}
 	router.GET("/x/y", handler.HandleFastHTTP)
 	router.POST("/x/y", handler.HandleFastHTTP)
 
-	checkIfHasRootRoute(t, router, GET)
+	checkIfHasRootRoute(t, router, http.MethodGet)
 
-	ctx := buildFastHTTPRequestContext(OPTIONS, "*")
+	ctx := buildFastHTTPRequestContext(http.MethodOptions, "*")
 
 	router.HandleFastHTTP(ctx)
 
@@ -132,7 +133,7 @@ func TestFastHTTPOPTIONS(t *testing.T) {
 		t.Errorf("Allow header incorrect value: %s", allow)
 	}
 
-	ctx2 := buildFastHTTPRequestContext(OPTIONS, "/x/y")
+	ctx2 := buildFastHTTPRequestContext(http.MethodOptions, "/x/y")
 
 	router.HandleFastHTTP(ctx2)
 
@@ -146,9 +147,10 @@ func TestFastHTTPNotFound(t *testing.T) {
 
 	handler := &mockHandler{}
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
+	router.GET("/x", handler.HandleFastHTTP)
 	router.GET("/x/y", handler.HandleFastHTTP)
 
-	ctx := buildFastHTTPRequestContext(POST, "/y/y")
+	ctx := buildFastHTTPRequestContext(http.MethodGet, "/x/x")
 
 	router.HandleFastHTTP(ctx)
 
@@ -182,7 +184,7 @@ func TestFastHTTPNotAllowed(t *testing.T) {
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
 	router.GET("/x/y", handler.HandleFastHTTP)
 
-	ctx := buildFastHTTPRequestContext(POST, "/x/y")
+	ctx := buildFastHTTPRequestContext(http.MethodPost, "/x/y")
 
 	router.HandleFastHTTP(ctx)
 
@@ -224,12 +226,13 @@ func TestFastHTTPParam(t *testing.T) {
 	router.GET("/x/{param}", func(ctx *fasthttp.RequestCtx) {
 		served = true
 
-		if ctx.UserValue("param") != "y" {
-			t.Errorf("Wrong params value. Expected 'x', actual '%s'", ctx.UserValue("param"))
+		params := ctx.UserValue("params").(context.Params)
+		if params.Value("param") != "y" {
+			t.Errorf("Wrong params value. Expected 'y', actual '%s'", params.Value("param"))
 		}
 	})
 
-	err := mockHandleFastHTTP(router.HandleFastHTTP, GET, "/x/y")
+	err := mockHandleFastHTTP(router.HandleFastHTTP, http.MethodGet, "/x/y")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,12 +251,13 @@ func TestFastHTTPRegexpParam(t *testing.T) {
 	router.GET("/x/{param:r([a-z]+)go}", func(ctx *fasthttp.RequestCtx) {
 		served = true
 
-		if ctx.UserValue("param") != "rxgo" {
-			t.Errorf("Wrong params value. Expected 'rxgo', actual '%s'", ctx.UserValue("param"))
+		params := ctx.UserValue("params").(context.Params)
+		if params.Value("param") != "rxgo" {
+			t.Errorf("Wrong params value. Expected 'rxgo', actual '%s'", params.Value("param"))
 		}
 	})
 
-	err := mockHandleFastHTTP(router.HandleFastHTTP, GET, "/x/rxgo")
+	err := mockHandleFastHTTP(router.HandleFastHTTP, http.MethodGet, "/x/rxgo")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -296,7 +300,7 @@ func TestFastHTTPServeFiles(t *testing.T) {
 	var ctx fasthttp.RequestCtx
 	var req fasthttp.Request
 	ctx.Init(&req, nil, testLogger{t})
-	ctx.Request.Header.SetMethod(GET)
+	ctx.Request.Header.SetMethod(http.MethodGet)
 	// will serve files from /var/www/static/favicon.ico
 	// because strip 1 value ServeFiles("/var/www/static", 1)
 	// /static/favicon.ico -> /favicon.ico
@@ -326,7 +330,7 @@ func TestFastHTTPNilMiddleware(t *testing.T) {
 		fmt.Fprintf(ctx, "test")
 	})
 
-	ctx := buildFastHTTPRequestContext(GET, "/x/y")
+	ctx := buildFastHTTPRequestContext(http.MethodGet, "/x/y")
 
 	router.HandleFastHTTP(ctx)
 
@@ -359,7 +363,7 @@ func TestFastHTTPPanicMiddleware(t *testing.T) {
 		panic("test panic recover")
 	})
 
-	err := mockHandleFastHTTP(router.HandleFastHTTP, GET, "/x/y")
+	err := mockHandleFastHTTP(router.HandleFastHTTP, http.MethodGet, "/x/y")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -375,12 +379,13 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
 
 	router.GET("/x/{param}", func(ctx *fasthttp.RequestCtx) {
-		fmt.Fprintf(ctx, ctx.UserValue("param").(string))
+		params := ctx.UserValue("params").(context.Params)
+		fmt.Fprintf(ctx, "%s", params.Value("param"))
 	})
 
-	router.USE(GET, "/x/{param}", mockFastHTTPMiddleware("m"))
+	router.USE(http.MethodGet, "/x/{param}", mockFastHTTPMiddleware("m"))
 
-	ctx := buildFastHTTPRequestContext(GET, "/x/y")
+	ctx := buildFastHTTPRequestContext(http.MethodGet, "/x/y")
 
 	router.HandleFastHTTP(ctx)
 
@@ -395,52 +400,57 @@ func TestFastHTTPChainCalls(t *testing.T) {
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
 
 	served := false
-	router.GET("/users/{user:[a-z0-9]+)}/starred", func(ctx *fasthttp.RequestCtx) {
+	router.GET("/users/{user:[a-z0-9]+}/starred", func(ctx *fasthttp.RequestCtx) {
 		served = true
 
-		if ctx.UserValue("user") != "x" {
-			t.Errorf("Wrong params value. Expected 'x', actual '%s'", ctx.UserValue("user"))
+		params := ctx.UserValue("params").(context.Params)
+		if params.Value("user") != "x" {
+			t.Errorf("Wrong params value. Expected 'x', actual '%s'", params.Value("user"))
 		}
 	})
 
 	router.GET("/applications/{client_id}/tokens", func(ctx *fasthttp.RequestCtx) {
 		served = true
 
-		if ctx.UserValue("client_id") != "client_id" {
-			t.Errorf("Wrong params value. Expected 'client_id', actual '%s'", ctx.UserValue("client_id"))
+		params := ctx.UserValue("params").(context.Params)
+		if params.Value("client_id") != "client_id" {
+			t.Errorf("Wrong params value. Expected 'client_id', actual '%s'", params.Value("client_id"))
 		}
 	})
 
 	router.GET("/applications/{client_id}/tokens/{access_token}", func(ctx *fasthttp.RequestCtx) {
 		served = true
 
-		if ctx.UserValue("client_id") != "client_id" {
-			t.Errorf("Wrong params value. Expected 'client_id', actual '%s'", ctx.UserValue("client_id"))
+		params := ctx.UserValue("params").(context.Params)
+		if params.Value("client_id") != "client_id" {
+			t.Errorf("Wrong params value. Expected 'client_id', actual '%s'", params.Value("client_id"))
 		}
 
-		if ctx.UserValue("access_token") != "access_token" {
-			t.Errorf("Wrong params value. Expected 'access_token', actual '%s'", ctx.UserValue("access_token"))
+		if params.Value("access_token") != "access_token" {
+			t.Errorf("Wrong params value. Expected 'access_token', actual '%s'", params.Value("access_token"))
 		}
 	})
 
 	router.GET("/users/{user}/received_events", func(ctx *fasthttp.RequestCtx) {
 		served = true
 
-		if ctx.UserValue("user") != "user1" {
-			t.Errorf("Wrong params value. Expected 'user1', actual '%s'", ctx.UserValue("user"))
+		params := ctx.UserValue("params").(context.Params)
+		if params.Value("user") != "user1" {
+			t.Errorf("Wrong params value. Expected 'user1', actual '%s'", params.Value("user"))
 		}
 	})
 
 	router.GET("/users/{user}/received_events/public", func(ctx *fasthttp.RequestCtx) {
 		served = true
 
-		if ctx.UserValue("user") != "user2" {
-			t.Errorf("Wrong params value. Expected 'user2', actual '%s'", ctx.UserValue("user"))
+		params := ctx.UserValue("params").(context.Params)
+		if params.Value("user") != "user2" {
+			t.Errorf("Wrong params value. Expected 'user2', actual '%s'", params.Value("user"))
 		}
 	})
 
 	// //FIRST CALL
-	err := mockHandleFastHTTP(router.HandleFastHTTP, GET, "/users/x/starred")
+	err := mockHandleFastHTTP(router.HandleFastHTTP, http.MethodGet, "/users/x/starred")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -451,7 +461,7 @@ func TestFastHTTPChainCalls(t *testing.T) {
 
 	//SECOND CALL
 	served = false
-	err = mockHandleFastHTTP(router.HandleFastHTTP, GET, "/applications/client_id/tokens")
+	err = mockHandleFastHTTP(router.HandleFastHTTP, http.MethodGet, "/applications/client_id/tokens")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -462,7 +472,7 @@ func TestFastHTTPChainCalls(t *testing.T) {
 
 	//THIRD CALL
 	served = false
-	err = mockHandleFastHTTP(router.HandleFastHTTP, GET, "/applications/client_id/tokens/access_token")
+	err = mockHandleFastHTTP(router.HandleFastHTTP, http.MethodGet, "/applications/client_id/tokens/access_token")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -473,7 +483,7 @@ func TestFastHTTPChainCalls(t *testing.T) {
 
 	//FOURTH CALL
 	served = false
-	err = mockHandleFastHTTP(router.HandleFastHTTP, GET, "/users/user1/received_events")
+	err = mockHandleFastHTTP(router.HandleFastHTTP, http.MethodGet, "/users/user1/received_events")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -484,7 +494,7 @@ func TestFastHTTPChainCalls(t *testing.T) {
 
 	//FIFTH CALL
 	served = false
-	err = mockHandleFastHTTP(router.HandleFastHTTP, GET, "/users/user2/received_events/public")
+	err = mockHandleFastHTTP(router.HandleFastHTTP, http.MethodGet, "/users/user2/received_events/public")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -497,33 +507,29 @@ func TestFastHTTPChainCalls(t *testing.T) {
 func TestFastHTTPMountSubRouter(t *testing.T) {
 	t.Parallel()
 
-	rGlobal1 := mockFastHTTPMiddleware("[rg1]")
-	rGlobal2 := mockFastHTTPMiddleware("[rg2]")
-	mainRouter := NewFastHTTPRouter(rGlobal1, rGlobal2).(*fastHTTPRouter)
-	mainRouter.GET("/{param}", func(ctx *fasthttp.RequestCtx) {
-		t.Fatal("Handler should be overtaken by subrouter")
-	})
+	mainRouter := NewFastHTTPRouter(
+		mockFastHTTPMiddleware("[rg1]"),
+		mockFastHTTPMiddleware("[rg2]"),
+	).(*fastHTTPRouter)
 
-	sGlobal1 := mockFastHTTPMiddleware("[sg1]")
-	sGlobal2 := mockFastHTTPMiddleware("[sg2]")
-	subRouter := NewFastHTTPRouter(sGlobal1, sGlobal2).(*fastHTTPRouter)
+	subRouter := NewFastHTTPRouter(
+		mockFastHTTPMiddleware("[sg1]"),
+		mockFastHTTPMiddleware("[sg2]"),
+	).(*fastHTTPRouter)
+
 	subRouter.GET("/y", func(ctx *fasthttp.RequestCtx) {
 		fmt.Fprintf(ctx, "[s]")
 	})
 
 	mainRouter.Mount("/{param}", subRouter.HandleFastHTTP)
 
-	r1 := mockFastHTTPMiddleware("[r1]")
-	r2 := mockFastHTTPMiddleware("[r2]")
-	mainRouter.USE(GET, "/{param}", r1)
-	mainRouter.USE(GET, "/{param}", r2)
+	mainRouter.USE(http.MethodGet, "/{param}", mockFastHTTPMiddleware("[r1]"))
+	mainRouter.USE(http.MethodGet, "/{param}", mockFastHTTPMiddleware("[r2]"))
 
-	s1 := mockFastHTTPMiddleware("[s1]")
-	s2 := mockFastHTTPMiddleware("[s2]")
-	subRouter.USE(GET, "/y", s1)
-	subRouter.USE(GET, "/y", s2)
+	subRouter.USE(http.MethodGet, "/y", mockFastHTTPMiddleware("[s1]"))
+	subRouter.USE(http.MethodGet, "/y", mockFastHTTPMiddleware("[s2]"))
 
-	ctx := buildFastHTTPRequestContext(GET, "/x/y")
+	ctx := buildFastHTTPRequestContext(http.MethodGet, "/x/y")
 
 	mainRouter.HandleFastHTTP(ctx)
 

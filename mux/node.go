@@ -2,200 +2,205 @@ package mux
 
 import (
 	"regexp"
-	"strings"
 
 	"github.com/vardius/gorouter/v4/context"
+	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
-// Node is route node
-type Node struct {
-	id          string
-	regexp      *regexp.Regexp
-	route       Route
-	parent      *Node
-	children    *Tree
-	params      uint8
-	isWildcard  bool
-	isRegexp    bool
-	isSubrouter bool
+// NewNode provides new mux Node
+func NewNode(pathPart string, maxParamsSize uint8) Node {
+	if len(pathPart) == 0 {
+		return nil
+	}
+
+	name, exp := pathutils.GetNameFromPart(pathPart)
+	static := &staticNode{
+		name:          name,
+		children:      NewTree(),
+		maxParamsSize: maxParamsSize,
+	}
+
+	var node Node
+
+	if exp != "" {
+		static.maxParamsSize++
+		node = withRegexp(static, regexp.MustCompile(exp))
+	} else if name != pathPart {
+		static.maxParamsSize++
+		node = withWildcard(static)
+	} else {
+		node = static
+	}
+
+	return node
 }
 
-// NewRoot create new tree root
-func NewRoot(id string) *Node {
-	return NewNode(nil, id)
+// Node represents mux Node
+// Can match path and provide routes
+type Node interface {
+	// Match matches given path to Node within Node and its Tree
+	Match(path string) (Node, context.Params, string)
+
+	// Name privides Node name
+	Name() string
+	// Name privides maximum number of parameters Route can have for given Node
+	MaxParamsSize() uint8
+	// Tree provides next level Node Tree
+	Tree() Tree
+	// Route provides Node's Route if assigned
+	Route() Route
+
+	// WithRoute assigns Route to given Node
+	WithRoute(r Route)
+	// WithChildren sets Node's Tree
+	WithChildren(t Tree)
 }
 
-// NewNode creates new tre node
-func NewNode(root *Node, id string) *Node {
-	var regexp string
-	isWildcard := false
-	isRegexp := false
-
-	if len(id) > 0 && id[0] == '{' {
-		id = id[1 : len(id)-1]
-		isWildcard = true
-
-		if parts := strings.Split(id, ":"); len(parts) == 2 {
-			id = parts[0]
-			regexp = parts[1]
-			regexp = regexp[:len(regexp)-1]
-			isRegexp = true
-		}
-
-		if id == "" {
-			panic("Empty wildcard name")
-		}
-	}
-
-	n := &Node{
-		id:         id,
-		parent:     root,
-		children:   NewTree(),
-		isWildcard: isWildcard,
-		isRegexp:   isRegexp,
-	}
-
-	if root != nil {
-		n.params = root.params
-	}
-
-	if isWildcard {
-		n.params++
-	}
-
-	if isRegexp {
-		n.SetRegexp(regexp)
-	}
-
-	return n
+type staticNode struct {
+	name          string
+	route         Route
+	children      Tree
+	maxParamsSize uint8
 }
 
-// AddChild adds child by ids
-func (n *Node) AddChild(ids []string) *Node {
-	if len(ids) > 0 && ids[0] != "" {
-		node := n.children.GetByID(ids[0])
+func (n *staticNode) Match(path string) (Node, context.Params, string) {
+	nameLength := len(n.name)
+	pathLength := len(path)
 
-		if node == nil {
-			node = NewNode(n, ids[0])
-			n.children.Insert(node)
+	if pathLength >= nameLength && n.name == path[:nameLength] {
+		if nameLength+1 >= pathLength {
+			return n, make(context.Params, n.maxParamsSize), ""
 		}
 
-		return node.AddChild(ids[1:])
-	}
-	return n
-}
-
-// GetChild gets child by ids
-func (n *Node) GetChild(ids []string) (*Node, context.Params) {
-	if len(ids) == 0 {
-		return n, make(context.Params, n.params)
-	}
-
-	child := n.children.GetByID(ids[0])
-	if child != nil {
-		n, params := child.GetChild(ids[1:])
-
-		if child.isWildcard && params != nil {
-			params[child.params-1].Value = ids[0]
-			params[child.params-1].Key = child.id
-		}
-
-		return n, params
-	}
-
-	return nil, nil
-}
-
-// GetChildByPath accepts string path then returns:
-// child node as a first arg,
-// parameters built from wildcards,
-// and part of path (this is used to strip request path for sub routers)
-func (n *Node) GetChildByPath(path string) (*Node, context.Params, string) {
-	pathLen := len(path)
-	if pathLen > 0 && path[0] == '/' {
-		path = path[1:]
-		pathLen--
-	}
-
-	if pathLen == 0 {
-		return n, make(context.Params, n.params), ""
-	}
-
-	child, part, path := n.children.GetByPath(path)
-
-	if child != nil {
-		grandChild, params, _ := child.GetChildByPath(path)
-
-		if part != "" && params != nil {
-			params[child.params-1].Value = part
-			params[child.params-1].Key = child.id
-		}
-
-		if grandChild == nil && child.isSubrouter {
-			return child, params, path
-		}
-
-		return grandChild, params, ""
+		return n.children.Match(path[nameLength+1:]) // +1 because we wan to skip slash as well
 	}
 
 	return nil, nil, ""
 }
 
-// SetRegexp sets node regexp value
-func (n *Node) SetRegexp(exp string) {
-	reg, err := regexp.Compile(exp)
-	if err != nil {
-		panic(err)
-	}
-
-	n.regexp = reg
-	n.isRegexp = true
-	n.isWildcard = true
+func (n *staticNode) WithChildren(t Tree) {
+	n.children = t
 }
 
-// SetRoute sets node route value
-func (n *Node) SetRoute(r Route) {
-	n.route = r
+func (n *staticNode) Name() string {
+	return n.name
 }
 
-// TurnIntoSubrouter sets node as subrouter
-func (n *Node) TurnIntoSubrouter() {
-	n.isSubrouter = true
+func (n *staticNode) MaxParamsSize() uint8 {
+	return n.maxParamsSize
 }
 
-// ID returns node's id
-func (n *Node) ID() string {
-	return n.id
-}
-
-// Route returns node's route
-func (n *Node) Route() Route {
-	return n.route
-}
-
-// Children returns node's children as tree
-func (n *Node) Children() *Tree {
+func (n *staticNode) Tree() Tree {
 	return n.children
 }
 
-// IsSubrouter returns true if node is subrouter
-func (n *Node) IsSubrouter() bool {
-	return n.isSubrouter
+func (n *staticNode) Route() Route {
+	return n.route
 }
 
-// IsRoot returns true if node is root
-func (n *Node) IsRoot() bool {
-	return n.parent == nil
+func (n *staticNode) WithRoute(r Route) {
+	n.route = r
 }
 
-// IsLeaf returns true if node is root
-func (n *Node) IsLeaf() bool {
-	return n.children.idsLen == 0 && len(n.children.regexps) == 0 && n.children.wildcard == nil
+func withWildcard(parent *staticNode) *wildcardNode {
+	return &wildcardNode{staticNode: parent}
 }
 
-func (n *Node) regexpToString() string {
-	if n.regexp == nil {
-		return ""
+type wildcardNode struct {
+	*staticNode
+}
+
+func (n *wildcardNode) Merge(node Node) Node {
+	return n
+}
+
+func (n *wildcardNode) Match(path string) (Node, context.Params, string) {
+	pathPart, subPath := pathutils.GetPart(path)
+	maxParamsSize := n.MaxParamsSize()
+
+	var node Node
+	var params context.Params
+
+	if subPath == "" {
+		node = n
+		params = make(context.Params, maxParamsSize)
+	} else {
+		node, params, subPath = n.children.Match(subPath)
+
+		if node == nil {
+			return nil, nil, ""
+		}
 	}
-	return n.regexp.String()
+
+	params.Set(maxParamsSize-1, n.name, pathPart)
+
+	return node, params, subPath
+}
+
+func withRegexp(parent *staticNode, regexp *regexp.Regexp) *regexpNode {
+	return &regexpNode{
+		staticNode: parent,
+		regexp:     regexp,
+	}
+}
+
+type regexpNode struct {
+	*staticNode
+
+	regexp *regexp.Regexp
+}
+
+func (n *regexpNode) Merge(node Node) Node {
+	return n
+}
+
+func (n *regexpNode) Match(path string) (Node, context.Params, string) {
+	pathPart, subPath := pathutils.GetPart(path)
+	if !n.regexp.MatchString(pathPart) {
+		return nil, nil, ""
+	}
+
+	maxParamsSize := n.MaxParamsSize()
+
+	var node Node
+	var params context.Params
+
+	if subPath == "" {
+		node = n
+		params = make(context.Params, maxParamsSize)
+	} else {
+		node, params, subPath = n.children.Match(subPath)
+
+		if node == nil {
+			return nil, nil, ""
+		}
+	}
+
+	params.Set(maxParamsSize-1, n.name, pathPart)
+
+	return node, params, subPath
+}
+
+func withSubrouter(parent Node) *subrouterNode {
+	return &subrouterNode{Node: parent}
+}
+
+type subrouterNode struct {
+	Node
+}
+
+func (n *subrouterNode) Match(path string) (Node, context.Params, string) {
+	pathPart, subPath := pathutils.GetPart(path)
+
+	node, params, _ := n.Node.Match(pathPart)
+
+	return node, params, subPath
+}
+
+func (n *subrouterNode) Merge(node Node) Node {
+	return n
+}
+
+func (n *subrouterNode) WithChildren(t Tree) {
+	panic("Subrouter node can not have children.")
 }

@@ -1,91 +1,84 @@
 package gorouter
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
-	path_utils "github.com/vardius/gorouter/v4/path"
+	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
-func addNode(t *mux.Tree, id, path string) *mux.Node {
-	root := t.GetByID(id)
-	if root == nil {
-		root = mux.NewRoot(id)
-		t.Insert(root)
+func addMiddleware(t mux.Tree, method, path string, mid middleware.Middleware) {
+	type recFunc func(recFunc, mux.Node, middleware.Middleware)
+
+	c := func(c recFunc, n mux.Node, m middleware.Middleware) {
+		if n.Route() != nil {
+			n.Route().AppendMiddleware(m)
+		}
+		for _, child := range n.Tree() {
+			c(c, child, m)
+		}
 	}
 
-	paths := path_utils.Split(path)
-	n := root.AddChild(paths)
+	// routes tree roots should be http method nodes only
+	if root := t.Find(method); root != nil {
+		if path != "" {
+			node := findNode(root, strings.Split(pathutils.TrimSlash(path), "/"))
+			if node != nil {
+				c(c, node, mid)
+			}
+		} else {
+			c(c, root, mid)
+		}
+	}
+}
+
+func findNode(n mux.Node, parts []string) mux.Node {
+	if len(parts) == 0 {
+		return n
+	}
+
+	name, _ := pathutils.GetNameFromPart(parts[0])
+
+	if node := n.Tree().Find(name); node != nil {
+		return findNode(node, parts[1:])
+	}
 
 	return n
 }
 
-func addMiddleware(t *mux.Tree, method, path string, mid middleware.Middleware) {
-	type recFunc func(recFunc, *mux.Node, middleware.Middleware)
-
-	c := func(c recFunc, n *mux.Node, m middleware.Middleware) {
-		if n.Route() != nil {
-			n.Route().AppendMiddleware(m)
-		}
-		for _, child := range n.Children().StaticNodes() {
-			c(c, child, m)
-		}
-		for _, child := range n.Children().RegexpNodes() {
-			c(c, child, m)
-		}
-		if n.Children().WildcardNode() != nil {
-			c(c, n.Children().WildcardNode(), m)
-		}
-	}
-
-	paths := path_utils.Split(path)
-
-	// routes tree roots should be http method nodes only
-	for _, root := range t.StaticNodes() {
-		if method == "" || method == root.ID() {
-			node, _ := root.GetChild(paths)
-			if node != nil {
-				c(c, node, mid)
-			}
-		}
-	}
-}
-
-func allowed(t *mux.Tree, method, path string) (allow string) {
-	path = strings.Trim(path, "/")
-
+func allowed(t mux.Tree, method, path string) (allow string) {
 	if path == "*" {
 		// routes tree roots should be http method nodes only
-		for _, root := range t.StaticNodes() {
-			if root.ID() == OPTIONS {
+		for _, root := range t {
+			if root.Name() == http.MethodOptions {
 				continue
 			}
 			if len(allow) == 0 {
-				allow = root.ID()
+				allow = root.Name()
 			} else {
-				allow += ", " + root.ID()
+				allow += ", " + root.Name()
 			}
 		}
 	} else {
 		// routes tree roots should be http method nodes only
-		for _, root := range t.StaticNodes() {
-			if root.ID() == method || root.ID() == OPTIONS {
+		for _, root := range t {
+			if root.Name() == method || root.Name() == http.MethodOptions {
 				continue
 			}
 
-			n, _, _ := root.GetChildByPath(path)
-			if n != nil && n.Route() != nil {
+			if n, _, _ := root.Tree().Match(path); n != nil && n.Route() != nil {
 				if len(allow) == 0 {
-					allow = root.ID()
+					allow = root.Name()
 				} else {
-					allow += ", " + root.ID()
+					allow += ", " + root.Name()
 				}
 			}
 		}
 	}
 	if len(allow) > 0 {
-		allow += ", " + OPTIONS
+		allow += ", " + http.MethodOptions
 	}
 	return allow
 }

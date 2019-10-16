@@ -26,24 +26,32 @@ func handleFastHTTPRequest(method, path string, handler fasthttp.RequestHandler)
 }
 
 func Example() {
-	hello := func(w http.ResponseWriter, r *http.Request) {
+	index := func(_ http.ResponseWriter, _ *http.Request) {
+		fmt.Printf("Hello\n")
+	}
+
+	hello := func(_ http.ResponseWriter, r *http.Request) {
 		params, _ := context.Parameters(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
 	router := gorouter.New()
+	router.GET("/", http.HandlerFunc(index))
 	router.GET("/hello/{name}", http.HandlerFunc(hello))
 
 	// for this example we will mock request
+	handleNetHTTPRequest("GET", "/", router)
 	handleNetHTTPRequest("GET", "/hello/guest", router)
 
 	// Output:
+	// Hello
 	// Hello, guest!
 }
 
 func Example_second() {
 	hello := func(ctx *fasthttp.RequestCtx) {
-		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+		params := ctx.UserValue("params").(context.Params)
+		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
 	router := gorouter.NewFastHTTPRouter()
@@ -154,7 +162,8 @@ func ExampleFastHTTPMiddlewareFunc() {
 	// Global middleware example
 	// applies to all routes
 	hello := func(ctx *fasthttp.RequestCtx) {
-		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+		params := ctx.UserValue("params").(context.Params)
+		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
 	logger := func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
@@ -181,7 +190,8 @@ func ExampleFastHTTPMiddlewareFunc_second() {
 	// Route level middleware example
 	// applies to route and its lower tree
 	hello := func(ctx *fasthttp.RequestCtx) {
-		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+		params := ctx.UserValue("params").(context.Params)
+		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
 	logger := func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
@@ -212,7 +222,8 @@ func ExampleFastHTTPMiddlewareFunc_third() {
 	// Http method middleware example
 	// applies to all routes under this method
 	hello := func(ctx *fasthttp.RequestCtx) {
-		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+		params := ctx.UserValue("params").(context.Params)
+		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
 	logger := func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
@@ -250,7 +261,7 @@ func ExampleRouter_mount() {
 	subrouter.GET("/{name}", http.HandlerFunc(hello))
 
 	// default mux as subrouter
-	// you can use eveything that implements http.Handler interface
+	// you can use everything that implements http.Handler interface
 	unknownSubrouter := http.NewServeMux()
 	unknownSubrouter.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		fmt.Println("Hi, guest!")
@@ -271,7 +282,8 @@ func ExampleRouter_mount() {
 
 func ExampleFastHTTPRouter_mount() {
 	hello := func(ctx *fasthttp.RequestCtx) {
-		fmt.Printf("Hello, %s!\n", ctx.UserValue("name"))
+		params := ctx.UserValue("params").(context.Params)
+		fmt.Printf("Hello, %s!\n", params.Value("name"))
 	}
 
 	subrouter := gorouter.NewFastHTTPRouter()

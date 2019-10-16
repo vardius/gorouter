@@ -34,11 +34,11 @@ func TestHandle(t *testing.T) {
 
 	handler := &mockHandler{}
 	router := New().(*router)
-	router.Handle(POST, "/x/y", handler)
+	router.Handle(http.MethodPost, "/x/y", handler)
 
-	checkIfHasRootRoute(t, router, POST)
+	checkIfHasRootRoute(t, router, http.MethodPost)
 
-	err := mockServeHTTP(router, POST, "/x/y")
+	err := mockServeHTTP(router, http.MethodPost, "/x/y")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,74 +52,74 @@ func TestPOST(t *testing.T) {
 	t.Parallel()
 
 	router := New().(*router)
-	testBasicMethod(t, router, router.POST, POST)
+	testBasicMethod(t, router, router.POST, http.MethodPost)
 }
 
 func TestGET(t *testing.T) {
 	t.Parallel()
 
 	router := New().(*router)
-	testBasicMethod(t, router, router.GET, GET)
+	testBasicMethod(t, router, router.GET, http.MethodGet)
 }
 
 func TestPUT(t *testing.T) {
 	t.Parallel()
 
 	router := New().(*router)
-	testBasicMethod(t, router, router.PUT, PUT)
+	testBasicMethod(t, router, router.PUT, http.MethodPut)
 }
 
 func TestDELETE(t *testing.T) {
 	t.Parallel()
 
 	router := New().(*router)
-	testBasicMethod(t, router, router.DELETE, DELETE)
+	testBasicMethod(t, router, router.DELETE, http.MethodDelete)
 }
 
 func TestPATCH(t *testing.T) {
 	t.Parallel()
 
 	router := New().(*router)
-	testBasicMethod(t, router, router.PATCH, PATCH)
+	testBasicMethod(t, router, router.PATCH, http.MethodPatch)
 }
 
 func TestHEAD(t *testing.T) {
 	t.Parallel()
 
 	router := New().(*router)
-	testBasicMethod(t, router, router.HEAD, HEAD)
+	testBasicMethod(t, router, router.HEAD, http.MethodHead)
 }
 
 func TestCONNECT(t *testing.T) {
 	t.Parallel()
 
 	router := New().(*router)
-	testBasicMethod(t, router, router.CONNECT, CONNECT)
+	testBasicMethod(t, router, router.CONNECT, http.MethodConnect)
 }
 
 func TestTRACE(t *testing.T) {
 	t.Parallel()
 
 	router := New().(*router)
-	testBasicMethod(t, router, router.TRACE, TRACE)
+	testBasicMethod(t, router, router.TRACE, http.MethodTrace)
 }
 
 func TestOPTIONS(t *testing.T) {
 	t.Parallel()
 
 	router := New().(*router)
-	testBasicMethod(t, router, router.OPTIONS, OPTIONS)
+	testBasicMethod(t, router, router.OPTIONS, http.MethodOptions)
 
 	handler := &mockHandler{}
 	router.GET("/x/y", handler)
 	router.POST("/x/y", handler)
 
-	checkIfHasRootRoute(t, router, GET)
+	checkIfHasRootRoute(t, router, http.MethodGet)
 
 	w := httptest.NewRecorder()
 
 	// test all routes "*" paths
-	req, err := http.NewRequest(OPTIONS, "*", nil)
+	req, err := http.NewRequest(http.MethodOptions, "*", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +131,7 @@ func TestOPTIONS(t *testing.T) {
 	}
 
 	// test specific path
-	req, err = http.NewRequest(OPTIONS, "/x/y", nil)
+	req, err = http.NewRequest(http.MethodOptions, "/x/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,10 +148,11 @@ func TestNotFound(t *testing.T) {
 
 	handler := &mockHandler{}
 	router := New().(*router)
+	router.GET("/x", handler)
 	router.GET("/x/y", handler)
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(POST, "/y/y", nil)
+	req, err := http.NewRequest(http.MethodGet, "/x/x", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +188,7 @@ func TestNotAllowed(t *testing.T) {
 	router.GET("/x/y", handler)
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(POST, "/x/y", nil)
+	req, err := http.NewRequest(http.MethodPost, "/x/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -215,7 +216,7 @@ func TestNotAllowed(t *testing.T) {
 	}
 
 	w = httptest.NewRecorder()
-	req, err = http.NewRequest(POST, "*", nil)
+	req, err = http.NewRequest(http.MethodPost, "*", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,11 +243,11 @@ func TestParam(t *testing.T) {
 		}
 
 		if params.Value("param") != "y" {
-			t.Errorf("Wrong params value. Expected 'x', actual '%s'", params.Value("param"))
+			t.Errorf("Wrong params value. Expected 'y', actual '%s'", params.Value("param"))
 		}
 	}))
 
-	err := mockServeHTTP(router, GET, "/x/y")
+	err := mockServeHTTP(router, http.MethodGet, "/x/y")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -275,7 +276,7 @@ func TestRegexpParam(t *testing.T) {
 		}
 	}))
 
-	err := mockServeHTTP(router, GET, "/x/rxgo")
+	err := mockServeHTTP(router, http.MethodGet, "/x/rxgo")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -288,10 +289,10 @@ func TestRegexpParam(t *testing.T) {
 func TestEmptyParam(t *testing.T) {
 	t.Parallel()
 
-	paniced := false
+	panicked := false
 	defer func() {
 		if rcv := recover(); rcv != nil {
-			paniced = true
+			panicked = true
 		}
 	}()
 
@@ -300,7 +301,7 @@ func TestEmptyParam(t *testing.T) {
 
 	router.GET("/x/{}", handler)
 
-	if paniced != true {
+	if panicked != true {
 		t.Error("Router should panic for empty wildcard path")
 	}
 }
@@ -318,7 +319,7 @@ func TestServeFiles(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	r, err := http.NewRequest(GET, "/favicon.ico", nil)
+	r, err := http.NewRequest(http.MethodGet, "/favicon.ico", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -348,7 +349,7 @@ func TestNilMiddleware(t *testing.T) {
 	}))
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, "/x/y", nil)
+	req, err := http.NewRequest(http.MethodGet, "/x/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -363,12 +364,12 @@ func TestNilMiddleware(t *testing.T) {
 func TestPanicMiddleware(t *testing.T) {
 	t.Parallel()
 
-	paniced := false
+	panicked := false
 	panicMiddleware := func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if rcv := recover(); rcv != nil {
-					paniced = true
+					panicked = true
 				}
 			}()
 
@@ -384,12 +385,12 @@ func TestPanicMiddleware(t *testing.T) {
 		panic("test panic recover")
 	}))
 
-	err := mockServeHTTP(router, GET, "/x/y")
+	err := mockServeHTTP(router, http.MethodGet, "/x/y")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if paniced != true {
+	if panicked != true {
 		t.Error("Panic has not been handled")
 	}
 }
@@ -408,10 +409,10 @@ func TestNodeApplyMiddleware(t *testing.T) {
 		w.Write([]byte(params.Value("param")))
 	}))
 
-	router.USE(GET, "/x/{param}", mockMiddleware("m"))
+	router.USE(http.MethodGet, "/x/{param}", mockMiddleware("m"))
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, "/x/y", nil)
+	req, err := http.NewRequest(http.MethodGet, "/x/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -429,7 +430,7 @@ func TestChainCalls(t *testing.T) {
 	router := New().(*router)
 
 	served := false
-	router.GET("/users/{user:[a-z0-9]+)}/starred", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+	router.GET("/users/{user:[a-z0-9]+}/starred", http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		served = true
 
 		params, ok := context.Parameters(r.Context())
@@ -499,7 +500,7 @@ func TestChainCalls(t *testing.T) {
 	}))
 
 	// //FIRST CALL
-	err := mockServeHTTP(router, GET, "/users/x/starred")
+	err := mockServeHTTP(router, http.MethodGet, "/users/x/starred")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -510,7 +511,7 @@ func TestChainCalls(t *testing.T) {
 
 	//SECOND CALL
 	served = false
-	err = mockServeHTTP(router, GET, "/applications/client_id/tokens")
+	err = mockServeHTTP(router, http.MethodGet, "/applications/client_id/tokens")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -521,7 +522,7 @@ func TestChainCalls(t *testing.T) {
 
 	//THIRD CALL
 	served = false
-	err = mockServeHTTP(router, GET, "/applications/client_id/tokens/access_token")
+	err = mockServeHTTP(router, http.MethodGet, "/applications/client_id/tokens/access_token")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -532,7 +533,7 @@ func TestChainCalls(t *testing.T) {
 
 	//FOURTH CALL
 	served = false
-	err = mockServeHTTP(router, GET, "/users/user1/received_events")
+	err = mockServeHTTP(router, http.MethodGet, "/users/user1/received_events")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -543,7 +544,7 @@ func TestChainCalls(t *testing.T) {
 
 	//FIFTH CALL
 	served = false
-	err = mockServeHTTP(router, GET, "/users/user2/received_events/public")
+	err = mockServeHTTP(router, http.MethodGet, "/users/user2/received_events/public")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -556,34 +557,30 @@ func TestChainCalls(t *testing.T) {
 func TestMountSubRouter(t *testing.T) {
 	t.Parallel()
 
-	rGlobal1 := mockMiddleware("[rg1]")
-	rGlobal2 := mockMiddleware("[rg2]")
-	mainRouter := New(rGlobal1, rGlobal2).(*router)
-	mainRouter.GET("/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t.Fatal("Handler should be overtaken by subrouter")
-	}))
+	mainRouter := New(
+		mockMiddleware("[rg1]"),
+		mockMiddleware("[rg2]"),
+	).(*router)
 
-	sGlobal1 := mockMiddleware("[sg1]")
-	sGlobal2 := mockMiddleware("[sg2]")
-	subRouter := New(sGlobal1, sGlobal2).(*router)
+	subRouter := New(
+		mockMiddleware("[sg1]"),
+		mockMiddleware("[sg2]"),
+	).(*router)
+
 	subRouter.GET("/y", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("[s]"))
 	}))
 
 	mainRouter.Mount("/{param}", subRouter)
 
-	r1 := mockMiddleware("[r1]")
-	r2 := mockMiddleware("[r2]")
-	mainRouter.USE(GET, "/{param}", r1)
-	mainRouter.USE(GET, "/{param}", r2)
+	mainRouter.USE(http.MethodGet, "/{param}", mockMiddleware("[r1]"))
+	mainRouter.USE(http.MethodGet, "/{param}", mockMiddleware("[r2]"))
 
-	s1 := mockMiddleware("[s1]")
-	s2 := mockMiddleware("[s2]")
-	subRouter.USE(GET, "/y", s1)
-	subRouter.USE(GET, "/y", s2)
+	subRouter.USE(http.MethodGet, "/y", mockMiddleware("[s1]"))
+	subRouter.USE(http.MethodGet, "/y", mockMiddleware("[s2]"))
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest(GET, "/x/y", nil)
+	req, err := http.NewRequest(http.MethodGet, "/x/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

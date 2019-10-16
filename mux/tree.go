@@ -23,14 +23,14 @@ func (t Tree) PrettyPrint() string {
 
 	for _, child := range t {
 		switch node := child.(type) {
-		case *subrouterNode:
-			fmt.Fprintf(buff, "\t_%s\n", node.Name())
 		case *staticNode:
 			fmt.Fprintf(buff, "\t%s\n", node.Name())
 		case *wildcardNode:
 			fmt.Fprintf(buff, "\t{%s}\n", node.Name())
 		case *regexpNode:
 			fmt.Fprintf(buff, "\t{%s:%s}\n", node.Name(), node.regexp.String())
+		case *subrouterNode:
+			fmt.Fprintf(buff, "\t_%s\n", node.Name())
 		}
 
 		if len(child.Tree()) > 0 {
@@ -46,13 +46,22 @@ func (t Tree) Compile() Tree {
 	for i, child := range t {
 		child.WithChildren(child.Tree().Compile())
 
-		if staticNode, ok := child.(*staticNode); ok && len(child.Tree()) == 1 {
-			node := child.Tree()[0]
+		if len(child.Tree()) == 1 {
+			switch node := child.(type) {
+			case *staticNode:
+				if staticNode, ok := node.Tree()[0].(*staticNode); ok {
+					node.WithChildren(staticNode.Tree())
+					node.name = fmt.Sprintf("%s/%s", node.name, staticNode.name)
 
-			staticNode.WithChildren(node.Tree())
-			staticNode.name = fmt.Sprintf("%s/%s", staticNode.name, node.Name())
-
-			t[i] = staticNode
+					t[i] = node
+				}
+			case *wildcardNode:
+				// skip
+			case *regexpNode:
+				// skip
+			case *subrouterNode:
+				// skip
+			}
 		}
 	}
 

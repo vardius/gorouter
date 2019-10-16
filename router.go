@@ -61,6 +61,9 @@ type Router interface {
 	// Mount another handler as a subrouter
 	Mount(pattern string, handler http.Handler)
 
+	// Compile optimizes Tree nodes reducing static nodes depth when possible
+	Compile()
+
 	// ServeHTTP dispatches the request to the route handler
 	// whose pattern matches the request URL
 	ServeHTTP(http.ResponseWriter, *http.Request)
@@ -126,6 +129,9 @@ type FastHTTPRouter interface {
 
 	// Mount another handler as a subrouter
 	Mount(pattern string, handler fasthttp.RequestHandler)
+
+	// Compile optimizes Tree nodes reducing static nodes depth when possible
+	Compile()
 
 	// HandleFastHTTP dispatches the request to the route handler
 	// whose pattern matches the request URL

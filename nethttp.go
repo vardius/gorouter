@@ -94,6 +94,10 @@ func (r *router) Mount(path string, h http.Handler) {
 	}
 }
 
+func (r *router) Compile() {
+	r.routes = r.routes.Compile()
+}
+
 func (r *router) NotFound(notFound http.Handler) {
 	r.notFound = notFound
 }

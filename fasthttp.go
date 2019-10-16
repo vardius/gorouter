@@ -93,6 +93,10 @@ func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
 	}
 }
 
+func (r *fastHTTPRouter) Compile() {
+	r.routes = r.routes.Compile()
+}
+
 func (r *fastHTTPRouter) NotFound(notFound fasthttp.RequestHandler) {
 	r.notFound = notFound
 }

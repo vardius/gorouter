@@ -41,9 +41,9 @@ type Node interface {
 	// Match matches given path to Node within Node and its Tree
 	Match(path string) (Node, context.Params, string)
 
-	// Name privides Node name
+	// Name provides Node name
 	Name() string
-	// Name privides maximum number of parameters Route can have for given Node
+	// Name provides maximum number of parameters Route can have for given Node
 	MaxParamsSize() uint8
 	// Tree provides next level Node Tree
 	Tree() Tree

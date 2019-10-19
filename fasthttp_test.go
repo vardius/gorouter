@@ -270,10 +270,10 @@ func TestFastHTTPRegexpParam(t *testing.T) {
 func TestFastHTTPEmptyParam(t *testing.T) {
 	t.Parallel()
 
-	paniced := false
+	panicked := false
 	defer func() {
 		if rcv := recover(); rcv != nil {
-			paniced = true
+			panicked = true
 		}
 	}()
 
@@ -282,7 +282,7 @@ func TestFastHTTPEmptyParam(t *testing.T) {
 
 	router.GET("/x/{}", handler.HandleFastHTTP)
 
-	if paniced != true {
+	if panicked != true {
 		t.Error("Router should panic for empty wildcard path")
 	}
 }
@@ -342,12 +342,12 @@ func TestFastHTTPNilMiddleware(t *testing.T) {
 func TestFastHTTPPanicMiddleware(t *testing.T) {
 	t.Parallel()
 
-	paniced := false
+	panicked := false
 	panicMiddleware := func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		fn := func(ctx *fasthttp.RequestCtx) {
 			defer func() {
 				if rcv := recover(); rcv != nil {
-					paniced = true
+					panicked = true
 				}
 			}()
 
@@ -368,7 +368,7 @@ func TestFastHTTPPanicMiddleware(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if paniced != true {
+	if panicked != true {
 		t.Error("Panic has not been handled")
 	}
 }

@@ -181,6 +181,27 @@ type subrouterNode struct {
 	Node
 }
 
+func (n *subrouterNode) Match(path string) (Node, context.Params, string) {
+	switch node := n.Node.(type) {
+	case *staticNode:
+		return node.Match(path[:len(node.name)])
+	case *wildcardNode:
+		pathPart, subPath := pathutils.GetPart(path)
+		n, params, _ := node.Match(pathPart)
+
+		return n, params, subPath
+	case *regexpNode:
+		pathPart, subPath := pathutils.GetPart(path)
+		n, params, _ := node.Match(pathPart)
+
+		return n, params, subPath
+	case *subrouterNode:
+		return node.Match(path)
+	}
+
+	return nil, nil, ""
+}
+
 func (n *subrouterNode) WithChildren(t Tree) {
 	panic("Subrouter node can not have children.")
 }

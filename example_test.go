@@ -273,7 +273,7 @@ func ExampleRouter_mount() {
 
 	// for this example we will mock request
 	handleNetHTTPRequest("GET", "/hello/guest", router)
-	handleNetHTTPRequest("GET", "/hi/guest", router)
+	handleNetHTTPRequest("GET", "/hi", router)
 
 	// Output:
 	// Hello, guest!

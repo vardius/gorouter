@@ -184,15 +184,14 @@ type subrouterNode struct {
 func (n *subrouterNode) Match(path string) (Node, context.Params, string) {
 	switch node := n.Node.(type) {
 	case *staticNode:
-		subPath := ""
 		nameLength := len(node.name)
 		n, params, _ := node.Match(path[:nameLength])
 
 		if nameLength < len(path) {
-			subPath = path[nameLength+1:]
+			return n, params, path[nameLength+1:]
 		}
 
-		return n, params, subPath
+		return n, params, ""
 	case *wildcardNode:
 		pathPart, subPath := pathutils.GetPart(path)
 		n, params, _ := node.Match(pathPart)

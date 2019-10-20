@@ -43,24 +43,33 @@ type Node interface {
 
 	// Name provides Node name
 	Name() string
-	// Name provides maximum number of parameters Route can have for given Node
-	MaxParamsSize() uint8
 	// Tree provides next level Node Tree
 	Tree() Tree
 	// Route provides Node's Route if assigned
 	Route() Route
 
+	// Name provides maximum number of parameters Route can have for given Node
+	MaxParamsSize() uint8
+
 	// WithRoute assigns Route to given Node
 	WithRoute(r Route)
 	// WithChildren sets Node's Tree
 	WithChildren(t Tree)
+
+	// SkipSubPath sets skipSubPath node property to true
+	// will skip children match search and return current node directly
+	// this value is used when matching subrouter
+	SkipSubPath()
 }
 
 type staticNode struct {
-	name          string
-	route         Route
-	children      Tree
+	name     string
+	children Tree
+
+	route Route
+
 	maxParamsSize uint8
+	skipSubPath   bool
 }
 
 func (n *staticNode) Match(path string) (Node, context.Params, string) {
@@ -72,22 +81,18 @@ func (n *staticNode) Match(path string) (Node, context.Params, string) {
 			return n, make(context.Params, n.maxParamsSize), ""
 		}
 
+		if n.skipSubPath {
+			return n, make(context.Params, n.maxParamsSize), path[nameLength+1:]
+		}
+
 		return n.children.Match(path[nameLength+1:]) // +1 because we wan to skip slash as well
 	}
 
 	return nil, nil, ""
 }
 
-func (n *staticNode) WithChildren(t Tree) {
-	n.children = t
-}
-
 func (n *staticNode) Name() string {
 	return n.name
-}
-
-func (n *staticNode) MaxParamsSize() uint8 {
-	return n.maxParamsSize
 }
 
 func (n *staticNode) Tree() Tree {
@@ -98,8 +103,20 @@ func (n *staticNode) Route() Route {
 	return n.route
 }
 
+func (n *staticNode) MaxParamsSize() uint8 {
+	return n.maxParamsSize
+}
+
+func (n *staticNode) WithChildren(t Tree) {
+	n.children = t
+}
+
 func (n *staticNode) WithRoute(r Route) {
 	n.route = r
+}
+
+func (n *staticNode) SkipSubPath() {
+	n.skipSubPath = true
 }
 
 func withWildcard(parent *staticNode) *wildcardNode {
@@ -117,7 +134,7 @@ func (n *wildcardNode) Match(path string) (Node, context.Params, string) {
 	var node Node
 	var params context.Params
 
-	if subPath == "" {
+	if n.staticNode.skipSubPath || subPath == "" {
 		node = n
 		params = make(context.Params, maxParamsSize)
 	} else {
@@ -157,7 +174,7 @@ func (n *regexpNode) Match(path string) (Node, context.Params, string) {
 	var node Node
 	var params context.Params
 
-	if subPath == "" {
+	if n.staticNode.skipSubPath || subPath == "" {
 		node = n
 		params = make(context.Params, maxParamsSize)
 	} else {
@@ -174,6 +191,8 @@ func (n *regexpNode) Match(path string) (Node, context.Params, string) {
 }
 
 func withSubrouter(parent Node) *subrouterNode {
+	parent.SkipSubPath()
+
 	return &subrouterNode{Node: parent}
 }
 
@@ -182,31 +201,9 @@ type subrouterNode struct {
 }
 
 func (n *subrouterNode) Match(path string) (Node, context.Params, string) {
-	switch node := n.Node.(type) {
-	case *staticNode:
-		nameLength := len(node.name)
-		n, params, _ := node.Match(path[:nameLength])
+	node, params, subPath := n.Node.Match(path)
 
-		if nameLength < len(path) {
-			return n, params, path[nameLength+1:]
-		}
-
-		return n, params, ""
-	case *wildcardNode:
-		pathPart, subPath := pathutils.GetPart(path)
-		n, params, _ := node.Match(pathPart)
-
-		return n, params, subPath
-	case *regexpNode:
-		pathPart, subPath := pathutils.GetPart(path)
-		n, params, _ := node.Match(pathPart)
-
-		return n, params, subPath
-	case *subrouterNode:
-		return node.Match(path)
-	}
-
-	return nil, nil, ""
+	return node, params, subPath
 }
 
 func (n *subrouterNode) WithChildren(t Tree) {

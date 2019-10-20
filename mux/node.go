@@ -110,10 +110,6 @@ type wildcardNode struct {
 	*staticNode
 }
 
-func (n *wildcardNode) Merge(node Node) Node {
-	return n
-}
-
 func (n *wildcardNode) Match(path string) (Node, context.Params, string) {
 	pathPart, subPath := pathutils.GetPart(path)
 	maxParamsSize := n.MaxParamsSize()
@@ -150,10 +146,6 @@ type regexpNode struct {
 	regexp *regexp.Regexp
 }
 
-func (n *regexpNode) Merge(node Node) Node {
-	return n
-}
-
 func (n *regexpNode) Match(path string) (Node, context.Params, string) {
 	pathPart, subPath := pathutils.GetPart(path)
 	if !n.regexp.MatchString(pathPart) {
@@ -187,18 +179,6 @@ func withSubrouter(parent Node) *subrouterNode {
 
 type subrouterNode struct {
 	Node
-}
-
-func (n *subrouterNode) Match(path string) (Node, context.Params, string) {
-	pathPart, subPath := pathutils.GetPart(path)
-
-	node, params, _ := n.Node.Match(pathPart)
-
-	return node, params, subPath
-}
-
-func (n *subrouterNode) Merge(node Node) Node {
-	return n
 }
 
 func (n *subrouterNode) WithChildren(t Tree) {

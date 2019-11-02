@@ -26,6 +26,10 @@ type router struct {
 	notAllowed http.Handler
 }
 
+func (r *router) PrettyPrint() string {
+	return r.routes.PrettyPrint()
+}
+
 func (r *router) POST(p string, f http.Handler) {
 	r.Handle(http.MethodPost, p, f)
 }
@@ -95,7 +99,9 @@ func (r *router) Mount(path string, h http.Handler) {
 }
 
 func (r *router) Compile() {
-	r.routes = r.routes.Compile()
+	for i, methodNode := range r.routes {
+		r.routes[i].WithChildren(methodNode.Tree().Compile())
+	}
 }
 
 func (r *router) NotFound(notFound http.Handler) {

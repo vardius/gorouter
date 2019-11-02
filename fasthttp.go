@@ -25,6 +25,10 @@ type fastHTTPRouter struct {
 	notAllowed fasthttp.RequestHandler
 }
 
+func (r *fastHTTPRouter) PrettyPrint() string {
+	return r.routes.PrettyPrint()
+}
+
 func (r *fastHTTPRouter) POST(p string, f fasthttp.RequestHandler) {
 	r.Handle(http.MethodPost, p, f)
 }
@@ -94,7 +98,9 @@ func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
 }
 
 func (r *fastHTTPRouter) Compile() {
-	r.routes = r.routes.Compile()
+	for i, methodNode := range r.routes {
+		r.routes[i].WithChildren(methodNode.Tree().Compile())
+	}
 }
 
 func (r *fastHTTPRouter) NotFound(notFound fasthttp.RequestHandler) {

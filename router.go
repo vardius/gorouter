@@ -14,6 +14,9 @@ type FastHTTPMiddlewareFunc func(fasthttp.RequestHandler) fasthttp.RequestHandle
 
 // Router is a micro framework, HTTP request router, multiplexer, mux
 type Router interface {
+	// PrettyPrint prints the tree text representation to console
+	PrettyPrint() string
+
 	// POST adds http.Handler as router handler
 	// under POST method and given patter
 	POST(pattern string, handler http.Handler)
@@ -83,6 +86,9 @@ type Router interface {
 
 // FastHTTPRouter is a fasthttp micro framework, HTTP request router, multiplexer, mux
 type FastHTTPRouter interface {
+	// PrettyPrint prints the tree text representation to console
+	PrettyPrint() string
+
 	// POST adds fasthttp.RequestHandler as router handler
 	// under POST method and given patter
 	POST(pattern string, handler fasthttp.RequestHandler)

@@ -298,3 +298,29 @@ func ExampleFastHTTPRouter_mount() {
 	// Output:
 	// Hello, guest!
 }
+
+func ExampleRouter_compile() {
+	health := func(_ http.ResponseWriter, _ *http.Request) {
+		fmt.Printf("Health OK!\n")
+	}
+
+	readiness := func(_ http.ResponseWriter, r *http.Request) {
+		fmt.Printf("Ready!\n")
+	}
+
+	router := gorouter.New()
+	router.GET("/v1/health", http.HandlerFunc(health))
+	router.GET("/v1/readiness", http.HandlerFunc(readiness))
+
+	// fmt.Printf("before: %s\n", router.PrettyPrint())
+
+	router.Compile()
+
+	// fmt.Printf("after: %s\n", router.PrettyPrint())
+
+	// for this example we will mock request
+	handleNetHTTPRequest("GET", "/v1/health", router)
+
+	// Output:
+	// Health OK!
+}

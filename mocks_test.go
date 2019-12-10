@@ -22,11 +22,11 @@ type mockHandler struct {
 	served bool
 }
 
-func (mh *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (mh *mockHandler) ServeHTTP(_ http.ResponseWriter, _ *http.Request) {
 	mh.served = true
 }
 
-func (mh *mockHandler) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
+func (mh *mockHandler) HandleFastHTTP(_ *fasthttp.RequestCtx) {
 	mh.served = true
 }
 
@@ -34,7 +34,7 @@ type mockFileSystem struct {
 	opened bool
 }
 
-func (mfs *mockFileSystem) Open(name string) (http.File, error) {
+func (mfs *mockFileSystem) Open(_ string) (http.File, error) {
 	mfs.opened = true
 	return nil, errors.New("")
 }

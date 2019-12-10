@@ -200,6 +200,6 @@ type subrouterNode struct {
 	Node
 }
 
-func (n *subrouterNode) WithChildren(t Tree) {
+func (n *subrouterNode) WithChildren(_ Tree) {
 	panic("Subrouter node can not have children.")
 }

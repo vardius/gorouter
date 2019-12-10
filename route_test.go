@@ -57,7 +57,7 @@ func TestParams(t *testing.T) {
 }
 
 func TestInvalidParams(t *testing.T) {
-	param := context.Param{"key", "value"}
+	param := context.Param{Key: "key", Value: "value"}
 	params := context.Params{param}
 
 	if params.Value("invalid_key") != "" {

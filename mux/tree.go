@@ -104,10 +104,11 @@ func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
 	parts := strings.Split(path, "/")
 	name, _ := pathutils.GetNameFromPart(parts[0])
 	node := t.Find(name)
+	newTree := t
 
 	if node == nil {
 		node = NewNode(parts[0], maxParamsSize)
-		t = t.withNode(node)
+		newTree = t.withNode(node)
 	}
 
 	if len(parts) == 1 {
@@ -116,7 +117,7 @@ func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
 		node.WithChildren(node.Tree().WithRoute(strings.Join(parts[1:], "/"), route, node.MaxParamsSize()))
 	}
 
-	return t
+	return newTree
 }
 
 // WithSubrouter returns new Tree with new Route set to Subrouter Node
@@ -130,13 +131,14 @@ func (t Tree) WithSubrouter(path string, route Route, maxParamsSize uint8) Tree 
 	parts := strings.Split(path, "/")
 	name, _ := pathutils.GetNameFromPart(parts[0])
 	node := t.Find(name)
+	newTree := t
 
 	if node == nil {
 		node = NewNode(parts[0], maxParamsSize)
 		if len(parts) == 1 {
 			node = withSubrouter(node)
 		}
-		t = t.withNode(node)
+		newTree = t.withNode(node)
 	}
 
 	if len(parts) == 1 {
@@ -145,7 +147,7 @@ func (t Tree) WithSubrouter(path string, route Route, maxParamsSize uint8) Tree 
 		node.WithChildren(node.Tree().WithSubrouter(strings.Join(parts[1:], "/"), route, node.MaxParamsSize()))
 	}
 
-	return t
+	return newTree
 }
 
 // withNode inserts node to Tree
@@ -155,14 +157,14 @@ func (t Tree) withNode(node Node) Tree {
 		return t
 	}
 
-	t = append(t, node)
+	newTree := append(t, node)
 
 	// Sort Nodes in order [statics, regexps, wildcards]
-	sort.Slice(t, func(i, j int) bool {
-		return isMoreImportant(t[i], t[j])
+	sort.Slice(newTree, func(i, j int) bool {
+		return isMoreImportant(newTree[i], newTree[j])
 	})
 
-	return t
+	return newTree
 }
 
 func isMoreImportant(left Node, right Node) bool {

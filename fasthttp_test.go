@@ -383,13 +383,22 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 		fmt.Fprintf(ctx, "%s", params.Value("param"))
 	})
 
-	router.USE(http.MethodGet, "/x/{param}", mockFastHTTPMiddleware("m"))
+	router.USE(http.MethodGet, "/x/{param}", mockFastHTTPMiddleware("m1"))
+	router.USE(http.MethodGet, "/x/x", mockFastHTTPMiddleware("m2"))
 
 	ctx := buildFastHTTPRequestContext(http.MethodGet, "/x/y")
 
 	router.HandleFastHTTP(ctx)
 
-	if string(ctx.Response.Body()) != "my" {
+	if string(ctx.Response.Body()) != "m1y" {
+		t.Errorf("Use global middleware error %s", string(ctx.Response.Body()))
+	}
+
+	ctx = buildFastHTTPRequestContext(http.MethodGet, "/x/x")
+
+	router.HandleFastHTTP(ctx)
+
+	if string(ctx.Response.Body()) != "m1m2x" {
 		t.Errorf("Use global middleware error %s", string(ctx.Response.Body()))
 	}
 }

@@ -409,7 +409,8 @@ func TestNodeApplyMiddleware(t *testing.T) {
 		w.Write([]byte(params.Value("param")))
 	}))
 
-	router.USE(http.MethodGet, "/x/{param}", mockMiddleware("m"))
+	router.USE(http.MethodGet, "/x/{param}", mockMiddleware("m1"))
+	router.USE(http.MethodGet, "/x/x", mockMiddleware("m2"))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(http.MethodGet, "/x/y", nil)
@@ -419,7 +420,19 @@ func TestNodeApplyMiddleware(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	if w.Body.String() != "my" {
+	if w.Body.String() != "m1y" {
+		t.Errorf("Use global middleware error %s", w.Body.String())
+	}
+
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest(http.MethodGet, "/x/x", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	router.ServeHTTP(w, req)
+
+	if w.Body.String() != "m1m2x" {
 		t.Errorf("Use global middleware error %s", w.Body.String())
 	}
 }

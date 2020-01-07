@@ -7,4 +7,7 @@ github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyC
 github.com/valyala/fasthttp v1.4.0 h1:PuaTGZIw3mjYhhhbVbCQp8aciRZN9YdoB7MGX9Ko76A=
 github.com/valyala/fasthttp v1.4.0/go.mod h1:4vX61m6KN+xDduDNwXrhIAVZaZaZiQ1luJk8LWSxF3s=
 github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a/go.mod h1:v3UYOV9WzVtRmSR+PDvWpU/qWl4Wa5LApYYX4ZtKbio=
+github.com/vardius/gorouter v3.0.4+incompatible h1:uq2makB6uVWEn3VQR9+TMGbe5nA8wyfz7Pq6HPT0PAg=
+github.com/vardius/gorouter/v4 v4.2.3 h1:OV6KSRYUV2BmdWm7EyjMvJVkLyDpwIp9o7N9qD2z61k=
+github.com/vardius/gorouter/v4 v4.2.3/go.mod h1:CqwuN5abHWzQNibpDgDlipb85ES6xF18C8vzOUozfew=
 golang.org/x/net v0.0.0-20180911220305-26e67e76b6c3/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=

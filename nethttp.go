@@ -128,7 +128,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	if root := r.routes.Find(req.Method); root != nil {
 		if node, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
-			h := node.Route().Handler().(http.Handler)
+			h := node.Route().Handler(path).(http.Handler)
 
 			if len(params) > 0 {
 				req = req.WithContext(context.WithParams(req.Context(), params))
@@ -143,7 +143,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 
 		if req.URL.Path == "/" && root.Route() != nil {
-			root.Route().Handler().(http.Handler).ServeHTTP(w, req)
+			root.Route().Handler(path).(http.Handler).ServeHTTP(w, req)
 			return
 		}
 	}

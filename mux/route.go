@@ -6,7 +6,8 @@ import (
 
 // Route is an middleware aware route interface
 type Route interface {
-	Handler() interface{}
-	AppendMiddleware(m middleware.Middleware)
+	Handler(path string) interface{}
+	AppendMiddleware(m middleware.Middleware, path string)
 	PrependMiddleware(m middleware.Middleware)
+	ComposeMiddleware(m middleware.Middleware)
 }

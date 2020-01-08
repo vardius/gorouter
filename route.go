@@ -1,10 +1,13 @@
 package gorouter
 
 import (
+	"fmt"
 	"github.com/vardius/gorouter/v4/middleware"
 )
 
 type route struct {
+	m          middleware.Middleware
+	path       string
 	middleware middleware.Middleware
 	handler    interface{}
 	// computedHandler is an optimization to improve performance
@@ -22,17 +25,27 @@ func newRoute(h interface{}) *route {
 	}
 }
 
-func (r *route) Handler() interface{} {
+func (r *route) Handler(path string) interface{} {
+	fmt.Printf("Handler path: %v\n", path)
+	fmt.Printf("Handler mapped: %v\n", r.path)
+	if r.path == path {
+		r.ComposeMiddleware(r.middleware)
+	}
 	// returns already cached computed handler
 	return r.computedHandler
 }
 
-func (r *route) AppendMiddleware(m middleware.Middleware) {
+func (r *route) AppendMiddleware(m middleware.Middleware, path string) {
+	r.path = path
 	r.middleware = r.middleware.Merge(m)
-	r.computedHandler = r.middleware.Compose(r.handler)
+	//r.computedHandler = r.middleware.Compose(r.handler)
 }
 
 func (r *route) PrependMiddleware(m middleware.Middleware) {
 	r.middleware = m.Merge(r.middleware)
+	r.computedHandler = r.middleware.Compose(r.handler)
+}
+
+func (r *route) ComposeMiddleware(m middleware.Middleware) {
 	r.computedHandler = r.middleware.Compose(r.handler)
 }

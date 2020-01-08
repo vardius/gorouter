@@ -1,6 +1,7 @@
 package gorouter
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/valyala/fasthttp"
@@ -67,7 +68,7 @@ func (r *fastHTTPRouter) TRACE(p string, f fasthttp.RequestHandler) {
 
 func (r *fastHTTPRouter) USE(method, p string, fs ...FastHTTPMiddlewareFunc) {
 	m := transformFastHTTPMiddlewareFunc(fs...)
-
+	fmt.Printf("path: %v\n", p)
 	addMiddleware(r.routes, method, p, m)
 }
 
@@ -120,12 +121,18 @@ func (r *fastHTTPRouter) ServeFiles(root string, stripSlashes int) {
 }
 
 func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
+	fmt.Printf("fastHTTPRouter ctx: %v\n", ctx)
 	method := string(ctx.Method())
+	fmt.Printf("fastHTTPRouter method: %v\n", method)
 	pathAsString := string(ctx.Path())
+	fmt.Printf("fastHTTPRouter pathAsString: %v\n", pathAsString)
 	path := pathutils.TrimSlash(pathAsString)
+	fmt.Printf("fastHTTPRouter path: %v\n", path)
 
 	if root := r.routes.Find(method); root != nil {
 		if node, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
+			fmt.Printf("fastHTTPRouter params: %v\n", params)
+			fmt.Printf("fastHTTPRouter subPath: %v\n", subPath)
 			if len(params) > 0 {
 				ctx.SetUserValue("params", params)
 			}
@@ -134,12 +141,13 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 				ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))
 			}
 
-			node.Route().Handler().(fasthttp.RequestHandler)(ctx)
+			node.Route().Handler(pathAsString).(fasthttp.RequestHandler)(ctx)
+			fmt.Printf("fastHTTPRouter ctx.Response.Body: %v\n", string(ctx.Response.Body()))
 			return
 		}
 
 		if pathAsString == "/" && root.Route() != nil {
-			root.Route().Handler().(fasthttp.RequestHandler)(ctx)
+			root.Route().Handler(path).(fasthttp.RequestHandler)(ctx)
 			return
 		}
 	}

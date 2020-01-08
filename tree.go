@@ -1,6 +1,7 @@
 package gorouter
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -10,13 +11,17 @@ import (
 )
 
 func addMiddleware(t mux.Tree, method, path string, mid middleware.Middleware) {
+	fmt.Printf("tree: %v\n", t.PrettyPrint())
 	type recFunc func(recFunc, mux.Node, middleware.Middleware)
 
 	c := func(c recFunc, n mux.Node, m middleware.Middleware) {
+		fmt.Printf("route handler: %v\n", n.Route())
 		if n.Route() != nil {
-			n.Route().AppendMiddleware(m)
+			fmt.Println("append")
+			n.Route().AppendMiddleware(m, path)
 		}
 		for _, child := range n.Tree() {
+			fmt.Printf("child: %v\n", child)
 			c(c, child, m)
 		}
 	}

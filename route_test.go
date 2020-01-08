@@ -28,14 +28,14 @@ func TestRouter(t *testing.T) {
 	m1 := buildMiddlewareFunc("1")
 	m2 := buildMiddlewareFunc("2")
 	m3 := buildMiddlewareFunc("3")
-
+	path := "/test"
 	r := newRoute(handler)
-	r.AppendMiddleware(middleware.New(m1, m2, m3))
+	r.AppendMiddleware(middleware.New(m1, m2, m3), path)
 
-	h := r.Handler()
+	h := r.Handler(path)
 
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequest("GET", path, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,9 +72,9 @@ func TestNilHandler(t *testing.T) {
 			panicked = true
 		}
 	}()
-
+	path := "test"
 	r := newRoute(nil)
-	if h := r.Handler(); h != nil {
+	if h := r.Handler(path); h != nil {
 		t.Error("Handler should be equal nil")
 	}
 

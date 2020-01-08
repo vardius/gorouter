@@ -6,7 +6,6 @@ import (
 )
 
 type route struct {
-	m          middleware.Middleware
 	path       string
 	middleware middleware.Middleware
 	handler    interface{}

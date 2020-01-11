@@ -65,15 +65,14 @@ func (r *fastHTTPRouter) TRACE(p string, f fasthttp.RequestHandler) {
 	r.Handle(http.MethodTrace, p, f)
 }
 
-func (r *fastHTTPRouter) USE(method, p string, fs ...FastHTTPMiddlewareFunc) {
+func (r *fastHTTPRouter) USE(method, path string, fs ...FastHTTPMiddlewareFunc) {
 	m := transformFastHTTPMiddlewareFunc(fs...)
 
-	addMiddleware(r.routes, method, p, m)
+	r.routes = r.routes.WithMiddleware(method+path, m, 0)
 }
 
 func (r *fastHTTPRouter) Handle(method, path string, h fasthttp.RequestHandler) {
 	route := newRoute(h)
-	route.PrependMiddleware(r.middleware)
 
 	r.routes = r.routes.WithRoute(method+path, route, 0)
 }
@@ -91,7 +90,6 @@ func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
 		http.MethodTrace,
 	} {
 		route := newRoute(h)
-		route.PrependMiddleware(r.middleware)
 
 		r.routes = r.routes.WithSubrouter(method+path, route, 0)
 	}
@@ -125,7 +123,14 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 	path := pathutils.TrimSlash(pathAsString)
 
 	if root := r.routes.Find(method); root != nil {
-		if node, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
+		if node, treeMiddleware, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
+			route := node.Route()
+			handler := route.Handler()
+			middleware := r.middleware.Merge(treeMiddleware)
+			computedHandler := middleware.Compose(handler)
+
+			h := computedHandler.(fasthttp.RequestHandler)
+
 			if len(params) > 0 {
 				ctx.SetUserValue("params", params)
 			}
@@ -134,7 +139,7 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 				ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))
 			}
 
-			node.Route().Handler().(fasthttp.RequestHandler)(ctx)
+			h(ctx)
 			return
 		}
 

@@ -37,7 +37,7 @@ func TestTreeMatch(t *testing.T) {
 
 	root.WithChildren(root.Tree().Compile())
 
-	n, _, _ := root.Tree().Match("pl/blog/comments/123/new")
+	n, _, _, _ := root.Tree().Match("pl/blog/comments/123/new")
 
 	if n == nil {
 		t.Fatalf("%v", n)

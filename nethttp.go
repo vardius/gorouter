@@ -66,15 +66,14 @@ func (r *router) TRACE(p string, f http.Handler) {
 	r.Handle(http.MethodTrace, p, f)
 }
 
-func (r *router) USE(method, p string, fs ...MiddlewareFunc) {
+func (r *router) USE(method, path string, fs ...MiddlewareFunc) {
 	m := transformMiddlewareFunc(fs...)
 
-	addMiddleware(r.routes, method, p, m)
+	r.routes = r.routes.WithMiddleware(method+path, m, 0)
 }
 
 func (r *router) Handle(method, path string, h http.Handler) {
 	route := newRoute(h)
-	route.PrependMiddleware(r.middleware)
 
 	r.routes = r.routes.WithRoute(method+path, route, 0)
 }
@@ -92,7 +91,6 @@ func (r *router) Mount(path string, h http.Handler) {
 		http.MethodTrace,
 	} {
 		route := newRoute(h)
-		route.PrependMiddleware(r.middleware)
 
 		r.routes = r.routes.WithSubrouter(method+path, route, 0)
 	}
@@ -127,8 +125,13 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	path := pathutils.TrimSlash(req.URL.Path)
 
 	if root := r.routes.Find(req.Method); root != nil {
-		if node, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
-			h := node.Route().Handler().(http.Handler)
+		if node, treeMiddleware, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
+			route := node.Route()
+			handler := route.Handler()
+			middleware := r.middleware.Merge(treeMiddleware)
+			computedHandler := middleware.Compose(handler)
+
+			h := computedHandler.(http.Handler)
 
 			if len(params) > 0 {
 				req = req.WithContext(context.WithParams(req.Context(), params))

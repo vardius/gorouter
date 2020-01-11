@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/vardius/gorouter/v4/context"
+	"github.com/vardius/gorouter/v4/middleware"
 	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
@@ -68,14 +69,14 @@ func (t Tree) Compile() Tree {
 }
 
 // Match path to Node
-func (t Tree) Match(path string) (Node, context.Params, string) {
+func (t Tree) Match(path string) (Node, middleware.Middleware, context.Params, string) {
 	for _, child := range t {
-		if node, params, subPath := child.Match(path); node != nil {
-			return node, params, subPath
+		if node, m, params, subPath := child.Match(path); node != nil {
+			return node, m, params, subPath
 		}
 	}
 
-	return nil, nil, ""
+	return nil, nil, nil, ""
 }
 
 // Find Node inside a tree by name
@@ -94,7 +95,7 @@ func (t Tree) Find(name string) Node {
 }
 
 // WithRoute returns new Tree with Route set to Node
-// Route is set to Node under the give path, ff Node does not exist it is created
+// Route is set to Node under the give path, if Node does not exist it is created
 func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
 	path = pathutils.TrimSlash(path)
 	if path == "" {
@@ -115,6 +116,33 @@ func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
 		node.WithRoute(route)
 	} else {
 		node.WithChildren(node.Tree().WithRoute(strings.Join(parts[1:], "/"), route, node.MaxParamsSize()))
+	}
+
+	return newTree
+}
+
+// WithMiddleware returns new Tree with Middleware appended to given Node
+// Middleware is appended to Node under the give path, if Node does not exist it is created
+func (t Tree) WithMiddleware(path string, m middleware.Middleware, maxParamsSize uint8) Tree {
+	path = pathutils.TrimSlash(path)
+	if path == "" {
+		return t
+	}
+
+	parts := strings.Split(path, "/")
+	name, _ := pathutils.GetNameFromPart(parts[0])
+	node := t.Find(name)
+	newTree := t
+
+	if node == nil {
+		node = NewNode(parts[0], maxParamsSize)
+		newTree = t.withNode(node)
+	}
+
+	if len(parts) == 1 {
+		node.AppendMiddleware(m)
+	} else {
+		node.WithChildren(node.Tree().WithMiddleware(strings.Join(parts[1:], "/"), m, node.MaxParamsSize()))
 	}
 
 	return newTree

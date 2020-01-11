@@ -30,9 +30,8 @@ func TestRouter(t *testing.T) {
 	m3 := buildMiddlewareFunc("3")
 
 	r := newRoute(handler)
-	r.AppendMiddleware(middleware.New(m1, m2, m3))
-
-	h := r.Handler()
+	m := middleware.New(m1, m2, m3)
+	h := m.Compose(r.Handler())
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", "/", nil)

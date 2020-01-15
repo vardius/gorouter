@@ -3,6 +3,7 @@ package mux
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -71,7 +72,7 @@ func (t Tree) Compile() Tree {
 // Match path to Node
 func (t Tree) Match(path string) (Node, middleware.Middleware, context.Params, string) {
 	for _, child := range t {
-		if node, m, params, subPath := child.Match(path); node != nil {
+		if node, m, params, subPath := child.Match(path); node != nil && node.Route() != nil {
 			return node, m, params, subPath
 		}
 	}
@@ -79,14 +80,14 @@ func (t Tree) Match(path string) (Node, middleware.Middleware, context.Params, s
 	return nil, nil, nil, ""
 }
 
-// Find Node inside a tree by name
+// Find Node inside a tree by name, if name == {} we are specifically looking for a parameterized route and it's regex checked
 func (t Tree) Find(name string) Node {
 	if name == "" {
 		return nil
 	}
 
 	for _, child := range t {
-		if child.Name() == name {
+		if child.Name() == name || name == "{}" && regexp.MustCompile(`{|}`).MatchString(child.Name()) {
 			return child
 		}
 	}
@@ -101,7 +102,6 @@ func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
 	if path == "" {
 		return t
 	}
-
 	parts := strings.Split(path, "/")
 	name, _ := pathutils.GetNameFromPart(parts[0])
 	node := t.Find(name)
@@ -134,8 +134,12 @@ func (t Tree) WithMiddleware(path string, m middleware.Middleware, maxParamsSize
 	node := t.Find(name)
 	newTree := t
 
+	// If there is no node get the route of the previous pameterized one
+	// and append middleware on top of its own middleware
 	if node == nil {
 		node = NewNode(parts[0], maxParamsSize)
+		node.WithRoute(t.Find("{}").Route())
+		node.AppendMiddleware(t.Find("{}").Middleware())
 		newTree = t.withNode(node)
 	}
 

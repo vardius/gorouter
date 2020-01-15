@@ -30,23 +30,17 @@ func GetPart(path string) (part string, nextPath string) {
 	return
 }
 
-// GetNameFromPart gets node name from path part
+// GetNameFromPart gets node name from path part, braces are not stripped so that we can check which node is associated with a parameter
 func GetNameFromPart(pathPart string) (name string, exp string) {
 	name = pathPart
 
-	if pathPart[0] == '{' {
-		name = pathPart[1 : len(pathPart)-1]
+	if parts := strings.Split(name, ":"); len(parts) == 2 {
+		name = parts[0]
+		exp = parts[1]
+	}
 
-		if parts := strings.Split(name, ":"); len(parts) == 2 {
-			name = parts[0]
-			exp = parts[1]
-		}
-
-		if name == "" {
-			panic("Empty wildcard name")
-		}
-
-		return
+	if name == "" {
+		panic("Empty wildcard name")
 	}
 
 	return

@@ -53,6 +53,7 @@ func (t Tree) Compile() Tree {
 			case *staticNode:
 				if staticNode, ok := node.Tree()[0].(*staticNode); ok {
 					node.WithChildren(staticNode.Tree())
+					node.AppendMiddleware(staticNode.Middleware())
 					node.name = fmt.Sprintf("%s/%s", node.name, staticNode.name)
 
 					t[i] = node

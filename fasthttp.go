@@ -126,7 +126,8 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 		if node, treeMiddleware, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
 			route := node.Route()
 			handler := route.Handler()
-			middleware := r.middleware.Merge(treeMiddleware)
+			middleware := root.Middleware().Merge(treeMiddleware)
+			middleware = r.middleware.Merge(middleware)
 			computedHandler := middleware.Compose(handler)
 
 			h := computedHandler.(fasthttp.RequestHandler)

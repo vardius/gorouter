@@ -123,7 +123,7 @@ func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
 }
 
 // WithMiddleware returns new Tree with Middleware appended to given Node
-// Middleware is appended to Node under the give path, if Node does not exist it is created
+// Middleware is appended to Node under the give path, if Node does not exist it will panic
 func (t Tree) WithMiddleware(path string, m middleware.Middleware, maxParamsSize uint8) Tree {
 	path = pathutils.TrimSlash(path)
 	if path == "" {
@@ -136,8 +136,7 @@ func (t Tree) WithMiddleware(path string, m middleware.Middleware, maxParamsSize
 	newTree := t
 
 	if node == nil {
-		node = NewNode(parts[0], maxParamsSize)
-		newTree = t.withNode(node)
+		panic("Could not find node for given path")
 	}
 
 	if len(parts) == 1 {

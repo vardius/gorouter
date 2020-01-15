@@ -384,22 +384,41 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 	})
 
 	router.USE(http.MethodGet, "/x/{param}", mockFastHTTPMiddleware("m1"))
-	router.USE(http.MethodGet, "/x/x", mockFastHTTPMiddleware("m2"))
 
 	ctx := buildFastHTTPRequestContext(http.MethodGet, "/x/y")
 
 	router.HandleFastHTTP(ctx)
 
 	if string(ctx.Response.Body()) != "m1y" {
-		t.Errorf("Use global middleware error %s", string(ctx.Response.Body()))
+		t.Errorf("Use middleware error %s", string(ctx.Response.Body()))
 	}
+}
 
-	ctx = buildFastHTTPRequestContext(http.MethodGet, "/x/x")
+func TestFastHTTPNodeApplyMiddlewareInvalidPath(t *testing.T) {
+	t.Parallel()
+
+	panicked := false
+	defer func() {
+		if rcv := recover(); rcv != nil {
+			panicked = true
+		}
+	}()
+
+	router := NewFastHTTPRouter().(*fastHTTPRouter)
+
+	router.GET("/x/{param}", func(ctx *fasthttp.RequestCtx) {
+		params := ctx.UserValue("params").(context.Params)
+		fmt.Fprintf(ctx, "%s", params.Value("param"))
+	})
+
+	router.USE(http.MethodGet, "/x/x", mockFastHTTPMiddleware("m2"))
+
+	ctx := buildFastHTTPRequestContext(http.MethodGet, "/x/x")
 
 	router.HandleFastHTTP(ctx)
 
-	if string(ctx.Response.Body()) != "m1m2x" {
-		t.Errorf("Use global middleware error %s", string(ctx.Response.Body()))
+	if panicked != true {
+		t.Error("Router should panic for invalid middleware path")
 	}
 }
 

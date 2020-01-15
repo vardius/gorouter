@@ -126,8 +126,6 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	if root := r.routes.Find(req.Method); root != nil {
 		if node, treeMiddleware, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
-			// @FIXME @TODO: issue when adding middleware to static path node while route was added to wildcard node
-			// Found node will (matching middleware path) will not have assigned route
 			route := node.Route()
 			handler := route.Handler()
 			middleware := root.Middleware().Merge(treeMiddleware)

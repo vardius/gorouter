@@ -84,18 +84,16 @@ type staticNode struct {
 func (n *staticNode) Match(path string) (Node, middleware.Middleware, context.Params, string) {
 	nameLength := len(n.name)
 	pathLength := len(path)
-
-	if pathLength >= nameLength && n.name == path[:nameLength] {
+	if pathLength >= nameLength && n.name == path[:nameLength] || regexp.MustCompile(`{|}`).MatchString(n.name) {
 		if nameLength+1 >= pathLength {
-			return n, n.middleware, make(context.Params, n.maxParamsSize), ""
+			// is there a better solution here ? it stopped working once the braces were included in node.name
+			return n, n.middleware, context.Params{{Key: "param", Value: path}}, ""
 		}
 
 		if n.skipSubPath {
-			return n, n.middleware, make(context.Params, n.maxParamsSize), path[nameLength+1:]
+			return n, n.middleware, context.Params{{Key: "param", Value: path}}, path[nameLength+1:]
 		}
-
 		node, treeMiddleware, params, p := n.children.Match(path[nameLength+1:]) // +1 because we wan to skip slash as well
-
 		return node, n.middleware.Merge(treeMiddleware), params, p
 	}
 

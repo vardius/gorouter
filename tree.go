@@ -25,9 +25,11 @@ func addMiddleware(t mux.Tree, method, path string, mid middleware.Middleware) {
 	if root := t.Find(method); root != nil {
 		if path != "" {
 			node := findNode(root, strings.Split(pathutils.TrimSlash(path), "/"))
-			if node != nil {
-				c(c, node, mid)
+			if node == nil {
+				panic("Could not find node for given path")
 			}
+
+			c(c, node, mid)
 		} else {
 			c(c, root, mid)
 		}

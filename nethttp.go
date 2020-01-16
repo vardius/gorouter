@@ -68,6 +68,7 @@ func (r *router) TRACE(p string, f http.Handler) {
 
 func (r *router) USE(method, path string, fs ...MiddlewareFunc) {
 	m := transformMiddlewareFunc(fs...)
+
 	r.routes = r.routes.WithMiddleware(method+path, m, 0)
 }
 

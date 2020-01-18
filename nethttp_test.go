@@ -164,7 +164,9 @@ func TestNotFound(t *testing.T) {
 	}
 
 	router.NotFound(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("test"))
+		if _, err := w.Write([]byte("test")); err != nil {
+			t.Fatal(err)
+		}
 	}))
 
 	if router.notFound == nil {
@@ -200,7 +202,9 @@ func TestNotAllowed(t *testing.T) {
 	}
 
 	router.NotAllowed(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("test"))
+		if _, err := w.Write([]byte("test")); err != nil {
+			t.Fatal(err)
+		}
 	}))
 
 	if router.notAllowed == nil {
@@ -345,7 +349,9 @@ func TestNilMiddleware(t *testing.T) {
 	router := New().(*router)
 
 	router.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("test"))
+		if _, err := w.Write([]byte("test")); err != nil {
+			t.Fatal(err)
+		}
 	}))
 
 	w := httptest.NewRecorder()
@@ -406,7 +412,9 @@ func TestNodeApplyMiddleware(t *testing.T) {
 			t.Fatal("Error while reading param")
 		}
 
-		w.Write([]byte(params.Value("param")))
+		if _, err := w.Write([]byte(params.Value("param"))); err != nil {
+			t.Fatal(err)
+		}
 	}))
 
 	router.USE(http.MethodGet, "/x/{param}", mockMiddleware("m1"))
@@ -420,6 +428,19 @@ func TestNodeApplyMiddleware(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	if w.Body.String() != "m1y" {
+		t.Errorf("Use middleware error %s", w.Body.String())
+	}
+
+	router.USE(http.MethodGet, "/x/x", mockMiddleware("m2"))
+
+	req, err = http.NewRequest(http.MethodGet, "/x/x", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	router.ServeHTTP(w, req)
+
+	if w.Body.String() != "m1m2x" {
 		t.Errorf("Use middleware error %s", w.Body.String())
 	}
 }
@@ -436,13 +457,15 @@ func TestNodeApplyMiddlewareInvalidPath(t *testing.T) {
 
 	router := New().(*router)
 
-	router.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router.GET("/x/{param:[0-9]+}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		params, ok := context.Parameters(r.Context())
 		if !ok {
 			t.Fatal("Error while reading param")
 		}
 
-		w.Write([]byte(params.Value("param")))
+		if _, err := w.Write([]byte(params.Value("param"))); err != nil {
+			t.Fatal(err)
+		}
 	}))
 
 	router.USE(http.MethodGet, "/x/x", mockMiddleware("m2"))
@@ -604,7 +627,9 @@ func TestMountSubRouter(t *testing.T) {
 	).(*router)
 
 	subRouter.GET("/y", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("[s]"))
+		if _, err := w.Write([]byte("[s]")); err != nil {
+			t.Fatal(err)
+		}
 	}))
 
 	mainRouter.Mount("/{param}", subRouter)

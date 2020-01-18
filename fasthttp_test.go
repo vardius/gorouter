@@ -159,7 +159,9 @@ func TestFastHTTPNotFound(t *testing.T) {
 	}
 
 	router.NotFound(func(ctx *fasthttp.RequestCtx) {
-		fmt.Fprintf(ctx, "test")
+		if _, err := fmt.Fprintf(ctx, "test"); err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	if router.notFound == nil {
@@ -193,7 +195,9 @@ func TestFastHTTPNotAllowed(t *testing.T) {
 	}
 
 	router.NotAllowed(func(ctx *fasthttp.RequestCtx) {
-		fmt.Fprintf(ctx, "test")
+		if _, err := fmt.Fprintf(ctx, "test"); err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	if router.notAllowed == nil {
@@ -327,7 +331,9 @@ func TestFastHTTPNilMiddleware(t *testing.T) {
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
 
 	router.GET("/x/{param}", func(ctx *fasthttp.RequestCtx) {
-		fmt.Fprintf(ctx, "test")
+		if _, err := fmt.Fprintf(ctx, "test"); err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	ctx := buildFastHTTPRequestContext(http.MethodGet, "/x/y")
@@ -380,7 +386,9 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 
 	router.GET("/x/{param}", func(ctx *fasthttp.RequestCtx) {
 		params := ctx.UserValue("params").(context.Params)
-		fmt.Fprintf(ctx, "%s", params.Value("param"))
+		if _, err := fmt.Fprintf(ctx, "%s", params.Value("param")); err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	router.USE(http.MethodGet, "/x/{param}", mockFastHTTPMiddleware("m1"))
@@ -390,6 +398,16 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 	router.HandleFastHTTP(ctx)
 
 	if string(ctx.Response.Body()) != "m1y" {
+		t.Errorf("Use middleware error %s", string(ctx.Response.Body()))
+	}
+
+	router.USE(http.MethodGet, "/x/x", mockFastHTTPMiddleware("m2"))
+
+	ctx = buildFastHTTPRequestContext(http.MethodGet, "/x/x")
+
+	router.HandleFastHTTP(ctx)
+
+	if string(ctx.Response.Body()) != "m1m2x" {
 		t.Errorf("Use middleware error %s", string(ctx.Response.Body()))
 	}
 }
@@ -406,9 +424,11 @@ func TestFastHTTPNodeApplyMiddlewareInvalidPath(t *testing.T) {
 
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
 
-	router.GET("/x/{param}", func(ctx *fasthttp.RequestCtx) {
+	router.GET("/x/{param:[0-9]+}", func(ctx *fasthttp.RequestCtx) {
 		params := ctx.UserValue("params").(context.Params)
-		fmt.Fprintf(ctx, "%s", params.Value("param"))
+		if _, err := fmt.Fprintf(ctx, "%s", params.Value("param")); err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	router.USE(http.MethodGet, "/x/x", mockFastHTTPMiddleware("m2"))
@@ -546,7 +566,9 @@ func TestFastHTTPMountSubRouter(t *testing.T) {
 	).(*fastHTTPRouter)
 
 	subRouter.GET("/y", func(ctx *fasthttp.RequestCtx) {
-		fmt.Fprintf(ctx, "[s]")
+		if _, err := fmt.Fprintf(ctx, "[s]"); err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	mainRouter.Mount("/{param}", subRouter.HandleFastHTTP)

@@ -69,7 +69,7 @@ func (r *router) TRACE(p string, f http.Handler) {
 func (r *router) USE(method, path string, fs ...MiddlewareFunc) {
 	m := transformMiddlewareFunc(fs...)
 
-	r.routes = r.routes.WithMiddleware(method+path, m, 0)
+	r.routes = r.routes.WithMiddleware(method+path, m)
 }
 
 func (r *router) Handle(method, path string, h http.Handler) {
@@ -128,9 +128,8 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		if node, treeMiddleware, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
 			route := node.Route()
 			handler := route.Handler()
-			middleware := root.Middleware().Merge(treeMiddleware)
-			middleware = r.middleware.Merge(middleware)
-			computedHandler := middleware.Compose(handler)
+			allMiddleware := r.middleware.Merge(root.Middleware().Merge(treeMiddleware))
+			computedHandler := allMiddleware.Compose(handler)
 
 			h := computedHandler.(http.Handler)
 

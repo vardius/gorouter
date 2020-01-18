@@ -26,17 +26,17 @@ func (t Tree) PrettyPrint() string {
 	for _, child := range t {
 		switch node := child.(type) {
 		case *staticNode:
-			fmt.Fprintf(buff, "\t%s\n", node.Name())
+			_, _ = fmt.Fprintf(buff, "\t%s\n", node.Name())
 		case *wildcardNode:
-			fmt.Fprintf(buff, "\t{%s}\n", node.Name())
+			_, _ = fmt.Fprintf(buff, "\t{%s}\n", node.Name())
 		case *regexpNode:
-			fmt.Fprintf(buff, "\t{%s:%s}\n", node.Name(), node.regexp.String())
+			_, _ = fmt.Fprintf(buff, "\t{%s:%s}\n", node.Name(), node.regexp.String())
 		case *subrouterNode:
-			fmt.Fprintf(buff, "\t_%s\n", node.Name())
+			_, _ = fmt.Fprintf(buff, "\t_%s\n", node.Name())
 		}
 
 		if len(child.Tree()) > 0 {
-			fmt.Fprintf(buff, "\t%s", child.Tree().PrettyPrint())
+			_, _ = fmt.Fprintf(buff, "\t%s", child.Tree().PrettyPrint())
 		}
 	}
 
@@ -124,7 +124,7 @@ func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
 
 // WithMiddleware returns new Tree with Middleware appended to given Node
 // Middleware is appended to Node under the give path, if Node does not exist it will panic
-func (t Tree) WithMiddleware(path string, m middleware.Middleware, maxParamsSize uint8) Tree {
+func (t Tree) WithMiddleware(path string, m middleware.Middleware) Tree {
 	path = pathutils.TrimSlash(path)
 	if path == "" {
 		return t
@@ -135,6 +135,11 @@ func (t Tree) WithMiddleware(path string, m middleware.Middleware, maxParamsSize
 	node := t.Find(name)
 	newTree := t
 
+	// try to find node by matching name against nodes
+	if node == nil {
+		node, _, _, _ = t.Match(name)
+	}
+
 	if node == nil {
 		panic("Could not find node for given path")
 	}
@@ -142,7 +147,7 @@ func (t Tree) WithMiddleware(path string, m middleware.Middleware, maxParamsSize
 	if len(parts) == 1 {
 		node.AppendMiddleware(m)
 	} else {
-		node.WithChildren(node.Tree().WithMiddleware(strings.Join(parts[1:], "/"), m, node.MaxParamsSize()))
+		node.WithChildren(node.Tree().WithMiddleware(strings.Join(parts[1:], "/"), m))
 	}
 
 	return newTree

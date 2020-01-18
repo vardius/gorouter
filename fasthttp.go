@@ -68,7 +68,7 @@ func (r *fastHTTPRouter) TRACE(p string, f fasthttp.RequestHandler) {
 func (r *fastHTTPRouter) USE(method, path string, fs ...FastHTTPMiddlewareFunc) {
 	m := transformFastHTTPMiddlewareFunc(fs...)
 
-	r.routes = r.routes.WithMiddleware(method+path, m, 0)
+	r.routes = r.routes.WithMiddleware(method+path, m)
 }
 
 func (r *fastHTTPRouter) Handle(method, path string, h fasthttp.RequestHandler) {
@@ -126,9 +126,8 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 		if node, treeMiddleware, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
 			route := node.Route()
 			handler := route.Handler()
-			middleware := root.Middleware().Merge(treeMiddleware)
-			middleware = r.middleware.Merge(middleware)
-			computedHandler := middleware.Compose(handler)
+			allMiddleware := r.middleware.Merge(root.Middleware().Merge(treeMiddleware))
+			computedHandler := allMiddleware.Compose(handler)
 
 			h := computedHandler.(fasthttp.RequestHandler)
 

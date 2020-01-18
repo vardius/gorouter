@@ -401,7 +401,7 @@ func TestPanicMiddleware(t *testing.T) {
 	}
 }
 
-func TestNodeApplyMiddlewareOne(t *testing.T) {
+func TestNodeApplyMiddleware(t *testing.T) {
 	t.Parallel()
 
 	router := New().(*router)
@@ -430,29 +430,12 @@ func TestNodeApplyMiddlewareOne(t *testing.T) {
 	if w.Body.String() != "y" {
 		t.Errorf("Use middleware error %s", w.Body.String())
 	}
-}
-
-func TestNodeApplyMiddleware(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-
-	router.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		params, ok := context.Parameters(r.Context())
-		if !ok {
-			t.Fatal("Error while reading param")
-		}
-
-		if _, err := w.Write([]byte(params.Value("param"))); err != nil {
-			t.Fatal(err)
-		}
-	}))
 
 	router.USE(http.MethodGet, "/x/{param}", mockMiddleware("m1"))
 	router.USE(http.MethodGet, "/x/x", mockMiddleware("m2"))
 
-	w := httptest.NewRecorder()
-	req, err := http.NewRequest(http.MethodGet, "/x/y", nil)
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest(http.MethodGet, "/x/y", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

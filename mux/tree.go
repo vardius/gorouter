@@ -142,6 +142,7 @@ func (t Tree) WithMiddleware(path string, m middleware.Middleware) Tree {
 		} else {
 			newNode := NewNode(parts[0], 0)
 			newNode.WithRoute(node.Route())
+			newNode.AppendMiddleware(m)
 			newTree = t.withNode(newNode)
 
 			return newTree

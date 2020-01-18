@@ -402,30 +402,6 @@ func TestFastHTTPNodeApplyMiddlewareOne(t *testing.T) {
 	}
 }
 
-func TestFastHTTPNodeApplyMiddlewareTwo(t *testing.T) {
-	t.Parallel()
-
-	router := NewFastHTTPRouter().(*fastHTTPRouter)
-
-	router.GET("/x/{param}", func(ctx *fasthttp.RequestCtx) {
-		params := ctx.UserValue("params").(context.Params)
-		if _, err := fmt.Fprintf(ctx, "%s", params.Value("param")); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	router.USE(http.MethodGet, "/x/{param}", mockFastHTTPMiddleware("m1"))
-	router.USE(http.MethodGet, "/x/x", mockFastHTTPMiddleware("m2"))
-
-	ctx := buildFastHTTPRequestContext(http.MethodGet, "/x/y")
-
-	router.HandleFastHTTP(ctx)
-
-	if string(ctx.Response.Body()) != "m1y" {
-		t.Errorf("Use middleware error %s", string(ctx.Response.Body()))
-	}
-}
-
 func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 	t.Parallel()
 
@@ -439,22 +415,13 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 	})
 
 	router.USE(http.MethodGet, "/x/{param}", mockFastHTTPMiddleware("m1"))
+	router.USE(http.MethodGet, "/x/x", mockFastHTTPMiddleware("m2"))
 
 	ctx := buildFastHTTPRequestContext(http.MethodGet, "/x/y")
 
 	router.HandleFastHTTP(ctx)
 
 	if string(ctx.Response.Body()) != "m1y" {
-		t.Errorf("Use middleware error %s", string(ctx.Response.Body()))
-	}
-
-	router.USE(http.MethodGet, "/x/x", mockFastHTTPMiddleware("m2"))
-
-	ctx = buildFastHTTPRequestContext(http.MethodGet, "/x/x")
-
-	router.HandleFastHTTP(ctx)
-
-	if string(ctx.Response.Body()) != "m1m2x" {
 		t.Errorf("Use middleware error %s", string(ctx.Response.Body()))
 	}
 }

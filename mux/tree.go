@@ -137,11 +137,15 @@ func (t Tree) WithMiddleware(path string, m middleware.Middleware) Tree {
 
 	// try to find node by matching name against nodes
 	if node == nil {
-		node, _, _, _ = t.Match(name)
-	}
+		if node, _, _, _ = t.Match(name); node == nil {
+			panic("Could not find node for given path")
+		} else {
+			newNode := NewNode(parts[0], 0)
+			newNode.WithRoute(node.Route())
+			newTree = t.withNode(newNode)
 
-	if node == nil {
-		panic("Could not find node for given path")
+			return newTree
+		}
 	}
 
 	if len(parts) == 1 {

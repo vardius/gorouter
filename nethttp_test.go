@@ -446,6 +446,29 @@ func TestNodeApplyMiddleware(t *testing.T) {
 	}
 }
 
+func TestNodeApplyMiddlewareStatic(t *testing.T) {
+	t.Parallel()
+
+	router := New().(*router)
+
+	router.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	}))
+
+	router.USE(http.MethodGet, "/x/x", mockMiddleware("m1"))
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, "/x/x", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	router.ServeHTTP(w, req)
+
+	if w.Body.String() != "m1x" {
+		t.Errorf("Use middleware error %s", w.Body.String())
+	}
+}
+
 func TestNodeApplyMiddlewareInvalidNodeReference(t *testing.T) {
 	t.Parallel()
 

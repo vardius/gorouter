@@ -412,6 +412,25 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 	}
 }
 
+func TestFastHTTPNodeApplyMiddlewareStatic(t *testing.T) {
+	t.Parallel()
+
+	router := NewFastHTTPRouter().(*fastHTTPRouter)
+
+	router.GET("/x/x", func(ctx *fasthttp.RequestCtx) {
+	})
+
+	router.USE(http.MethodGet, "/x/x", mockFastHTTPMiddleware("m1"))
+
+	ctx := buildFastHTTPRequestContext(http.MethodGet, "/x/x")
+
+	router.HandleFastHTTP(ctx)
+
+	if string(ctx.Response.Body()) != "m1x" {
+		t.Errorf("Use middleware error %s", string(ctx.Response.Body()))
+	}
+}
+
 func TestFastHTTPNodeApplyMiddlewareInvalidNodeReference(t *testing.T) {
 	t.Parallel()
 

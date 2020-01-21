@@ -418,6 +418,9 @@ func TestFastHTTPNodeApplyMiddlewareStatic(t *testing.T) {
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
 
 	router.GET("/x/x", func(ctx *fasthttp.RequestCtx) {
+		if _, err := fmt.Fprintf(ctx, "x"); err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	router.USE(http.MethodGet, "/x/x", mockFastHTTPMiddleware("m1"))

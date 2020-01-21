@@ -452,6 +452,9 @@ func TestNodeApplyMiddlewareStatic(t *testing.T) {
 	router := New().(*router)
 
 	router.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write([]byte("x")); err != nil {
+			t.Fatal(err)
+		}
 	}))
 
 	router.USE(http.MethodGet, "/x/x", mockMiddleware("m1"))

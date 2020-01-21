@@ -1,5 +1,7 @@
 package middleware
 
+import "reflect"
+
 // MiddlewareFunc is a middleware function type.
 // Long story - short: it is a handler wrapper
 type MiddlewareFunc func(interface{}) interface{}
@@ -33,4 +35,15 @@ func (m Middleware) Compose(h interface{}) interface{} {
 	}
 
 	return h
+}
+
+// helper function needed to reverse order when adding orphan nodes
+func (m Middleware) ReverseAny() Middleware {
+	n := reflect.ValueOf(m).Len()
+	swap := reflect.Swapper(m)
+	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
+		swap(i, j)
+	}
+
+	return m
 }

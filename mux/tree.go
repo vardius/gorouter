@@ -3,7 +3,6 @@ package mux
 import (
 	"bytes"
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
 
@@ -78,14 +77,6 @@ func (t Tree) Compile() Tree {
 	return t
 }
 
-func reverseAny(s interface{}) {
-	n := reflect.ValueOf(s).Len()
-	swap := reflect.Swapper(s)
-	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
-		swap(i, j)
-	}
-}
-
 // Match path to Node
 func (t Tree) Match(path string) (Node, middleware.Middleware, context.Params, string) {
 	var orphanMatches []match
@@ -96,7 +87,7 @@ func (t Tree) Match(path string) (Node, middleware.Middleware, context.Params, s
 				if len(orphanMatches) > 0 {
 					for i := 0; i < len(orphanMatches); i++ {
 						m = orphanMatches[i].node.Middleware().Merge(m)
-						reverseAny(m)
+						m.ReverseAny()
 					}
 				}
 

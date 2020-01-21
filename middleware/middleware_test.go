@@ -106,7 +106,10 @@ func TestReverse(t *testing.T) {
 	m3 := mockMiddleware("3")
 
 	fn := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("4"))
+		_, err := w.Write([]byte("4"))
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	m := New(m1)

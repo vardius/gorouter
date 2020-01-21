@@ -418,7 +418,7 @@ func TestNodeApplyMiddleware(t *testing.T) {
 	}))
 
 	router.USE(http.MethodGet, "/x/{param}", mockMiddleware("m1"))
-	router.USE(http.MethodGet, "/x/x", mockMiddleware("m2"))
+	router.USE(http.MethodGet, "/x/y", mockMiddleware("m2"))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(http.MethodGet, "/x/y", nil)
@@ -428,9 +428,11 @@ func TestNodeApplyMiddleware(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	if w.Body.String() != "m1y" {
+	if w.Body.String() != "m1m2y" {
 		t.Errorf("Use middleware error %s", w.Body.String())
 	}
+
+	router.USE(http.MethodGet, "/x/x", mockMiddleware("m3"))
 
 	w = httptest.NewRecorder()
 	req, err = http.NewRequest(http.MethodGet, "/x/x", nil)
@@ -440,7 +442,7 @@ func TestNodeApplyMiddleware(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	if w.Body.String() != "m2m1x" {
+	if w.Body.String() != "m1m3x" {
 		t.Errorf("Use middleware error %s", w.Body.String())
 	}
 }

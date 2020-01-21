@@ -87,7 +87,7 @@ func (t Tree) Match(path string) (Node, middleware.Middleware, context.Params, s
 				if len(orphanMatches) > 0 {
 					for i := 0; i < len(orphanMatches); i++ {
 						m = orphanMatches[i].node.Middleware().Merge(m)
-						m.ReverseAny()
+						m.Reverse()
 					}
 				}
 

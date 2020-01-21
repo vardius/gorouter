@@ -37,8 +37,8 @@ func (m Middleware) Compose(h interface{}) interface{} {
 	return h
 }
 
-// helper function needed to reverse order when adding orphan nodes
-func (m Middleware) ReverseAny() Middleware {
+// Reverse reverses middleware order. Needed after adding orphan nodes
+func (m Middleware) Reverse() Middleware {
 	n := reflect.ValueOf(m).Len()
 	swap := reflect.Swapper(m)
 	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {

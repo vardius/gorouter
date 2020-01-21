@@ -111,7 +111,7 @@ func TestReverse(t *testing.T) {
 
 	m := New(m1)
 	m = m.Merge(New(m2, m3))
-	m.ReverseAny()
+	m.Reverse()
 	h := m.Compose(fn).(http.Handler)
 
 	w := httptest.NewRecorder()

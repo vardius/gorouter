@@ -411,6 +411,39 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 	}
 }
 
+func TestFastHTTPTreeOrphanMiddlewareOrder(t *testing.T) {
+	t.Parallel()
+
+	router := NewFastHTTPRouter().(*fastHTTPRouter)
+
+	router.GET("/x/{param}", func(ctx *fasthttp.RequestCtx) {
+		if _, err := fmt.Fprintf(ctx, "handler"); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	// Method global middleware
+	router.USE(http.MethodGet, "/", mockFastHTTPMiddleware("m1->"))
+	router.USE(http.MethodGet, "/", mockFastHTTPMiddleware("m2->"))
+	// Path middleware
+	router.USE(http.MethodGet, "/x", mockFastHTTPMiddleware("mx1->"))
+	router.USE(http.MethodGet, "/x", mockFastHTTPMiddleware("mx2->"))
+	router.USE(http.MethodGet, "/x/y", mockFastHTTPMiddleware("mxy1->"))
+	router.USE(http.MethodGet, "/x/y", mockFastHTTPMiddleware("mxy2->"))
+	router.USE(http.MethodGet, "/x/{param}", mockFastHTTPMiddleware("mparam1->"))
+	router.USE(http.MethodGet, "/x/{param}", mockFastHTTPMiddleware("mparam2->"))
+	router.USE(http.MethodGet, "/x/y", mockFastHTTPMiddleware("mxy3->"))
+	router.USE(http.MethodGet, "/x/y", mockFastHTTPMiddleware("mxy4->"))
+
+	ctx := buildFastHTTPRequestContext(http.MethodGet, "/x/y")
+
+	router.HandleFastHTTP(ctx)
+
+	if string(ctx.Response.Body()) != "m1->m2->mx1->mx2->mparam1->mparam2->mxy1->mxy2->mxy3->mxy4->handler" {
+		t.Errorf("Use middleware error %s", string(ctx.Response.Body()))
+	}
+}
+
 func TestFastHTTPNodeApplyMiddlewareStatic(t *testing.T) {
 	t.Parallel()
 

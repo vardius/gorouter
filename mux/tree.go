@@ -86,7 +86,7 @@ func (t Tree) Match(path string) (Node, middleware.Middleware, context.Params, s
 			if node.Route() != nil {
 				if len(orphanMatches) > 0 {
 					for i := 0; i < len(orphanMatches); i++ {
-						m = orphanMatches[i].node.Middleware().Merge(m)
+						m = m.Merge(orphanMatches[i].node.Middleware())
 					}
 				}
 

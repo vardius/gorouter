@@ -39,7 +39,7 @@ func (m Middleware) Compose(h interface{}) interface{} {
 
 // Reverse reverses middleware order. Needed after adding orphan nodes
 func (m Middleware) Reverse() Middleware {
-	n := reflect.ValueOf(m).Len()
+	n := len(m)
 	swap := reflect.Swapper(m)
 	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
 		swap(i, j)

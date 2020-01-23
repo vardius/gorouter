@@ -501,6 +501,35 @@ func TestNodeApplyMiddlewareDeepStatic(t *testing.T) {
 	}
 }
 
+func TestNodeApplyMiddlewareWidlcardStaticMix(t *testing.T) {
+	t.Parallel()
+
+	router := New().(*router)
+
+	router.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write([]byte("handler")); err != nil {
+			t.Fatal(err)
+		}
+	}))
+
+	router.USE(http.MethodGet, "/", mockMiddleware("m1->"), mockMiddleware("m2->"))
+	router.USE(http.MethodGet, "/x", mockMiddleware("mx1->"), mockMiddleware("mx2->"))
+	router.USE(http.MethodGet, "/x/{param}", mockMiddleware("mparam1->"), mockMiddleware("mparam2->"))
+	router.USE(http.MethodGet, "/x/y", mockMiddleware("mxy1->"), mockMiddleware("mxy2->"))
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, "/x/y", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	router.ServeHTTP(w, req)
+
+	if w.Body.String() != "m1->m2->mx1->mx2->mxy1->mxy2->mparam1->mparam2->handler" {
+		t.Errorf("Use middleware error %s", w.Body.String())
+	}
+}
+
 func TestNodeApplyMiddlewareInvalidNodeReference(t *testing.T) {
 	t.Parallel()
 

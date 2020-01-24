@@ -77,7 +77,7 @@ func (t Tree) Compile() Tree {
 	return t
 }
 
-// Match path to Node
+// Match path to first Node
 func (t Tree) Match(path string) (Node, middleware.Middleware, context.Params, string) {
 	var orphanMatches []match
 
@@ -143,7 +143,7 @@ func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
 
 	if node == nil {
 		node = NewNode(parts[0], maxParamsSize)
-		newTree = t.withNode(node)
+		newTree = t.withNode(node).sort()
 	}
 
 	if len(parts) == 1 {
@@ -170,7 +170,7 @@ func (t Tree) WithMiddleware(path string, m middleware.Middleware, maxParamsSize
 
 	if node == nil {
 		node = NewNode(parts[0], maxParamsSize)
-		newTree = t.withNode(node)
+		newTree = t.withNode(node).sort()
 	}
 
 	if len(parts) == 1 {
@@ -200,7 +200,7 @@ func (t Tree) WithSubrouter(path string, route Route, maxParamsSize uint8) Tree 
 		if len(parts) == 1 {
 			node = withSubrouter(node)
 		}
-		newTree = t.withNode(node)
+		newTree = t.withNode(node).sort()
 	}
 
 	if len(parts) == 1 {
@@ -213,7 +213,6 @@ func (t Tree) WithSubrouter(path string, route Route, maxParamsSize uint8) Tree 
 }
 
 // withNode inserts node to Tree
-// Nodes are sorted static, regexp, wildcard
 func (t Tree) withNode(node Node) Tree {
 	if node == nil {
 		return t
@@ -221,12 +220,17 @@ func (t Tree) withNode(node Node) Tree {
 
 	newTree := append(t, node)
 
+	return newTree
+}
+
+// Sort sorts nodes in order: static, regexp, wildcard
+func (t Tree) sort() Tree {
 	// Sort Nodes in order [statics, regexps, wildcards]
-	sort.Slice(newTree, func(i, j int) bool {
-		return isMoreImportant(newTree[i], newTree[j])
+	sort.Slice(t, func(i, j int) bool {
+		return isMoreImportant(t[i], t[j])
 	})
 
-	return newTree
+	return t
 }
 
 func isMoreImportant(left Node, right Node) bool {

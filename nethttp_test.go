@@ -440,7 +440,7 @@ func TestNodeApplyMiddleware(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	if w.Body.String() != "m2m1x" {
+	if w.Body.String() != "m1m2x" {
 		t.Errorf("Use middleware error %s", w.Body.String())
 	}
 }

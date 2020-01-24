@@ -406,7 +406,7 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 
 	router.HandleFastHTTP(ctx)
 
-	if string(ctx.Response.Body()) != "m2m1x" {
+	if string(ctx.Response.Body()) != "m1m2x" {
 		t.Errorf("Use middleware error %s", string(ctx.Response.Body()))
 	}
 }

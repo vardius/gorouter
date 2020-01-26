@@ -67,7 +67,7 @@ func mockServeHTTP(h http.Handler, method, path string) error {
 func mockFastHTTPMiddleware(body string) FastHTTPMiddlewareFunc {
 	fn := func(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
-			if _, err := fmt.Fprintf(ctx, body); err != nil {
+			if _, err := fmt.Fprint(ctx, body); err != nil {
 				panic(err)
 			}
 

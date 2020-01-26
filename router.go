@@ -6,10 +6,10 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// MiddlewareFunc is a http middleware function type
+// MiddlewareFunc is a http globalMiddleware function type
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// FastHTTPMiddlewareFunc is a fasthttp middleware function type
+// FastHTTPMiddlewareFunc is a fasthttp globalMiddleware function type
 type FastHTTPMiddlewareFunc func(fasthttp.RequestHandler) fasthttp.RequestHandler
 
 // Router is a micro framework, HTTP request router, multiplexer, mux
@@ -53,7 +53,7 @@ type Router interface {
 	// under TRACE method and given patter
 	TRACE(pattern string, handler http.Handler)
 
-	// USE adds middleware functions ([]MiddlewareFunc)
+	// USE adds globalMiddleware functions ([]MiddlewareFunc)
 	// to whole router branch under given method and patter
 	USE(method, pattern string, fs ...MiddlewareFunc)
 
@@ -125,7 +125,7 @@ type FastHTTPRouter interface {
 	// under TRACE method and given patter
 	TRACE(pattern string, handler fasthttp.RequestHandler)
 
-	// USE adds middleware functions ([]MiddlewareFunc)
+	// USE adds globalMiddleware functions ([]MiddlewareFunc)
 	// to whole router branch under given method and patter
 	USE(method, pattern string, fs ...FastHTTPMiddlewareFunc)
 

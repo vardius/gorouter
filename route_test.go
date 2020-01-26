@@ -11,13 +11,17 @@ import (
 
 func TestRouter(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("4"))
+		if _, err := w.Write([]byte("4")); err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	buildMiddlewareFunc := func(body string) middleware.MiddlewareFunc {
 		fn := func(h interface{}) interface{} {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte(body))
+				if _, err := w.Write([]byte(body)); err != nil {
+					t.Fatal(err)
+				}
 				h.(http.Handler).ServeHTTP(w, r)
 			})
 		}

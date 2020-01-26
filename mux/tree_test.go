@@ -37,13 +37,13 @@ func TestTreeMatch(t *testing.T) {
 
 	root.WithChildren(root.Tree().Compile())
 
-	n, _, _, _ := root.Tree().Match("pl/blog/comments/123/new")
+	route, _, _ := root.Tree().MatchRoute("pl/blog/comments/123/new")
 
-	if n == nil {
-		t.Fatalf("%v", n)
+	if route == nil {
+		t.Fatalf("%v", route)
 	}
 
-	if n.Name() != commentNew.Name() {
-		t.Fatalf("%s != %s", n.Name(), commentNew.Name())
+	if route != commentNew.Route() {
+		t.Fatalf("%s != %s (%s)", route, commentNew.Route(), commentNew.Name())
 	}
 }

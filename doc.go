@@ -1,5 +1,5 @@
 /*
-Package gorouter provide request router with middleware
+Package gorouter provide request router with globalMiddleware
 
 Router
 

@@ -19,14 +19,6 @@ func NewTree() Tree {
 // Tree slice of mux Nodes
 type Tree []Node
 
-// Match represents path match data struct
-type match struct {
-	node       Node
-	middleware middleware.Middleware
-	params     context.Params
-	subPath    string
-}
-
 // PrettyPrint prints the tree text representation to console
 func (t Tree) PrettyPrint() string {
 	buff := &bytes.Buffer{}
@@ -77,40 +69,28 @@ func (t Tree) Compile() Tree {
 	return t
 }
 
-// Match path to first Node
-func (t Tree) Match(path string) (Node, middleware.Middleware, context.Params, string) {
-	var orphanMatches []match
-
+// MatchRoute path to first Node
+func (t Tree) MatchRoute(path string) (Route, context.Params, string) {
 	for _, child := range t {
-		if node, m, params, subPath := child.Match(path); node != nil {
-			if node.Route() != nil {
-				if len(orphanMatches) > 0 {
-					for i := 0; i < len(orphanMatches); i++ {
-						m = m.Merge(orphanMatches[i].node.Middleware())
-					}
-				}
-
-				return node, m, params, subPath
-			}
-
-			orphanMatch := match{
-				node:       node,
-				middleware: m,
-				params:     params,
-				subPath:    subPath,
-			}
-			orphanMatches = append(orphanMatches, orphanMatch)
+		if route, params, subPath := child.MatchRoute(path); route != nil {
+			return route, params, subPath
 		}
 	}
 
-	// no route found, return first orphan match
-	if len(orphanMatches) > 0 {
-		firstOrphanMatch := orphanMatches[0]
+	return nil, nil, ""
+}
 
-		return firstOrphanMatch.node, firstOrphanMatch.middleware, firstOrphanMatch.params, firstOrphanMatch.subPath
+// MatchMiddleware collects middleware from all nodes that match path
+func (t Tree) MatchMiddleware(path string) middleware.Middleware {
+	var treeMiddleware = make(middleware.Middleware, 0)
+
+	for _, child := range t {
+		if m := child.MatchMiddleware(path); m != nil {
+			treeMiddleware = treeMiddleware.Merge(m)
+		}
 	}
 
-	return nil, nil, nil, ""
+	return treeMiddleware
 }
 
 // Find finds Node inside a tree by name
@@ -157,7 +137,7 @@ func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
 
 // WithMiddleware returns new Tree with Middleware appended to given Node
 // Middleware is appended to Node under the give path, if Node does not exist it will panic
-func (t Tree) WithMiddleware(path string, m middleware.Middleware, maxParamsSize uint8) Tree {
+func (t Tree) WithMiddleware(path string, m middleware.Middleware) Tree {
 	path = pathutils.TrimSlash(path)
 	if path == "" {
 		return t
@@ -169,14 +149,14 @@ func (t Tree) WithMiddleware(path string, m middleware.Middleware, maxParamsSize
 	newTree := t
 
 	if node == nil {
-		node = NewNode(parts[0], maxParamsSize)
-		newTree = t.withNode(node).sort()
+		node = NewNode(parts[0], 0)
+		newTree = t.withNode(node)
 	}
 
 	if len(parts) == 1 {
 		node.AppendMiddleware(m)
 	} else {
-		node.WithChildren(node.Tree().WithMiddleware(strings.Join(parts[1:], "/"), m, node.MaxParamsSize()))
+		node.WithChildren(node.Tree().WithMiddleware(strings.Join(parts[1:], "/"), m))
 	}
 
 	return newTree

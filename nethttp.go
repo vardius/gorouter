@@ -13,17 +13,19 @@ import (
 // New creates new net/http Router instance, returns pointer
 func New(fs ...MiddlewareFunc) Router {
 	return &router{
-		routes:     mux.NewTree(),
-		middleware: transformMiddlewareFunc(fs...),
+		routes:           mux.NewTree(),
+		middleware:       mux.NewTree(),
+		globalMiddleware: transformMiddlewareFunc(fs...),
 	}
 }
 
 type router struct {
-	routes     mux.Tree
-	middleware middleware.Middleware
-	fileServer http.Handler
-	notFound   http.Handler
-	notAllowed http.Handler
+	routes           mux.Tree // mux.RouteAware tree
+	middleware       mux.Tree // mux.MiddlewareAware tree
+	globalMiddleware middleware.Middleware
+	fileServer       http.Handler
+	notFound         http.Handler
+	notAllowed       http.Handler
 }
 
 func (r *router) PrettyPrint() string {
@@ -69,7 +71,7 @@ func (r *router) TRACE(p string, f http.Handler) {
 func (r *router) USE(method, path string, fs ...MiddlewareFunc) {
 	m := transformMiddlewareFunc(fs...)
 
-	r.routes = r.routes.WithMiddleware(method+path, m, 0)
+	r.middleware = r.middleware.WithMiddleware(method+path, m)
 }
 
 func (r *router) Handle(method, path string, h http.Handler) {
@@ -125,11 +127,13 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	path := pathutils.TrimSlash(req.URL.Path)
 
 	if root := r.routes.Find(req.Method); root != nil {
-		if node, treeMiddleware, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
-			route := node.Route()
-			handler := route.Handler()
-			allMiddleware := r.middleware.Merge(root.Middleware().Merge(treeMiddleware))
-			computedHandler := allMiddleware.Compose(handler)
+		if route, params, subPath := root.Tree().MatchRoute(req.Method + path); route != nil {
+			allMiddleware := r.globalMiddleware
+			if treeMiddleware := r.middleware.MatchMiddleware(req.Method + path); treeMiddleware != nil {
+				allMiddleware = allMiddleware.Merge(treeMiddleware)
+			}
+
+			computedHandler := allMiddleware.Compose(route.Handler())
 
 			h := computedHandler.(http.Handler)
 
@@ -146,7 +150,12 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 
 		if req.URL.Path == "/" && root.Route() != nil {
-			root.Route().Handler().(http.Handler).ServeHTTP(w, req)
+			rootMiddleware := r.globalMiddleware
+			if root.Middleware() != nil {
+				rootMiddleware = rootMiddleware.Merge(root.Middleware())
+			}
+			rootHandler := rootMiddleware.Compose(root.Route().Handler())
+			rootHandler.(http.Handler).ServeHTTP(w, req)
 			return
 		}
 	}

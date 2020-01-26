@@ -12,17 +12,19 @@ import (
 // NewFastHTTPRouter creates new Router instance, returns pointer
 func NewFastHTTPRouter(fs ...FastHTTPMiddlewareFunc) FastHTTPRouter {
 	return &fastHTTPRouter{
-		routes:     mux.NewTree(),
-		middleware: transformFastHTTPMiddlewareFunc(fs...),
+		routes:           mux.NewTree(),
+		middleware:       mux.NewTree(),
+		globalMiddleware: transformFastHTTPMiddlewareFunc(fs...),
 	}
 }
 
 type fastHTTPRouter struct {
-	routes     mux.Tree
-	middleware middleware.Middleware
-	fileServer fasthttp.RequestHandler
-	notFound   fasthttp.RequestHandler
-	notAllowed fasthttp.RequestHandler
+	routes           mux.Tree // mux.RouteAware tree
+	middleware       mux.Tree // mux.MiddlewareAware tree
+	globalMiddleware middleware.Middleware
+	fileServer       fasthttp.RequestHandler
+	notFound         fasthttp.RequestHandler
+	notAllowed       fasthttp.RequestHandler
 }
 
 func (r *fastHTTPRouter) PrettyPrint() string {
@@ -68,7 +70,7 @@ func (r *fastHTTPRouter) TRACE(p string, f fasthttp.RequestHandler) {
 func (r *fastHTTPRouter) USE(method, path string, fs ...FastHTTPMiddlewareFunc) {
 	m := transformFastHTTPMiddlewareFunc(fs...)
 
-	r.routes = r.routes.WithMiddleware(method+path, m, 0)
+	r.middleware = r.middleware.WithMiddleware(method+path, m)
 }
 
 func (r *fastHTTPRouter) Handle(method, path string, h fasthttp.RequestHandler) {
@@ -123,11 +125,13 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 	path := pathutils.TrimSlash(pathAsString)
 
 	if root := r.routes.Find(method); root != nil {
-		if node, treeMiddleware, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
-			route := node.Route()
-			handler := route.Handler()
-			allMiddleware := r.middleware.Merge(root.Middleware().Merge(treeMiddleware))
-			computedHandler := allMiddleware.Compose(handler)
+		if route, params, subPath := root.Tree().MatchRoute(path); route != nil {
+			allMiddleware := r.globalMiddleware
+			if treeMiddleware := r.middleware.MatchMiddleware(method + path); treeMiddleware != nil {
+				allMiddleware = allMiddleware.Merge(treeMiddleware)
+			}
+
+			computedHandler := allMiddleware.Compose(route.Handler())
 
 			h := computedHandler.(fasthttp.RequestHandler)
 
@@ -144,7 +148,12 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 		}
 
 		if pathAsString == "/" && root.Route() != nil {
-			root.Route().Handler().(fasthttp.RequestHandler)(ctx)
+			rootMiddleware := r.globalMiddleware
+			if root.Middleware() != nil {
+				rootMiddleware = rootMiddleware.Merge(root.Middleware())
+			}
+			rootHandler := rootMiddleware.Compose(root.Route().Handler())
+			rootHandler.(fasthttp.RequestHandler)(ctx)
 			return
 		}
 	}

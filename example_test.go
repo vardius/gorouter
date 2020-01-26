@@ -65,7 +65,7 @@ func Example_second() {
 }
 
 func ExampleMiddlewareFunc() {
-	// Global middleware example
+	// Global globalMiddleware example
 	// applies to all routes
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := context.Parameters(r.Context())
@@ -81,7 +81,7 @@ func ExampleMiddlewareFunc() {
 		return http.HandlerFunc(fn)
 	}
 
-	// apply middleware to all routes
+	// apply globalMiddleware to all routes
 	// can pass as many as you want
 	router := gorouter.New(logger)
 	router.GET("/hello/{name}", http.HandlerFunc(hello))
@@ -95,7 +95,7 @@ func ExampleMiddlewareFunc() {
 }
 
 func ExampleMiddlewareFunc_second() {
-	// Route level middleware example
+	// Route level globalMiddleware example
 	// applies to route and its lower tree
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := context.Parameters(r.Context())
@@ -114,7 +114,7 @@ func ExampleMiddlewareFunc_second() {
 	router := gorouter.New()
 	router.GET("/hello/{name}", http.HandlerFunc(hello))
 
-	// apply middleware to route and all it children
+	// apply globalMiddleware to route and all it children
 	// can pass as many as you want
 	router.USE("GET", "/hello/{name}", logger)
 
@@ -127,7 +127,7 @@ func ExampleMiddlewareFunc_second() {
 }
 
 func ExampleMiddlewareFunc_third() {
-	// Http method middleware example
+	// Http method globalMiddleware example
 	// applies to all routes under this method
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := context.Parameters(r.Context())
@@ -146,7 +146,7 @@ func ExampleMiddlewareFunc_third() {
 	router := gorouter.New()
 	router.GET("/hello/{name}", http.HandlerFunc(hello))
 
-	// apply middleware to all routes with GET method
+	// apply globalMiddleware to all routes with GET method
 	// can pass as many as you want
 	router.USE("GET", "", logger)
 
@@ -159,7 +159,7 @@ func ExampleMiddlewareFunc_third() {
 }
 
 func ExampleFastHTTPMiddlewareFunc() {
-	// Global middleware example
+	// Global globalMiddleware example
 	// applies to all routes
 	hello := func(ctx *fasthttp.RequestCtx) {
 		params := ctx.UserValue("params").(context.Params)
@@ -187,7 +187,7 @@ func ExampleFastHTTPMiddlewareFunc() {
 }
 
 func ExampleFastHTTPMiddlewareFunc_second() {
-	// Route level middleware example
+	// Route level globalMiddleware example
 	// applies to route and its lower tree
 	hello := func(ctx *fasthttp.RequestCtx) {
 		params := ctx.UserValue("params").(context.Params)
@@ -206,7 +206,7 @@ func ExampleFastHTTPMiddlewareFunc_second() {
 	router := gorouter.NewFastHTTPRouter()
 	router.GET("/hello/{name}", hello)
 
-	// apply middleware to route and all it children
+	// apply globalMiddleware to route and all it children
 	// can pass as many as you want
 	router.USE("GET", "/hello/{name}", logger)
 
@@ -219,7 +219,7 @@ func ExampleFastHTTPMiddlewareFunc_second() {
 }
 
 func ExampleFastHTTPMiddlewareFunc_third() {
-	// Http method middleware example
+	// Http method globalMiddleware example
 	// applies to all routes under this method
 	hello := func(ctx *fasthttp.RequestCtx) {
 		params := ctx.UserValue("params").(context.Params)
@@ -238,7 +238,7 @@ func ExampleFastHTTPMiddlewareFunc_third() {
 	router := gorouter.NewFastHTTPRouter()
 	router.GET("/hello/{name}", hello)
 
-	// apply middleware to all routes with GET method
+	// apply globalMiddleware to all routes with GET method
 	// can pass as many as you want
 	router.USE("GET", "", logger)
 

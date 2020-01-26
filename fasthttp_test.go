@@ -341,7 +341,7 @@ func TestFastHTTPNilMiddleware(t *testing.T) {
 	router.HandleFastHTTP(ctx)
 
 	if string(ctx.Response.Body()) != "test" {
-		t.Error("Nil middleware works")
+		t.Error("Nil globalMiddleware works")
 	}
 }
 
@@ -399,7 +399,7 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 	router.HandleFastHTTP(ctx)
 
 	if string(ctx.Response.Body()) != "m1y" {
-		t.Errorf("Use middleware error %s", string(ctx.Response.Body()))
+		t.Errorf("Use globalMiddleware error %s", string(ctx.Response.Body()))
 	}
 
 	ctx = buildFastHTTPRequestContext(http.MethodGet, "/x/x")
@@ -407,7 +407,7 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 	router.HandleFastHTTP(ctx)
 
 	if string(ctx.Response.Body()) != "m1m2x" {
-		t.Errorf("Use middleware error %s", string(ctx.Response.Body()))
+		t.Errorf("Use globalMiddleware error %s", string(ctx.Response.Body()))
 	}
 }
 
@@ -422,10 +422,10 @@ func TestFastHTTPTreeOrphanMiddlewareOrder(t *testing.T) {
 		}
 	})
 
-	// Method global middleware
+	// Method global globalMiddleware
 	router.USE(http.MethodGet, "/", mockFastHTTPMiddleware("m1->"))
 	router.USE(http.MethodGet, "/", mockFastHTTPMiddleware("m2->"))
-	// Path middleware
+	// Path globalMiddleware
 	router.USE(http.MethodGet, "/x", mockFastHTTPMiddleware("mx1->"))
 	router.USE(http.MethodGet, "/x", mockFastHTTPMiddleware("mx2->"))
 	router.USE(http.MethodGet, "/x/y", mockFastHTTPMiddleware("mxy1->"))
@@ -440,7 +440,7 @@ func TestFastHTTPTreeOrphanMiddlewareOrder(t *testing.T) {
 	router.HandleFastHTTP(ctx)
 
 	if string(ctx.Response.Body()) != "m1->m2->mx1->mx2->mparam1->mparam2->mxy1->mxy2->mxy3->mxy4->handler" {
-		t.Errorf("Use middleware error %s", string(ctx.Response.Body()))
+		t.Errorf("Use globalMiddleware error %s", string(ctx.Response.Body()))
 	}
 }
 
@@ -462,7 +462,7 @@ func TestFastHTTPNodeApplyMiddlewareStatic(t *testing.T) {
 	router.HandleFastHTTP(ctx)
 
 	if string(ctx.Response.Body()) != "m1x" {
-		t.Errorf("Use middleware error %s", string(ctx.Response.Body()))
+		t.Errorf("Use globalMiddleware error %s", string(ctx.Response.Body()))
 	}
 }
 
@@ -485,7 +485,7 @@ func TestFastHTTPNodeApplyMiddlewareInvalidNodeReference(t *testing.T) {
 	router.HandleFastHTTP(ctx)
 
 	if string(ctx.Response.Body()) != "y" {
-		t.Errorf("Use middleware error %s", string(ctx.Response.Body()))
+		t.Errorf("Use globalMiddleware error %s", string(ctx.Response.Body()))
 	}
 }
 
@@ -631,6 +631,6 @@ func TestFastHTTPMountSubRouter(t *testing.T) {
 	mainRouter.HandleFastHTTP(ctx)
 
 	if string(ctx.Response.Body()) != "[rg1][rg2][r1][r2][sg1][sg2][s1][s2][s]" {
-		t.Errorf("Router mount sub router middleware error: %s", string(ctx.Response.Body()))
+		t.Errorf("Router mount sub router globalMiddleware error: %s", string(ctx.Response.Body()))
 	}
 }

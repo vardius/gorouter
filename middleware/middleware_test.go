@@ -9,7 +9,9 @@ import (
 func mockMiddleware(body string) MiddlewareFunc {
 	fn := func(h interface{}) interface{} {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(body))
+			if _, err := w.Write([]byte(body)); err != nil {
+				panic(err)
+			}
 			h.(http.Handler).ServeHTTP(w, r)
 		})
 	}
@@ -22,7 +24,9 @@ func TestOrders(t *testing.T) {
 	m2 := mockMiddleware("2")
 	m3 := mockMiddleware("3")
 	fn := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("4"))
+		if _, err := w.Write([]byte("4")); err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	m := New(m1, m2, m3)
@@ -46,7 +50,9 @@ func TestAppend(t *testing.T) {
 	m2 := mockMiddleware("2")
 	m3 := mockMiddleware("3")
 	fn := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("4"))
+		if _, err := w.Write([]byte("4")); err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	m := New(m1)
@@ -71,7 +77,9 @@ func TestMerge(t *testing.T) {
 	m2 := mockMiddleware("2")
 	m3 := mockMiddleware("3")
 	fn := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("4"))
+		if _, err := w.Write([]byte("4")); err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	m := New(m1)

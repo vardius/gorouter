@@ -37,6 +37,7 @@ func NewNode(pathPart string, maxParamsSize uint8) Node {
 	return node
 }
 
+// RouteAware represents route aware Node
 type RouteAware interface {
 	// MatchRoute matches given path to Route within Node and its Tree
 	MatchRoute(path string) (Route, context.Params, string)
@@ -54,6 +55,7 @@ type RouteAware interface {
 	SkipSubPath()
 }
 
+// MiddlewareAware represents middleware aware node
 type MiddlewareAware interface {
 	// MatchMiddleware collects middleware from all nodes within tree matching given path
 	// middleware is merged in order nodes where created, collecting from top to bottom

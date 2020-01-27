@@ -6,7 +6,6 @@ import (
 	"github.com/valyala/fasthttp"
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
-	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
 // NewFastHTTPRouter creates new Router instance, returns pointer
@@ -121,41 +120,28 @@ func (r *fastHTTPRouter) ServeFiles(root string, stripSlashes int) {
 
 func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 	method := string(ctx.Method())
-	pathAsString := string(ctx.Path())
-	path := pathutils.TrimSlash(pathAsString)
+	path := string(ctx.Path())
 
-	if root := r.routes.Find(method); root != nil {
-		if route, params, subPath := root.Tree().MatchRoute(path); route != nil {
-			allMiddleware := r.globalMiddleware
-			if treeMiddleware := r.middleware.MatchMiddleware(method + path); treeMiddleware != nil {
-				allMiddleware = allMiddleware.Merge(treeMiddleware)
-			}
-
-			computedHandler := allMiddleware.Compose(route.Handler())
-
-			h := computedHandler.(fasthttp.RequestHandler)
-
-			if len(params) > 0 {
-				ctx.SetUserValue("params", params)
-			}
-
-			if subPath != "" {
-				ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))
-			}
-
-			h(ctx)
-			return
+	if route, params, subPath := r.routes.MatchRoute(method + path); route != nil {
+		allMiddleware := r.globalMiddleware
+		if treeMiddleware := r.middleware.MatchMiddleware(method + path); treeMiddleware != nil {
+			allMiddleware = allMiddleware.Merge(treeMiddleware)
 		}
 
-		if pathAsString == "/" && root.Route() != nil {
-			rootMiddleware := r.globalMiddleware
-			if root.Middleware() != nil {
-				rootMiddleware = rootMiddleware.Merge(root.Middleware())
-			}
-			rootHandler := rootMiddleware.Compose(root.Route().Handler())
-			rootHandler.(fasthttp.RequestHandler)(ctx)
-			return
+		computedHandler := allMiddleware.Compose(route.Handler())
+
+		h := computedHandler.(fasthttp.RequestHandler)
+
+		if len(params) > 0 {
+			ctx.SetUserValue("params", params)
 		}
+
+		if subPath != "" {
+			ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))
+		}
+
+		h(ctx)
+		return
 	}
 
 	// Handle OPTIONS

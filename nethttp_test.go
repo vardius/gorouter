@@ -477,7 +477,7 @@ func TestTreeOrphanMiddlewareOrder(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	if w.Body.String() != "m1->m2->mx1->mx2->mparam1->mparam2->mxy1->mxy2->mxy3->mxy4->handler" {
+	if w.Body.String() != "m1->m2->mx1->mx2->mxy1->mxy2->mxy3->mxy4->mparam1->mparam2->handler" {
 		t.Errorf("Use globalMiddleware error %s", w.Body.String())
 	}
 }

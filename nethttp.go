@@ -7,7 +7,6 @@ import (
 	"github.com/vardius/gorouter/v4/context"
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
-	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
 // New creates new net/http Router instance, returns pointer
@@ -124,45 +123,31 @@ func (r *router) ServeFiles(fs http.FileSystem, root string, strip bool) {
 }
 
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	path := pathutils.TrimSlash(req.URL.Path)
-
-	if root := r.routes.Find(req.Method); root != nil {
-		if route, params, subPath := root.Tree().MatchRoute(req.Method + path); route != nil {
-			allMiddleware := r.globalMiddleware
-			if treeMiddleware := r.middleware.MatchMiddleware(req.Method + path); treeMiddleware != nil {
-				allMiddleware = allMiddleware.Merge(treeMiddleware)
-			}
-
-			computedHandler := allMiddleware.Compose(route.Handler())
-
-			h := computedHandler.(http.Handler)
-
-			if len(params) > 0 {
-				req = req.WithContext(context.WithParams(req.Context(), params))
-			}
-
-			if subPath != "" {
-				h = http.StripPrefix(strings.TrimSuffix(req.URL.Path, "/"+subPath), h)
-			}
-
-			h.ServeHTTP(w, req)
-			return
+	if route, params, subPath := r.routes.MatchRoute(req.Method + req.URL.Path); route != nil {
+		allMiddleware := r.globalMiddleware
+		if treeMiddleware := r.middleware.MatchMiddleware(req.Method + req.URL.Path); treeMiddleware != nil {
+			allMiddleware = allMiddleware.Merge(treeMiddleware)
 		}
 
-		if req.URL.Path == "/" && root.Route() != nil {
-			rootMiddleware := r.globalMiddleware
-			if root.Middleware() != nil {
-				rootMiddleware = rootMiddleware.Merge(root.Middleware())
-			}
-			rootHandler := rootMiddleware.Compose(root.Route().Handler())
-			rootHandler.(http.Handler).ServeHTTP(w, req)
-			return
+		computedHandler := allMiddleware.Compose(route.Handler())
+
+		h := computedHandler.(http.Handler)
+
+		if len(params) > 0 {
+			req = req.WithContext(context.WithParams(req.Context(), params))
 		}
+
+		if subPath != "" {
+			h = http.StripPrefix(strings.TrimSuffix(req.URL.Path, "/"+subPath), h)
+		}
+
+		h.ServeHTTP(w, req)
+		return
 	}
 
 	// Handle OPTIONS
 	if req.Method == http.MethodOptions {
-		if allow := allowed(r.routes, req.Method, path); len(allow) > 0 {
+		if allow := allowed(r.routes, req.Method, req.URL.Path); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			return
 		}
@@ -172,7 +157,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	} else {
 		// Handle 405
-		if allow := allowed(r.routes, req.Method, path); len(allow) > 0 {
+		if allow := allowed(r.routes, req.Method, req.URL.Path); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			r.serveNotAllowed(w, req)
 			return

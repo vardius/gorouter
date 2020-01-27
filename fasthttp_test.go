@@ -391,14 +391,16 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 		}
 	})
 
-	router.USE(http.MethodGet, "/x/{param}", mockFastHTTPMiddleware("m1"))
-	router.USE(http.MethodGet, "/x/x", mockFastHTTPMiddleware("m2"))
+	router.USE(http.MethodGet, "/x/x", mockFastHTTPMiddleware("m1"))
+	router.USE(http.MethodGet, "/x/{param}", mockFastHTTPMiddleware("m2"))
+	router.USE(http.MethodGet, "/x/x", mockFastHTTPMiddleware("m3"))
+	router.USE(http.MethodGet, "/x/{param}", mockFastHTTPMiddleware("m4"))
 
 	ctx := buildFastHTTPRequestContext(http.MethodGet, "/x/y")
 
 	router.HandleFastHTTP(ctx)
 
-	if string(ctx.Response.Body()) != "m1y" {
+	if string(ctx.Response.Body()) != "m2m4y" {
 		t.Errorf("Use globalMiddleware error %s", string(ctx.Response.Body()))
 	}
 
@@ -406,7 +408,7 @@ func TestFastHTTPNodeApplyMiddleware(t *testing.T) {
 
 	router.HandleFastHTTP(ctx)
 
-	if string(ctx.Response.Body()) != "m1m2x" {
+	if string(ctx.Response.Body()) != "m1m2m3m4x" {
 		t.Errorf("Use globalMiddleware error %s", string(ctx.Response.Body()))
 	}
 }
@@ -439,7 +441,7 @@ func TestFastHTTPTreeOrphanMiddlewareOrder(t *testing.T) {
 
 	router.HandleFastHTTP(ctx)
 
-	if string(ctx.Response.Body()) != "m1->m2->mx1->mx2->mxy1->mxy2->mxy3->mxy4->mparam1->mparam2->handler" {
+	if string(ctx.Response.Body()) != "m1->m2->mx1->mx2->mxy1->mxy2->mparam1->mparam2->mxy3->mxy4->handler" {
 		t.Errorf("Use globalMiddleware error %s", string(ctx.Response.Body()))
 	}
 }

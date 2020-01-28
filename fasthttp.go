@@ -129,13 +129,19 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 
 	if route, params, subPath := r.tree.MatchRoute(method + path); route != nil {
 		allMiddleware := r.globalMiddleware
-		if treeMiddleware := r.tree.MatchMiddleware(method + path); treeMiddleware != nil {
-			allMiddleware = allMiddleware.Merge(treeMiddleware)
+		if treeMiddleware := r.tree.MatchMiddleware(method + path); treeMiddleware != nil && len(treeMiddleware) > 0 {
+			allMiddleware = allMiddleware.Merge(treeMiddleware.Sort())
 		}
 
-		computedHandler := allMiddleware.Sort().Compose(route.Handler())
+		var h fasthttp.RequestHandler
+		if len(allMiddleware) > 0 {
+			computedHandler := allMiddleware.Compose(route.Handler())
+	
+			h = computedHandler.(fasthttp.RequestHandler)
 
-		h := computedHandler.(fasthttp.RequestHandler)
+		}
+
+		h = route.Handler().(fasthttp.RequestHandler)
 
 		if len(params) > 0 {
 			ctx.SetUserValue("params", params)

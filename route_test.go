@@ -16,8 +16,8 @@ func TestRouter(t *testing.T) {
 		}
 	})
 
-	buildMiddlewareFunc := func(body string) middleware.MiddlewareFunc {
-		fn := func(h interface{}) interface{} {
+	buildMiddlewareFunc := func(body string) middleware.Middleware {
+		fn := func(h middleware.Handler) middleware.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if _, err := w.Write([]byte(body)); err != nil {
 					t.Fatal(err)
@@ -26,7 +26,7 @@ func TestRouter(t *testing.T) {
 			})
 		}
 
-		return fn
+		return middleware.New(middleware.WrapperFunc(fn), 0)
 	}
 
 	m1 := buildMiddlewareFunc("1")
@@ -34,7 +34,7 @@ func TestRouter(t *testing.T) {
 	m3 := buildMiddlewareFunc("3")
 
 	r := newRoute(handler)
-	m := middleware.New(m1, m2, m3)
+	m := middleware.NewCollection(m1, m2, m3)
 	h := m.Compose(r.Handler())
 
 	w := httptest.NewRecorder()

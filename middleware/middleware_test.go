@@ -1,109 +1,66 @@
 package middleware
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
-func mockMiddleware(body string) MiddlewareFunc {
-	fn := func(h interface{}) interface{} {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if _, err := w.Write([]byte(body)); err != nil {
-				panic(err)
+type mockWrapper struct{}
+
+func (*mockWrapper) Wrap(h Handler) Handler {
+	return h
+}
+
+func TestNew(t *testing.T) {
+	type args struct {
+		w        Wrapper
+		priority uint
+	}
+	type test struct {
+		name string
+		args args
+	}
+	tests := []test{
+		test{"From Wrapper", args{&mockWrapper{}, 0}},
+		test{"From WrapperFunc", args{WrapperFunc(func(h Handler) Handler { return func() {} }), 0}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			panicked := false
+			defer func() {
+				if rcv := recover(); rcv != nil {
+					panicked = true
+				}
+			}()
+
+			got := New(tt.args.w, tt.args.priority)
+
+			if panicked {
+				t.Errorf("Panic: New() = %v", got)
 			}
-			h.(http.Handler).ServeHTTP(w, r)
 		})
 	}
-
-	return fn
 }
 
-func TestOrders(t *testing.T) {
-	m1 := mockMiddleware("1")
-	m2 := mockMiddleware("2")
-	m3 := mockMiddleware("3")
-	fn := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		if _, err := w.Write([]byte("4")); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	m := New(m1, m2, m3)
-	h := m.Compose(fn).(http.Handler)
-
-	w := httptest.NewRecorder()
-	r, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
+func TestMiddleware_Priority(t *testing.T) {
+	type test struct {
+		name       string
+		middleware Middleware
+		want       uint
 	}
-
-	h.ServeHTTP(w, r)
-
-	if w.Body.String() != "1234" {
-		t.Error("The order is incorrect")
+	tests := []test{
+		test{"Zero", mockMiddleware("TestMiddleware_Priority 1", 0), 0},
+		test{"Positive", mockMiddleware("TestMiddleware_Priority 1", 1), 1},
+		test{"Positive Large", mockMiddleware("TestMiddleware_Priority 1", 999), 999},
 	}
-}
-
-func TestAppend(t *testing.T) {
-	m1 := mockMiddleware("1")
-	m2 := mockMiddleware("2")
-	m3 := mockMiddleware("3")
-	fn := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		if _, err := w.Write([]byte("4")); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	m := New(m1)
-	m = m.Append(m2, m3)
-	h := m.Compose(fn).(http.Handler)
-
-	w := httptest.NewRecorder()
-	r, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	h.ServeHTTP(w, r)
-
-	if w.Body.String() != "1234" {
-		t.Errorf("The order is incorrect expected: 1234 actual: %s", w.Body.String())
-	}
-}
-
-func TestMerge(t *testing.T) {
-	m1 := mockMiddleware("1")
-	m2 := mockMiddleware("2")
-	m3 := mockMiddleware("3")
-	fn := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		if _, err := w.Write([]byte("4")); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	m := New(m1)
-	m = m.Merge(New(m2, m3))
-	h := m.Compose(fn).(http.Handler)
-
-	w := httptest.NewRecorder()
-	r, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	h.ServeHTTP(w, r)
-
-	if w.Body.String() != "1234" {
-		t.Errorf("The order is incorrect expected: 1234 actual: %s", w.Body.String())
-	}
-}
-
-func TestCompose(t *testing.T) {
-	m := New(mockMiddleware("1"))
-	h := m.Compose(nil)
-
-	if h != nil {
-		t.Fail()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := Middleware{
+				wrapper:  tt.middleware.wrapper,
+				priority: tt.middleware.priority,
+			}
+			if got := m.Priority(); got != tt.want {
+				t.Errorf("Priority() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

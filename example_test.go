@@ -66,7 +66,7 @@ func Example_second() {
 
 func ExampleMiddlewareFunc() {
 	// Global globalMiddleware example
-	// applies to all routes
+	// applies to all tree
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := context.Parameters(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
@@ -81,7 +81,7 @@ func ExampleMiddlewareFunc() {
 		return http.HandlerFunc(fn)
 	}
 
-	// apply globalMiddleware to all routes
+	// apply globalMiddleware to all tree
 	// can pass as many as you want
 	router := gorouter.New(logger)
 	router.GET("/hello/{name}", http.HandlerFunc(hello))
@@ -128,7 +128,7 @@ func ExampleMiddlewareFunc_second() {
 
 func ExampleMiddlewareFunc_third() {
 	// Http method globalMiddleware example
-	// applies to all routes under this method
+	// applies to all tree under this method
 	hello := func(w http.ResponseWriter, r *http.Request) {
 		params, _ := context.Parameters(r.Context())
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
@@ -146,7 +146,7 @@ func ExampleMiddlewareFunc_third() {
 	router := gorouter.New()
 	router.GET("/hello/{name}", http.HandlerFunc(hello))
 
-	// apply globalMiddleware to all routes with GET method
+	// apply globalMiddleware to all tree with GET method
 	// can pass as many as you want
 	router.USE("GET", "", logger)
 
@@ -160,7 +160,7 @@ func ExampleMiddlewareFunc_third() {
 
 func ExampleFastHTTPMiddlewareFunc() {
 	// Global globalMiddleware example
-	// applies to all routes
+	// applies to all tree
 	hello := func(ctx *fasthttp.RequestCtx) {
 		params := ctx.UserValue("params").(context.Params)
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
@@ -220,7 +220,7 @@ func ExampleFastHTTPMiddlewareFunc_second() {
 
 func ExampleFastHTTPMiddlewareFunc_third() {
 	// Http method globalMiddleware example
-	// applies to all routes under this method
+	// applies to all tree under this method
 	hello := func(ctx *fasthttp.RequestCtx) {
 		params := ctx.UserValue("params").(context.Params)
 		fmt.Printf("Hello, %s!\n", params.Value("name"))
@@ -238,7 +238,7 @@ func ExampleFastHTTPMiddlewareFunc_third() {
 	router := gorouter.NewFastHTTPRouter()
 	router.GET("/hello/{name}", hello)
 
-	// apply globalMiddleware to all routes with GET method
+	// apply globalMiddleware to all tree with GET method
 	// can pass as many as you want
 	router.USE("GET", "", logger)
 

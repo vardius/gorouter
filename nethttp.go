@@ -9,26 +9,27 @@ import (
 	"github.com/vardius/gorouter/v4/mux"
 )
 
-// New creates new net/http Router instance, returns pointer
+// NewCollection creates new net/http Router instance, returns pointer
 func New(fs ...MiddlewareFunc) Router {
+	globalMiddleware := middleware.NewCollectionFromWrappers(0, transformMiddlewareFunc(fs...)...)
 	return &router{
-		routes:           mux.NewTree(),
-		middleware:       mux.NewTree(),
-		globalMiddleware: transformMiddlewareFunc(fs...),
+		tree:              mux.NewTree(),
+		globalMiddleware:  globalMiddleware,
+		middlewareCounter: uint(len(globalMiddleware)),
 	}
 }
 
 type router struct {
-	routes           mux.Tree // mux.RouteAware tree
-	middleware       mux.Tree // mux.MiddlewareAware tree
-	globalMiddleware middleware.Middleware
-	fileServer       http.Handler
-	notFound         http.Handler
-	notAllowed       http.Handler
+	tree              mux.Tree
+	globalMiddleware  middleware.Collection
+	fileServer        http.Handler
+	notFound          http.Handler
+	notAllowed        http.Handler
+	middlewareCounter uint
 }
 
 func (r *router) PrettyPrint() string {
-	return r.routes.PrettyPrint()
+	return r.tree.PrettyPrint()
 }
 
 func (r *router) POST(p string, f http.Handler) {
@@ -70,13 +71,14 @@ func (r *router) TRACE(p string, f http.Handler) {
 func (r *router) USE(method, path string, fs ...MiddlewareFunc) {
 	m := transformMiddlewareFunc(fs...)
 
-	r.middleware = r.middleware.WithMiddleware(method+path, m)
+	r.tree = r.tree.WithMiddleware(method+path, m, r.middlewareCounter, 0)
+	r.middlewareCounter += uint(len(m))
 }
 
 func (r *router) Handle(method, path string, h http.Handler) {
 	route := newRoute(h)
 
-	r.routes = r.routes.WithRoute(method+path, route, 0)
+	r.tree = r.tree.WithRoute(method+path, route, 0)
 }
 
 func (r *router) Mount(path string, h http.Handler) {
@@ -93,13 +95,13 @@ func (r *router) Mount(path string, h http.Handler) {
 	} {
 		route := newRoute(h)
 
-		r.routes = r.routes.WithSubrouter(method+path, route, 0)
+		r.tree = r.tree.WithSubrouter(method+path, route, 0)
 	}
 }
 
 func (r *router) Compile() {
-	for i, methodNode := range r.routes {
-		r.routes[i].WithChildren(methodNode.Tree().Compile())
+	for i, methodNode := range r.tree {
+		r.tree[i].WithChildren(methodNode.Tree().Compile())
 	}
 }
 
@@ -123,13 +125,13 @@ func (r *router) ServeFiles(fs http.FileSystem, root string, strip bool) {
 }
 
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if route, params, subPath := r.routes.MatchRoute(req.Method + req.URL.Path); route != nil {
+	if route, params, subPath := r.tree.MatchRoute(req.Method + req.URL.Path); route != nil {
 		allMiddleware := r.globalMiddleware
-		if treeMiddleware := r.middleware.MatchMiddleware(req.Method + req.URL.Path); treeMiddleware != nil {
+		if treeMiddleware := r.tree.MatchMiddleware(req.Method + req.URL.Path); treeMiddleware != nil {
 			allMiddleware = allMiddleware.Merge(treeMiddleware)
 		}
 
-		computedHandler := allMiddleware.Compose(route.Handler())
+		computedHandler := allMiddleware.Sort().Compose(route.Handler())
 
 		h := computedHandler.(http.Handler)
 
@@ -147,7 +149,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// Handle OPTIONS
 	if req.Method == http.MethodOptions {
-		if allow := allowed(r.routes, req.Method, req.URL.Path); len(allow) > 0 {
+		if allow := allowed(r.tree, req.Method, req.URL.Path); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			return
 		}
@@ -157,7 +159,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	} else {
 		// Handle 405
-		if allow := allowed(r.routes, req.Method, req.URL.Path); len(allow) > 0 {
+		if allow := allowed(r.tree, req.Method, req.URL.Path); len(allow) > 0 {
 			w.Header().Set("Allow", allow)
 			r.serveNotAllowed(w, req)
 			return
@@ -187,12 +189,12 @@ func (r *router) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func transformMiddlewareFunc(fs ...MiddlewareFunc) middleware.Middleware {
-	m := make(middleware.Middleware, len(fs))
+func transformMiddlewareFunc(fs ...MiddlewareFunc) []middleware.Wrapper {
+	m := make([]middleware.Wrapper, len(fs))
 
 	for i, f := range fs {
-		m[i] = func(mf MiddlewareFunc) middleware.MiddlewareFunc {
-			return func(h interface{}) interface{} {
+		m[i] = func(mf MiddlewareFunc) middleware.WrapperFunc {
+			return func(h middleware.Handler) middleware.Handler {
 				return mf(h.(http.Handler))
 			}
 		}(f) // f is a reference to function so we have to wrap if with that callback

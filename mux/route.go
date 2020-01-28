@@ -1,6 +1,6 @@
 package mux
 
-// Route is an middleware aware route interface
+// Route is an handler aware route interface
 type Route interface {
 	Handler() interface{}
 }

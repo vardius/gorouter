@@ -11,7 +11,7 @@ func allowed(t mux.Tree, method, path string) (allow string) {
 	path = pathutils.TrimSlash(path)
 
 	if path == "*" {
-		// routes tree roots should be http method nodes only
+		// tree tree roots should be http method nodes only
 		for _, root := range t {
 			if root.Name() == http.MethodOptions {
 				continue
@@ -23,7 +23,7 @@ func allowed(t mux.Tree, method, path string) (allow string) {
 			}
 		}
 	} else {
-		// routes tree roots should be http method nodes only
+		// tree tree roots should be http method nodes only
 		for _, root := range t {
 			if root.Name() == method || root.Name() == http.MethodOptions {
 				continue

@@ -1,36 +1,47 @@
 package middleware
 
-// MiddlewareFunc is a middleware function type.
-// Long story - short: it is a handler wrapper
-type MiddlewareFunc func(interface{}) interface{}
+// Handler represents wrapped function
+type Handler interface{}
 
-// Middleware is a slice of handler functions
-type Middleware []MiddlewareFunc
-
-// New provides new middleware
-func New(fs ...MiddlewareFunc) Middleware {
-	return fs
+// Wrapper wraps Handler
+type Wrapper interface {
+	// Wrap Handler with middleware
+	Wrap(Handler) Handler
 }
 
-// Append appends handlers to middleware
-func (m Middleware) Append(fs ...MiddlewareFunc) Middleware {
-	return m.Merge(fs)
+// Sortable allows Collection to be sorted by priority
+type Sortable interface {
+	// Priority provides a value for sorting Collection, lower values come first
+	Priority() uint
 }
 
-// Merge merges another middleware
-func (m Middleware) Merge(n Middleware) Middleware {
-	return append(m, n...)
+// WrapperFunc is an adapter to allow the use of
+// handler wrapper functions as middleware functions.
+type WrapperFunc func(Handler) Handler
+
+// Wrap implements Wrapper interface
+func (f WrapperFunc) Wrap(h Handler) Handler {
+	return f(h)
 }
 
-// Compose returns middleware composed to single MiddlewareFunc
-func (m Middleware) Compose(h interface{}) interface{} {
-	if h == nil {
-		return nil
+// Middleware is a slice of handler wrappers functions
+type Middleware struct {
+	wrapper  Wrapper
+	priority uint
+}
+
+func (m Middleware) Wrap(h Handler) Handler {
+	return m.wrapper.Wrap(h)
+}
+
+func (m Middleware) Priority() uint {
+	return m.priority
+}
+
+// New provides new Middleware
+func New(w Wrapper, priority uint) Middleware {
+	return Middleware{
+		wrapper:  w,
+		priority: priority,
 	}
-
-	for i := range m {
-		h = m[len(m)-1-i](h)
-	}
-
-	return h
 }

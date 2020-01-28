@@ -81,8 +81,8 @@ func (t Tree) MatchRoute(path string) (Route, context.Params, string) {
 }
 
 // MatchMiddleware collects middleware from all nodes that match path
-func (t Tree) MatchMiddleware(path string) middleware.Middleware {
-	var treeMiddleware = make(middleware.Middleware, 0)
+func (t Tree) MatchMiddleware(path string) middleware.Collection {
+	var treeMiddleware = make(middleware.Collection, 0)
 
 	for _, child := range t {
 		if m := child.MatchMiddleware(path); m != nil {
@@ -135,9 +135,9 @@ func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
 	return newTree
 }
 
-// WithMiddleware returns new Tree with Middleware appended to given Node
-// Middleware is appended to Node under the give path, if Node does not exist it will panic
-func (t Tree) WithMiddleware(path string, m middleware.Middleware) Tree {
+// WithMiddleware returns new Tree with Collection appended to given Node
+// Collection is appended to Node under the give path, if Node does not exist it will panic
+func (t Tree) WithMiddleware(path string, ws []middleware.Wrapper, priority uint, maxParamsSize uint8) Tree {
 	path = pathutils.TrimSlash(path)
 	if path == "" {
 		return t
@@ -149,14 +149,14 @@ func (t Tree) WithMiddleware(path string, m middleware.Middleware) Tree {
 	newTree := t
 
 	if node == nil {
-		node = NewNode(parts[0], 0)
+		node = NewNode(parts[0], maxParamsSize)
 		newTree = t.withNode(node)
 	}
 
 	if len(parts) == 1 {
-		node.AppendMiddleware(m)
+		node.AppendMiddleware(middleware.NewCollectionFromWrappers(priority, ws...))
 	} else {
-		node.WithChildren(node.Tree().WithMiddleware(strings.Join(parts[1:], "/"), m))
+		node.WithChildren(node.Tree().WithMiddleware(strings.Join(parts[1:], "/"), ws, priority, maxParamsSize))
 	}
 
 	return newTree
@@ -206,7 +206,7 @@ func (t Tree) withNode(node Node) Tree {
 // Sort sorts nodes in order: static, regexp, wildcard
 func (t Tree) sort() Tree {
 	// Sort Nodes in order [statics, regexps, wildcards]
-	sort.Slice(t, func(i, j int) bool {
+	sort.SliceStable(t, func(i, j int) bool {
 		return isMoreImportant(t[i], t[j])
 	})
 

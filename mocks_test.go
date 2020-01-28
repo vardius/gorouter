@@ -92,7 +92,7 @@ func checkIfHasRootRoute(t *testing.T, r interface{}, method string) {
 	switch v := r.(type) {
 	case *router:
 	case *fastHTTPRouter:
-		if rootRoute := v.routes.Find(method); rootRoute == nil {
+		if rootRoute := v.tree.Find(method); rootRoute == nil {
 			t.Error("Route not found")
 		}
 	default:

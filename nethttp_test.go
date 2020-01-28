@@ -118,7 +118,7 @@ func TestOPTIONS(t *testing.T) {
 
 	w := httptest.NewRecorder()
 
-	// test all routes "*" paths
+	// test all tree "*" paths
 	req, err := http.NewRequest(http.MethodOptions, "*", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -477,7 +477,7 @@ func TestTreeOrphanMiddlewareOrder(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	if w.Body.String() != "m1->m2->mx1->mx2->mxy1->mxy2->mxy3->mxy4->mparam1->mparam2->handler" {
+	if w.Body.String() != "m1->m2->mx1->mx2->mxy1->mxy2->mparam1->mparam2->mxy3->mxy4->handler" {
 		t.Errorf("Use globalMiddleware error %s", w.Body.String())
 	}
 }

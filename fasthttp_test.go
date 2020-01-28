@@ -439,7 +439,7 @@ func TestFastHTTPTreeOrphanMiddlewareOrder(t *testing.T) {
 
 	router.HandleFastHTTP(ctx)
 
-	if string(ctx.Response.Body()) != "m1->m2->mx1->mx2->mxy1->mxy2->mxy3->mxy4->mparam1->mparam2->handler" {
+	if string(ctx.Response.Body()) != "m1->m2->mx1->mx2->mxy1->mxy2->mparam1->mparam2->mxy3->mxy4->handler" {
 		t.Errorf("Use globalMiddleware error %s", string(ctx.Response.Body()))
 	}
 }

@@ -139,9 +139,9 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 	
 			h = computedHandler.(fasthttp.RequestHandler)
 
+		} else {
+			h = route.Handler().(fasthttp.RequestHandler)
 		}
-
-		h = route.Handler().(fasthttp.RequestHandler)
 
 		if len(params) > 0 {
 			ctx.SetUserValue("params", params)

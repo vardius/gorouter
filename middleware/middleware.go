@@ -30,10 +30,12 @@ type Middleware struct {
 	priority uint
 }
 
+// Wrap Handler with middleware
 func (m Middleware) Wrap(h Handler) Handler {
 	return m.wrapper.Wrap(h)
 }
 
+// Priority provides a value for sorting Collection, lower values come first
 func (m Middleware) Priority() uint {
 	return m.priority
 }

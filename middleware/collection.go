@@ -45,7 +45,7 @@ func (c Collection) Compose(h Handler) Handler {
 	return h
 }
 
-// Merge merges another middleware
+// Sort sorts collection by priority
 func (c Collection) Sort() Collection {
 	sort.SliceStable(c, func(i, j int) bool {
 		return c[i].Priority() < c[j].Priority()

@@ -9,7 +9,7 @@ import (
 	"github.com/vardius/gorouter/v4/mux"
 )
 
-// NewCollection creates new net/http Router instance, returns pointer
+// New creates new net/http Router instance, returns pointer
 func New(fs ...MiddlewareFunc) Router {
 	globalMiddleware := middleware.NewCollectionFromWrappers(0, transformMiddlewareFunc(fs...)...)
 	return &router{

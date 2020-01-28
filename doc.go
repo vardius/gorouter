@@ -1,11 +1,11 @@
 /*
-Package gorouter provide request router with globalMiddleware
+Package gorouter provide request router with middleware
 
 Router
 
-The router determines how to handle that request.
-GoRouter uses a routing tree. Once one branch of the tree matches, only tree inside that branch are considered,
-not any tree after that branch. When instantiating router, the root node of tree is created.
+The router determines how to handle http request.
+GoRouter uses a routing tree. Once one branch of the tree matches, only routes inside that branch are considered,
+not any routes after that branch. When instantiating router, the root node of tree is created.
 
 Route types
 

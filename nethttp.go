@@ -140,9 +140,9 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	
 			h = computedHandler.(http.Handler)
 
+		} else {
+			h = route.Handler().(http.Handler)
 		}
-
-		h = route.Handler().(http.Handler)
 
 		if len(params) > 0 {
 			req = req.WithContext(context.WithParams(req.Context(), params))

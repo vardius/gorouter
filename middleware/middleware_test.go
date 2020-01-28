@@ -20,8 +20,8 @@ func TestNew(t *testing.T) {
 		args args
 	}
 	tests := []test{
-		test{"From Wrapper", args{&mockWrapper{}, 0}},
-		test{"From WrapperFunc", args{WrapperFunc(func(h Handler) Handler { return func() {} }), 0}},
+		{"From Wrapper", args{&mockWrapper{}, 0}},
+		{"From WrapperFunc", args{WrapperFunc(func(h Handler) Handler { return func() {} }), 0}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -48,9 +48,9 @@ func TestMiddleware_Priority(t *testing.T) {
 		want       uint
 	}
 	tests := []test{
-		test{"Zero", mockMiddleware("TestMiddleware_Priority 1", 0), 0},
-		test{"Positive", mockMiddleware("TestMiddleware_Priority 1", 1), 1},
-		test{"Positive Large", mockMiddleware("TestMiddleware_Priority 1", 999), 999},
+		{"Zero", mockMiddleware("TestMiddleware_Priority 1", 0), 0},
+		{"Positive", mockMiddleware("TestMiddleware_Priority 1", 1), 1},
+		{"Positive Large", mockMiddleware("TestMiddleware_Priority 1", 999), 999},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

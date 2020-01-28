@@ -34,12 +34,12 @@ func TestNewCollection(t *testing.T) {
 		sortedOutput string
 	}
 	tests := []test{
-		test{"Empty", []Middleware{}, "h", "h"},
-		test{"Single middleware", []Middleware{middlewareFactory("0", 0)}, "0h", "0h"},
-		test{"Multiple unsorted middleware", []Middleware{middlewareFactory("3", 3), middlewareFactory("1", 1), middlewareFactory("2", 2)}, "312h", "123h"},
-		test{"Multiple unsorted middleware 2", []Middleware{middlewareFactory("2", 2), middlewareFactory("1", 1), middlewareFactory("3", 3)}, "213h", "123h"},
-		test{"Multiple unsorted middleware 3", []Middleware{middlewareFactory("1", 1), middlewareFactory("3", 3), middlewareFactory("2", 2)}, "132h", "123h"},
-		test{"Multiple sorted middleware", []Middleware{middlewareFactory("1", 1), middlewareFactory("2", 2), middlewareFactory("3", 3)}, "123h", "123h"},
+		{"Empty", []Middleware{}, "h", "h"},
+		{"Single middleware", []Middleware{middlewareFactory("0", 0)}, "0h", "0h"},
+		{"Multiple unsorted middleware", []Middleware{middlewareFactory("3", 3), middlewareFactory("1", 1), middlewareFactory("2", 2)}, "312h", "123h"},
+		{"Multiple unsorted middleware 2", []Middleware{middlewareFactory("2", 2), middlewareFactory("1", 1), middlewareFactory("3", 3)}, "213h", "123h"},
+		{"Multiple unsorted middleware 3", []Middleware{middlewareFactory("1", 1), middlewareFactory("3", 3), middlewareFactory("2", 2)}, "132h", "123h"},
+		{"Multiple sorted middleware", []Middleware{middlewareFactory("1", 1), middlewareFactory("2", 2), middlewareFactory("3", 3)}, "123h", "123h"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

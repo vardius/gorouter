@@ -11,7 +11,7 @@ import (
 
 // New creates new net/http Router instance, returns pointer
 func New(fs ...MiddlewareFunc) Router {
-	globalMiddleware := middleware.NewCollectionFromWrappers(0, transformMiddlewareFunc(fs...)...)
+	globalMiddleware := transformMiddlewareFunc(fs...)
 	return &router{
 		tree:              mux.NewTree(),
 		globalMiddleware:  globalMiddleware,
@@ -70,8 +70,11 @@ func (r *router) TRACE(p string, f http.Handler) {
 
 func (r *router) USE(method, path string, fs ...MiddlewareFunc) {
 	m := transformMiddlewareFunc(fs...)
+	for i, mf := range m {
+		m[i] = middleware.WithPriority(mf, r.middlewareCounter)
+	}
 
-	r.tree = r.tree.WithMiddleware(method+path, m, r.middlewareCounter, 0)
+	r.tree = r.tree.WithMiddleware(method+path, m, 0)
 	r.middlewareCounter += uint(len(m))
 }
 
@@ -189,8 +192,8 @@ func (r *router) serveNotAllowed(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func transformMiddlewareFunc(fs ...MiddlewareFunc) []middleware.Wrapper {
-	m := make([]middleware.Wrapper, len(fs))
+func transformMiddlewareFunc(fs ...MiddlewareFunc) middleware.Collection {
+	m := make(middleware.Collection, len(fs))
 
 	for i, f := range fs {
 		m[i] = func(mf MiddlewareFunc) middleware.WrapperFunc {

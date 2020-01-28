@@ -12,21 +12,6 @@ func NewCollection(ms ...Middleware) Collection {
 	return ms
 }
 
-// NewCollectionFromWrappers provides new middleware
-// with order priority preset to provided value
-func NewCollectionFromWrappers(priority uint, ws ...Wrapper) Collection {
-	c := make(Collection, len(ws))
-
-	for i, w := range ws {
-		c[i] = Middleware{
-			wrapper:  w,
-			priority: priority,
-		}
-	}
-
-	return c
-}
-
 // Merge merges another middleware
 func (c Collection) Merge(m Collection) Collection {
 	return append(c, m...)

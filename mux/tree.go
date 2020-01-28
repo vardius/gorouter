@@ -137,7 +137,7 @@ func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
 
 // WithMiddleware returns new Tree with Collection appended to given Node
 // Collection is appended to Node under the give path, if Node does not exist it will panic
-func (t Tree) WithMiddleware(path string, ws []middleware.Wrapper, priority uint, maxParamsSize uint8) Tree {
+func (t Tree) WithMiddleware(path string, m middleware.Collection, maxParamsSize uint8) Tree {
 	path = pathutils.TrimSlash(path)
 	if path == "" {
 		return t
@@ -154,9 +154,9 @@ func (t Tree) WithMiddleware(path string, ws []middleware.Wrapper, priority uint
 	}
 
 	if len(parts) == 1 {
-		node.AppendMiddleware(middleware.NewCollectionFromWrappers(priority, ws...))
+		node.AppendMiddleware(m)
 	} else {
-		node.WithChildren(node.Tree().WithMiddleware(strings.Join(parts[1:], "/"), ws, priority, maxParamsSize))
+		node.WithChildren(node.Tree().WithMiddleware(strings.Join(parts[1:], "/"), m, maxParamsSize))
 	}
 
 	return newTree

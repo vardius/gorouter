@@ -10,7 +10,7 @@ import (
 
 // NewFastHTTPRouter creates new Router instance, returns pointer
 func NewFastHTTPRouter(fs ...FastHTTPMiddlewareFunc) FastHTTPRouter {
-	globalMiddleware := middleware.NewCollectionFromWrappers(0, transformFastHTTPMiddlewareFunc(fs...)...)
+	globalMiddleware := transformFastHTTPMiddlewareFunc(fs...)
 	return &fastHTTPRouter{
 		tree:              mux.NewTree(),
 		globalMiddleware:  globalMiddleware,
@@ -69,8 +69,11 @@ func (r *fastHTTPRouter) TRACE(p string, f fasthttp.RequestHandler) {
 
 func (r *fastHTTPRouter) USE(method, path string, fs ...FastHTTPMiddlewareFunc) {
 	m := transformFastHTTPMiddlewareFunc(fs...)
+	for i, mf := range m {
+		m[i] = middleware.WithPriority(mf, r.middlewareCounter)
+	}
 
-	r.tree = r.tree.WithMiddleware(method+path, m, r.middlewareCounter, 0)
+	r.tree = r.tree.WithMiddleware(method+path, m, 0)
 	r.middlewareCounter += uint(len(m))
 }
 
@@ -185,8 +188,8 @@ func (r *fastHTTPRouter) serveNotAllowed(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func transformFastHTTPMiddlewareFunc(fs ...FastHTTPMiddlewareFunc) []middleware.Wrapper {
-	m := make([]middleware.Wrapper, len(fs))
+func transformFastHTTPMiddlewareFunc(fs ...FastHTTPMiddlewareFunc) middleware.Collection {
+	m := make(middleware.Collection, len(fs))
 
 	for i, f := range fs {
 		m[i] = func(mf FastHTTPMiddlewareFunc) middleware.WrapperFunc {

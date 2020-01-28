@@ -26,7 +26,7 @@ func TestRouter(t *testing.T) {
 			})
 		}
 
-		return middleware.New(middleware.WrapperFunc(fn), 0)
+		return middleware.WrapperFunc(fn)
 	}
 
 	m1 := buildMiddlewareFunc("1")

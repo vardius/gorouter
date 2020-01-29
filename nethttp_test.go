@@ -363,7 +363,7 @@ func TestNilMiddleware(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	if w.Body.String() != "test" {
-		t.Error("Nil globalMiddleware works")
+		t.Error("Nil middleware works")
 	}
 }
 
@@ -429,7 +429,7 @@ func TestNodeApplyMiddleware(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	if w.Body.String() != "m1y" {
-		t.Errorf("Use globalMiddleware error %s", w.Body.String())
+		t.Errorf("Use middleware error %s", w.Body.String())
 	}
 
 	w = httptest.NewRecorder()
@@ -441,7 +441,7 @@ func TestNodeApplyMiddleware(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	if w.Body.String() != "m1m2x" {
-		t.Errorf("Use globalMiddleware error %s", w.Body.String())
+		t.Errorf("Use middleware error %s", w.Body.String())
 	}
 }
 
@@ -456,10 +456,10 @@ func TestTreeOrphanMiddlewareOrder(t *testing.T) {
 		}
 	}))
 
-	// Method global globalMiddleware
+	// Method global middleware
 	router.USE(http.MethodGet, "/", mockMiddleware("m1->"))
 	router.USE(http.MethodGet, "/", mockMiddleware("m2->"))
-	// Path globalMiddleware
+	// Path middleware
 	router.USE(http.MethodGet, "/x", mockMiddleware("mx1->"))
 	router.USE(http.MethodGet, "/x", mockMiddleware("mx2->"))
 	router.USE(http.MethodGet, "/x/y", mockMiddleware("mxy1->"))
@@ -478,7 +478,7 @@ func TestTreeOrphanMiddlewareOrder(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	if w.Body.String() != "m1->m2->mx1->mx2->mxy1->mxy2->mparam1->mparam2->mxy3->mxy4->handler" {
-		t.Errorf("Use globalMiddleware error %s", w.Body.String())
+		t.Errorf("Use middleware error %s", w.Body.String())
 	}
 }
 
@@ -504,7 +504,7 @@ func TestNodeApplyMiddlewareStatic(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	if w.Body.String() != "m1x" {
-		t.Errorf("Use globalMiddleware error %s", w.Body.String())
+		t.Errorf("Use middleware error %s", w.Body.String())
 	}
 }
 
@@ -535,7 +535,7 @@ func TestNodeApplyMiddlewareInvalidNodeReference(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	if w.Body.String() != "y" {
-		t.Errorf("Use globalMiddleware error %s", w.Body.String())
+		t.Errorf("Use middleware error %s", w.Body.String())
 	}
 }
 
@@ -705,6 +705,6 @@ func TestMountSubRouter(t *testing.T) {
 	mainRouter.ServeHTTP(w, req)
 
 	if w.Body.String() != "[rg1][rg2][r1][r2][sg1][sg2][s1][s2][s]" {
-		t.Errorf("Router mount sub router globalMiddleware error: %s", w.Body.String())
+		t.Errorf("Router mount subrouter middleware error: %s", w.Body.String())
 	}
 }

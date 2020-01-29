@@ -128,17 +128,16 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 	path := string(ctx.Path())
 
 	if route, params, subPath := r.tree.MatchRoute(method + path); route != nil {
-		allMiddleware := r.globalMiddleware
-		if treeMiddleware := r.tree.MatchMiddleware(method + path); treeMiddleware != nil && len(treeMiddleware) > 0 {
-			allMiddleware = allMiddleware.Merge(treeMiddleware.Sort())
-		}
-
 		var h fasthttp.RequestHandler
-		if len(allMiddleware) > 0 {
-			computedHandler := allMiddleware.Compose(route.Handler())
-	
-			h = computedHandler.(fasthttp.RequestHandler)
+		if r.middlewareCounter > 0 {
+			allMiddleware := r.globalMiddleware
+			if treeMiddleware := r.tree.MatchMiddleware(method + path); treeMiddleware != nil && len(treeMiddleware) > 0 {
+				allMiddleware = allMiddleware.Merge(treeMiddleware.Sort())
+			}
 
+			computedHandler := allMiddleware.Compose(route.Handler())
+
+			h = computedHandler.(fasthttp.RequestHandler)
 		} else {
 			h = route.Handler().(fasthttp.RequestHandler)
 		}

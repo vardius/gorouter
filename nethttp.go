@@ -129,17 +129,16 @@ func (r *router) ServeFiles(fs http.FileSystem, root string, strip bool) {
 
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if route, params, subPath := r.tree.MatchRoute(req.Method + req.URL.Path); route != nil {
-		allMiddleware := r.globalMiddleware
-		if treeMiddleware := r.tree.MatchMiddleware(req.Method + req.URL.Path); treeMiddleware != nil && len(treeMiddleware) > 0 {
-			allMiddleware = allMiddleware.Merge(treeMiddleware.Sort())
-		}
-
 		var h http.Handler
-		if len(allMiddleware) > 0 {
-			computedHandler := allMiddleware.Compose(route.Handler())
-	
-			h = computedHandler.(http.Handler)
+		if r.middlewareCounter > 0 {
+			allMiddleware := r.globalMiddleware
+			if treeMiddleware := r.tree.MatchMiddleware(req.Method + req.URL.Path); treeMiddleware != nil && len(treeMiddleware) > 0 {
+				allMiddleware = allMiddleware.Merge(treeMiddleware.Sort())
+			}
 
+			computedHandler := allMiddleware.Compose(route.Handler())
+
+			h = computedHandler.(http.Handler)
 		} else {
 			h = route.Handler().(http.Handler)
 		}

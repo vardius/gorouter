@@ -88,14 +88,49 @@ func mockHandleFastHTTP(h fasthttp.RequestHandler, method, path string) error {
 	return nil
 }
 
-func checkIfHasRootRoute(t *testing.T, r interface{}, method string) {
-	switch v := r.(type) {
-	case *router:
+func TestIfHasRootRoute(t *testing.T) {
+	r := routerInterface()
+	f := fastHTTProuterInterface()
+	switch v := f.(type) {
 	case *fastHTTPRouter:
-		if rootRoute := v.tree.Find(method); rootRoute == nil {
-			t.Error("Route not found")
+		if rootRoute := v.tree.Find(fasthttp.MethodPost); rootRoute == nil {
+			switch v := r.(type) {
+			case *router:
+				if rootRoute := v.tree.Find(fasthttp.MethodPost); rootRoute == nil {
+					t.Error("Route not found")
+				}
+			}
 		}
 	default:
 		t.Error("Unsupported type")
 	}
+}
+
+func routerInterface() interface{} {
+	handler := &mockHandler{}
+	router := New().(*router)
+	router.POST("/x/y", handler)
+	return router
+}
+
+func fastHTTProuterInterface() interface{} {
+	handler := &mockHandler{}
+	router := NewFastHTTPRouter().(*fastHTTPRouter)
+	router.POST("/x/y", handler.HandleFastHTTP)
+	return router
+}
+
+func CreateHTTPMethodsMap() []string {
+	m := []string{
+		fasthttp.MethodPost,
+		fasthttp.MethodGet,
+		fasthttp.MethodPut,
+		fasthttp.MethodDelete,
+		fasthttp.MethodPatch,
+		fasthttp.MethodHead,
+		fasthttp.MethodConnect,
+		fasthttp.MethodTrace,
+		fasthttp.MethodOptions,
+	}
+	return m
 }

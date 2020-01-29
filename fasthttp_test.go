@@ -3,6 +3,7 @@ package gorouter
 import (
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -18,19 +19,52 @@ func buildFastHTTPRequestContext(method, path string) *fasthttp.RequestCtx {
 	return ctx
 }
 
-func testBasicFastHTTPMethod(t *testing.T, router *fastHTTPRouter, h func(pattern string, handler fasthttp.RequestHandler), method string) {
-	handler := &mockHandler{}
-	h("/x/y", handler.HandleFastHTTP)
+func TestBasicFastHTTPMethod(t *testing.T) {
+	for _, m := range CreateHTTPMethodsMap() {
+		if m == "OPTIONS" {
+			router := NewFastHTTPRouter().(*fastHTTPRouter)
 
-	checkIfHasRootRoute(t, router, method)
+			handler := &mockHandler{}
+			router.GET("/x/y", handler.HandleFastHTTP)
+			router.POST("/x/y", handler.HandleFastHTTP)
 
-	err := mockHandleFastHTTP(router.HandleFastHTTP, method, "/x/y")
-	if err != nil {
-		t.Fatal(err)
-	}
+			TestIfHasRootRoute(t)
 
-	if handler.served != true {
-		t.Error("Handler has not been served")
+			ctx := buildFastHTTPRequestContext(http.MethodOptions, "*")
+
+			router.HandleFastHTTP(ctx)
+
+			if allow := string(ctx.Response.Header.Peek("Allow")); !strings.Contains(allow, "POST") || !strings.Contains(allow, "GET") || !strings.Contains(allow, "OPTIONS") {
+				t.Errorf("Allow header incorrect value: %s", allow)
+			}
+
+			ctx2 := buildFastHTTPRequestContext(http.MethodOptions, "/x/y")
+
+			router.HandleFastHTTP(ctx2)
+
+			if allow := string(ctx.Response.Header.Peek("Allow")); !strings.Contains(allow, "POST") || !strings.Contains(allow, "GET") || !strings.Contains(allow, "OPTIONS") {
+				t.Errorf("Allow header incorrect value: %s", allow)
+			}
+		}
+
+		handler := &mockHandler{}
+		router := NewFastHTTPRouter().(*fastHTTPRouter)
+
+		in := make([]reflect.Value, 2)
+		in[0] = reflect.ValueOf("/x/y")
+		in[1] = reflect.ValueOf(handler.HandleFastHTTP)
+		reflect.ValueOf(router).MethodByName(m).Call(in)
+
+		TestIfHasRootRoute(t)
+
+		err := mockHandleFastHTTP(router.HandleFastHTTP, m, "/x/y")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if handler.served != true {
+			t.Error("Handler has not been served")
+		}
 	}
 }
 
@@ -45,7 +79,7 @@ func TestFastHTTPHandle(t *testing.T) {
 	router := NewFastHTTPRouter().(*fastHTTPRouter)
 	router.Handle(http.MethodPost, "/x/y", handler.HandleFastHTTP)
 
-	checkIfHasRootRoute(t, router, http.MethodPost)
+	TestIfHasRootRoute(t)
 
 	err := mockHandleFastHTTP(router.HandleFastHTTP, http.MethodPost, "/x/y")
 	if err != nil {
@@ -57,89 +91,10 @@ func TestFastHTTPHandle(t *testing.T) {
 	}
 }
 
-func TestFastHTTPPOST(t *testing.T) {
+func TestFastHTTPMethods(t *testing.T) {
 	t.Parallel()
 
-	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.POST, http.MethodPost)
-}
-
-func TestFastHTTPGET(t *testing.T) {
-	t.Parallel()
-
-	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.GET, http.MethodGet)
-}
-
-func TestFastHTTPPUT(t *testing.T) {
-	t.Parallel()
-
-	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.PUT, http.MethodPut)
-}
-
-func TestFastHTTPDELETE(t *testing.T) {
-	t.Parallel()
-
-	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.DELETE, http.MethodDelete)
-}
-
-func TestFastHTTPPATCH(t *testing.T) {
-	t.Parallel()
-
-	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.PATCH, http.MethodPatch)
-}
-
-func TestFastHTTPHEAD(t *testing.T) {
-	t.Parallel()
-
-	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.HEAD, http.MethodHead)
-}
-
-func TestFastHTTPCONNECT(t *testing.T) {
-	t.Parallel()
-
-	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.CONNECT, http.MethodConnect)
-}
-
-func TestFastHTTPTRACE(t *testing.T) {
-	t.Parallel()
-
-	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.TRACE, http.MethodTrace)
-}
-
-func TestFastHTTPOPTIONS(t *testing.T) {
-	t.Parallel()
-
-	router := NewFastHTTPRouter().(*fastHTTPRouter)
-	testBasicFastHTTPMethod(t, router, router.OPTIONS, http.MethodOptions)
-
-	handler := &mockHandler{}
-	router.GET("/x/y", handler.HandleFastHTTP)
-	router.POST("/x/y", handler.HandleFastHTTP)
-
-	checkIfHasRootRoute(t, router, http.MethodGet)
-
-	ctx := buildFastHTTPRequestContext(http.MethodOptions, "*")
-
-	router.HandleFastHTTP(ctx)
-
-	if allow := string(ctx.Response.Header.Peek("Allow")); !strings.Contains(allow, "POST") || !strings.Contains(allow, "GET") || !strings.Contains(allow, "OPTIONS") {
-		t.Errorf("Allow header incorrect value: %s", allow)
-	}
-
-	ctx2 := buildFastHTTPRequestContext(http.MethodOptions, "/x/y")
-
-	router.HandleFastHTTP(ctx2)
-
-	if allow := string(ctx.Response.Header.Peek("Allow")); !strings.Contains(allow, "POST") || !strings.Contains(allow, "GET") || !strings.Contains(allow, "OPTIONS") {
-		t.Errorf("Allow header incorrect value: %s", allow)
-	}
+	TestBasicFastHTTPMethod(t)
 }
 
 func TestFastHTTPNotFound(t *testing.T) {

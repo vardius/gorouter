@@ -3,25 +3,67 @@ package gorouter
 import (
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/vardius/gorouter/v4/context"
 )
 
-func testBasicMethod(t *testing.T, router *router, h func(pattern string, handler http.Handler), method string) {
-	handler := &mockHandler{}
-	h("/x/y", handler)
+func TestBasicMethod(t *testing.T) {
+	for _, m := range CreateHTTPMethodsMap() {
+		if m == "OPTIONS" {
+			router := New().(*router)
+			handler := &mockHandler{}
+			router.GET("/x/y", handler)
+			router.POST("/x/y", handler)
 
-	checkIfHasRootRoute(t, router, method)
+			TestIfHasRootRoute(t)
 
-	err := mockServeHTTP(router, method, "/x/y")
-	if err != nil {
-		t.Fatal(err)
-	}
+			w := httptest.NewRecorder()
 
-	if handler.served != true {
-		t.Error("Handler has not been served")
+			// test all tree "*" paths
+			req, err := http.NewRequest(http.MethodOptions, "*", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			router.ServeHTTP(w, req)
+
+			if allow := w.Header().Get("Allow"); !strings.Contains(allow, "POST") || !strings.Contains(allow, "GET") || !strings.Contains(allow, "OPTIONS") {
+				t.Errorf("Allow header incorrect value: %s", allow)
+			}
+
+			// test specific path
+			req, err = http.NewRequest(http.MethodOptions, "/x/y", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			router.ServeHTTP(w, req)
+
+			if allow := w.Header().Get("Allow"); !strings.Contains(allow, "POST") || !strings.Contains(allow, "GET") || !strings.Contains(allow, "OPTIONS") {
+				t.Errorf("Allow header incorrect value: %s", allow)
+			}
+		}
+		handler := &mockHandler{}
+		router := New().(*router)
+
+		in := make([]reflect.Value, 2)
+		in[0] = reflect.ValueOf("/x/y")
+		in[1] = reflect.ValueOf(handler)
+		reflect.ValueOf(router).MethodByName(m).Call(in)
+
+		TestIfHasRootRoute(t)
+
+		err := mockServeHTTP(router, m, "/x/y")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if handler.served != true {
+			t.Error("Handler has not been served")
+		}
 	}
 }
 
@@ -36,7 +78,7 @@ func TestHandle(t *testing.T) {
 	router := New().(*router)
 	router.Handle(http.MethodPost, "/x/y", handler)
 
-	checkIfHasRootRoute(t, router, http.MethodPost)
+	TestIfHasRootRoute(t)
 
 	err := mockServeHTTP(router, http.MethodPost, "/x/y")
 	if err != nil {
@@ -48,99 +90,10 @@ func TestHandle(t *testing.T) {
 	}
 }
 
-func TestPOST(t *testing.T) {
+func TestMethods(t *testing.T) {
 	t.Parallel()
 
-	router := New().(*router)
-	testBasicMethod(t, router, router.POST, http.MethodPost)
-}
-
-func TestGET(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.GET, http.MethodGet)
-}
-
-func TestPUT(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.PUT, http.MethodPut)
-}
-
-func TestDELETE(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.DELETE, http.MethodDelete)
-}
-
-func TestPATCH(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.PATCH, http.MethodPatch)
-}
-
-func TestHEAD(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.HEAD, http.MethodHead)
-}
-
-func TestCONNECT(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.CONNECT, http.MethodConnect)
-}
-
-func TestTRACE(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.TRACE, http.MethodTrace)
-}
-
-func TestOPTIONS(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.OPTIONS, http.MethodOptions)
-
-	handler := &mockHandler{}
-	router.GET("/x/y", handler)
-	router.POST("/x/y", handler)
-
-	checkIfHasRootRoute(t, router, http.MethodGet)
-
-	w := httptest.NewRecorder()
-
-	// test all tree "*" paths
-	req, err := http.NewRequest(http.MethodOptions, "*", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	router.ServeHTTP(w, req)
-
-	if allow := w.Header().Get("Allow"); !strings.Contains(allow, "POST") || !strings.Contains(allow, "GET") || !strings.Contains(allow, "OPTIONS") {
-		t.Errorf("Allow header incorrect value: %s", allow)
-	}
-
-	// test specific path
-	req, err = http.NewRequest(http.MethodOptions, "/x/y", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	router.ServeHTTP(w, req)
-
-	if allow := w.Header().Get("Allow"); !strings.Contains(allow, "POST") || !strings.Contains(allow, "GET") || !strings.Contains(allow, "OPTIONS") {
-		t.Errorf("Allow header incorrect value: %s", allow)
-	}
+	TestBasicMethod(t)
 }
 
 func TestNotFound(t *testing.T) {

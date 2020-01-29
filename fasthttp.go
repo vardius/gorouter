@@ -131,7 +131,7 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 		var h fasthttp.RequestHandler
 		if r.middlewareCounter > 0 {
 			allMiddleware := r.globalMiddleware
-			if treeMiddleware := r.tree.MatchMiddleware(method + path); treeMiddleware != nil && len(treeMiddleware) > 0 {
+			if treeMiddleware := r.tree.MatchMiddleware(method + path); len(treeMiddleware) > 0 {
 				allMiddleware = allMiddleware.Merge(treeMiddleware.Sort())
 			}
 

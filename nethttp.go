@@ -132,7 +132,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		var h http.Handler
 		if r.middlewareCounter > 0 {
 			allMiddleware := r.globalMiddleware
-			if treeMiddleware := r.tree.MatchMiddleware(req.Method + req.URL.Path); treeMiddleware != nil && len(treeMiddleware) > 0 {
+			if treeMiddleware := r.tree.MatchMiddleware(req.Method + req.URL.Path); len(treeMiddleware) > 0 {
 				allMiddleware = allMiddleware.Merge(treeMiddleware.Sort())
 			}
 

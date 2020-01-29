@@ -8,7 +8,7 @@ func TestMiddleware_WithPriority(t *testing.T) {
 	type test struct {
 		name       string
 		middleware Middleware
-		priority       uint
+		priority   uint
 	}
 	tests := []test{
 		{"Zero", mockMiddleware("Zero"), 0},

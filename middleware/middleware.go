@@ -40,6 +40,6 @@ func (m *sortableMiddleware) Priority() uint {
 func WithPriority(middleware Middleware, priority uint) Middleware {
 	return &sortableMiddleware{
 		Middleware: middleware,
-		priority: priority,
+		priority:   priority,
 	}
 }

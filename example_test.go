@@ -114,7 +114,7 @@ func ExampleMiddlewareFunc_second() {
 	router := gorouter.New()
 	router.GET("/hello/{name}", http.HandlerFunc(hello))
 
-	// apply middleware to route and all it children
+	// apply middleware to route and all its children
 	// can pass as many as you want
 	router.USE("GET", "/hello/{name}", logger)
 
@@ -206,7 +206,7 @@ func ExampleFastHTTPMiddlewareFunc_second() {
 	router := gorouter.NewFastHTTPRouter()
 	router.GET("/hello/{name}", hello)
 
-	// apply middleware to route and all it children
+	// apply middleware to route and all its children
 	// can pass as many as you want
 	router.USE("GET", "/hello/{name}", logger)
 

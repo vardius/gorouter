@@ -6,27 +6,29 @@ import (
 	"github.com/valyala/fasthttp"
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
-	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
 // NewFastHTTPRouter creates new Router instance, returns pointer
 func NewFastHTTPRouter(fs ...FastHTTPMiddlewareFunc) FastHTTPRouter {
+	globalMiddleware := transformFastHTTPMiddlewareFunc(fs...)
 	return &fastHTTPRouter{
-		routes:     mux.NewTree(),
-		middleware: transformFastHTTPMiddlewareFunc(fs...),
+		tree:              mux.NewTree(),
+		globalMiddleware:  globalMiddleware,
+		middlewareCounter: uint(len(globalMiddleware)),
 	}
 }
 
 type fastHTTPRouter struct {
-	routes     mux.Tree
-	middleware middleware.Middleware
-	fileServer fasthttp.RequestHandler
-	notFound   fasthttp.RequestHandler
-	notAllowed fasthttp.RequestHandler
+	tree              mux.Tree
+	globalMiddleware  middleware.Collection
+	fileServer        fasthttp.RequestHandler
+	notFound          fasthttp.RequestHandler
+	notAllowed        fasthttp.RequestHandler
+	middlewareCounter uint
 }
 
 func (r *fastHTTPRouter) PrettyPrint() string {
-	return r.routes.PrettyPrint()
+	return r.tree.PrettyPrint()
 }
 
 func (r *fastHTTPRouter) POST(p string, f fasthttp.RequestHandler) {
@@ -65,17 +67,20 @@ func (r *fastHTTPRouter) TRACE(p string, f fasthttp.RequestHandler) {
 	r.Handle(http.MethodTrace, p, f)
 }
 
-func (r *fastHTTPRouter) USE(method, p string, fs ...FastHTTPMiddlewareFunc) {
+func (r *fastHTTPRouter) USE(method, path string, fs ...FastHTTPMiddlewareFunc) {
 	m := transformFastHTTPMiddlewareFunc(fs...)
+	for i, mf := range m {
+		m[i] = middleware.WithPriority(mf, r.middlewareCounter)
+	}
 
-	addMiddleware(r.routes, method, p, m)
+	r.tree = r.tree.WithMiddleware(method+path, m, 0)
+	r.middlewareCounter += uint(len(m))
 }
 
 func (r *fastHTTPRouter) Handle(method, path string, h fasthttp.RequestHandler) {
 	route := newRoute(h)
-	route.PrependMiddleware(r.middleware)
 
-	r.routes = r.routes.WithRoute(method+path, route, 0)
+	r.tree = r.tree.WithRoute(method+path, route, 0)
 }
 
 func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
@@ -91,15 +96,14 @@ func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
 		http.MethodTrace,
 	} {
 		route := newRoute(h)
-		route.PrependMiddleware(r.middleware)
 
-		r.routes = r.routes.WithSubrouter(method+path, route, 0)
+		r.tree = r.tree.WithSubrouter(method+path, route, 0)
 	}
 }
 
 func (r *fastHTTPRouter) Compile() {
-	for i, methodNode := range r.routes {
-		r.routes[i].WithChildren(methodNode.Tree().Compile())
+	for i, methodNode := range r.tree {
+		r.tree[i].WithChildren(methodNode.Tree().Compile())
 	}
 }
 
@@ -121,32 +125,38 @@ func (r *fastHTTPRouter) ServeFiles(root string, stripSlashes int) {
 
 func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 	method := string(ctx.Method())
-	pathAsString := string(ctx.Path())
-	path := pathutils.TrimSlash(pathAsString)
+	path := string(ctx.Path())
 
-	if root := r.routes.Find(method); root != nil {
-		if node, params, subPath := root.Tree().Match(path); node != nil && node.Route() != nil {
-			if len(params) > 0 {
-				ctx.SetUserValue("params", params)
+	if route, params, subPath := r.tree.MatchRoute(method + path); route != nil {
+		var h fasthttp.RequestHandler
+		if r.middlewareCounter > 0 {
+			allMiddleware := r.globalMiddleware
+			if treeMiddleware := r.tree.MatchMiddleware(method + path); len(treeMiddleware) > 0 {
+				allMiddleware = allMiddleware.Merge(treeMiddleware.Sort())
 			}
 
-			if subPath != "" {
-				ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))
-			}
+			computedHandler := allMiddleware.Compose(route.Handler())
 
-			node.Route().Handler().(fasthttp.RequestHandler)(ctx)
-			return
+			h = computedHandler.(fasthttp.RequestHandler)
+		} else {
+			h = route.Handler().(fasthttp.RequestHandler)
 		}
 
-		if pathAsString == "/" && root.Route() != nil {
-			root.Route().Handler().(fasthttp.RequestHandler)(ctx)
-			return
+		if len(params) > 0 {
+			ctx.SetUserValue("params", params)
 		}
+
+		if subPath != "" {
+			ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))
+		}
+
+		h(ctx)
+		return
 	}
 
 	// Handle OPTIONS
 	if method == http.MethodOptions {
-		if allow := allowed(r.routes, method, path); len(allow) > 0 {
+		if allow := allowed(r.tree, method, path); len(allow) > 0 {
 			ctx.Response.Header.Set("Allow", allow)
 			return
 		}
@@ -156,7 +166,7 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 		return
 	} else {
 		// Handle 405
-		if allow := allowed(r.routes, method, path); len(allow) > 0 {
+		if allow := allowed(r.tree, method, path); len(allow) > 0 {
 			ctx.Response.Header.Set("Allow", allow)
 			r.serveNotAllowed(ctx)
 			return
@@ -183,12 +193,12 @@ func (r *fastHTTPRouter) serveNotAllowed(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func transformFastHTTPMiddlewareFunc(fs ...FastHTTPMiddlewareFunc) middleware.Middleware {
-	m := make(middleware.Middleware, len(fs))
+func transformFastHTTPMiddlewareFunc(fs ...FastHTTPMiddlewareFunc) middleware.Collection {
+	m := make(middleware.Collection, len(fs))
 
 	for i, f := range fs {
-		m[i] = func(mf FastHTTPMiddlewareFunc) middleware.MiddlewareFunc {
-			return func(h interface{}) interface{} {
+		m[i] = func(mf FastHTTPMiddlewareFunc) middleware.WrapperFunc {
+			return func(h middleware.Handler) middleware.Handler {
 				return mf(h.(fasthttp.RequestHandler))
 			}
 		}(f) // f is a reference to function so we have to wrap if with that callback

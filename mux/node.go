@@ -4,6 +4,7 @@ import (
 	"regexp"
 
 	"github.com/vardius/gorouter/v4/context"
+	"github.com/vardius/gorouter/v4/middleware"
 	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
@@ -17,6 +18,7 @@ func NewNode(pathPart string, maxParamsSize uint8) Node {
 	static := &staticNode{
 		name:          name,
 		children:      NewTree(),
+		middleware:    middleware.NewCollection(),
 		maxParamsSize: maxParamsSize,
 	}
 
@@ -35,60 +37,100 @@ func NewNode(pathPart string, maxParamsSize uint8) Node {
 	return node
 }
 
-// Node represents mux Node
-// Can match path and provide routes
-type Node interface {
-	// Match matches given path to Node within Node and its Tree
-	Match(path string) (Node, context.Params, string)
+// RouteAware represents route aware Node
+type RouteAware interface {
+	// MatchRoute matches given path to Route within Node and its Tree
+	MatchRoute(path string) (Route, context.Params, string)
 
-	// Name provides Node name
-	Name() string
-	// Tree provides next level Node Tree
-	Tree() Tree
 	// Route provides Node's Route if assigned
 	Route() Route
+	// WithRoute assigns Route to given Node
+	WithRoute(r Route)
 
 	// Name provides maximum number of parameters Route can have for given Node
 	MaxParamsSize() uint8
-
-	// WithRoute assigns Route to given Node
-	WithRoute(r Route)
-	// WithChildren sets Node's Tree
-	WithChildren(t Tree)
-
 	// SkipSubPath sets skipSubPath node property to true
 	// will skip children match search and return current node directly
 	// this value is used when matching subrouter
 	SkipSubPath()
 }
 
+// MiddlewareAware represents middleware aware node
+type MiddlewareAware interface {
+	// MatchMiddleware collects middleware from all nodes within tree matching given path
+	// middleware is merged in order nodes where created, collecting from top to bottom
+	MatchMiddleware(path string) middleware.Collection
+
+	// Middleware provides Node's middleware collection
+	Middleware() middleware.Collection
+	// AppendMiddleware appends middleware collection to Node
+	AppendMiddleware(m middleware.Collection)
+	// PrependMiddleware prepends middleware collection to Node
+	PrependMiddleware(m middleware.Collection)
+}
+
+// Node represents mux Node
+// Can match path and provide routes
+type Node interface {
+	RouteAware
+	MiddlewareAware
+
+	// Name provides Node name
+	Name() string
+	// Tree provides next level Node Tree
+	Tree() Tree
+	// WithChildren sets Node's Tree
+	WithChildren(t Tree)
+}
+
 type staticNode struct {
 	name     string
 	children Tree
 
-	route Route
+	route      Route
+	middleware middleware.Collection
 
 	maxParamsSize uint8
 	skipSubPath   bool
 }
 
-func (n *staticNode) Match(path string) (Node, context.Params, string) {
+func (n *staticNode) MatchRoute(path string) (Route, context.Params, string) {
 	nameLength := len(n.name)
 	pathLength := len(path)
 
 	if pathLength >= nameLength && n.name == path[:nameLength] {
 		if nameLength+1 >= pathLength {
-			return n, make(context.Params, n.maxParamsSize), ""
+			return n.route, make(context.Params, n.maxParamsSize), ""
 		}
 
 		if n.skipSubPath {
-			return n, make(context.Params, n.maxParamsSize), path[nameLength+1:]
+			return n.route, make(context.Params, n.maxParamsSize), path[nameLength+1:]
 		}
 
-		return n.children.Match(path[nameLength+1:]) // +1 because we wan to skip slash as well
+		return n.children.MatchRoute(path[nameLength+1:]) // +1 because we wan to skip slash as well
 	}
 
 	return nil, nil, ""
+}
+
+func (n *staticNode) MatchMiddleware(path string) middleware.Collection {
+	nameLength := len(n.name)
+	pathLength := len(path)
+
+	if pathLength >= nameLength && n.name == path[:nameLength] {
+		if nameLength+1 >= pathLength {
+			return n.middleware
+		}
+
+		if treeMiddleware := n.children.MatchMiddleware(path[nameLength+1:]); treeMiddleware != nil { // +1 because we wan to skip slash as well
+
+			return n.middleware.Merge(treeMiddleware)
+		}
+
+		return n.middleware
+	}
+
+	return nil
 }
 
 func (n *staticNode) Name() string {
@@ -103,6 +145,10 @@ func (n *staticNode) Route() Route {
 	return n.route
 }
 
+func (n *staticNode) Middleware() middleware.Collection {
+	return n.middleware
+}
+
 func (n *staticNode) MaxParamsSize() uint8 {
 	return n.maxParamsSize
 }
@@ -113,6 +159,14 @@ func (n *staticNode) WithChildren(t Tree) {
 
 func (n *staticNode) WithRoute(r Route) {
 	n.route = r
+}
+
+func (n *staticNode) AppendMiddleware(m middleware.Collection) {
+	n.middleware = n.middleware.Merge(m)
+}
+
+func (n *staticNode) PrependMiddleware(m middleware.Collection) {
+	n.middleware = m.Merge(n.middleware)
 }
 
 func (n *staticNode) SkipSubPath() {
@@ -127,27 +181,37 @@ type wildcardNode struct {
 	*staticNode
 }
 
-func (n *wildcardNode) Match(path string) (Node, context.Params, string) {
+func (n *wildcardNode) MatchRoute(path string) (Route, context.Params, string) {
 	pathPart, subPath := pathutils.GetPart(path)
 	maxParamsSize := n.MaxParamsSize()
 
-	var node Node
+	var route Route
 	var params context.Params
 
 	if subPath == "" || n.staticNode.skipSubPath {
-		node = n
+		route = n.route
 		params = make(context.Params, maxParamsSize)
 	} else {
-		node, params, subPath = n.children.Match(subPath)
-
-		if node == nil {
+		route, params, subPath = n.children.MatchRoute(subPath)
+		if route == nil {
 			return nil, nil, ""
 		}
 	}
 
 	params.Set(maxParamsSize-1, n.name, pathPart)
 
-	return node, params, subPath
+	return route, params, subPath
+}
+
+func (n *wildcardNode) MatchMiddleware(path string) middleware.Collection {
+	_, subPath := pathutils.GetPart(path)
+
+	if treeMiddleware := n.children.MatchMiddleware(subPath); treeMiddleware != nil {
+
+		return n.middleware.Merge(treeMiddleware)
+	}
+
+	return n.middleware
 }
 
 func withRegexp(parent *staticNode, regexp *regexp.Regexp) *regexpNode {
@@ -163,7 +227,7 @@ type regexpNode struct {
 	regexp *regexp.Regexp
 }
 
-func (n *regexpNode) Match(path string) (Node, context.Params, string) {
+func (n *regexpNode) MatchRoute(path string) (Route, context.Params, string) {
 	pathPart, subPath := pathutils.GetPart(path)
 	if !n.regexp.MatchString(pathPart) {
 		return nil, nil, ""
@@ -171,23 +235,36 @@ func (n *regexpNode) Match(path string) (Node, context.Params, string) {
 
 	maxParamsSize := n.MaxParamsSize()
 
-	var node Node
+	var route Route
 	var params context.Params
 
 	if subPath == "" || n.staticNode.skipSubPath {
-		node = n
+		route = n.route
 		params = make(context.Params, maxParamsSize)
 	} else {
-		node, params, subPath = n.children.Match(subPath)
-
-		if node == nil {
+		route, params, subPath = n.children.MatchRoute(subPath)
+		if route == nil {
 			return nil, nil, ""
 		}
 	}
 
 	params.Set(maxParamsSize-1, n.name, pathPart)
 
-	return node, params, subPath
+	return route, params, subPath
+}
+
+func (n *regexpNode) MatchMiddleware(path string) middleware.Collection {
+	pathPart, subPath := pathutils.GetPart(path)
+	if !n.regexp.MatchString(pathPart) {
+		return nil
+	}
+
+	if treeMiddleware := n.children.MatchMiddleware(subPath); treeMiddleware != nil {
+
+		return n.middleware.Merge(treeMiddleware)
+	}
+
+	return n.middleware
 }
 
 func withSubrouter(parent Node) *subrouterNode {

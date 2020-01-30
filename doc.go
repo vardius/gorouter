@@ -3,7 +3,7 @@ Package gorouter provide request router with middleware
 
 Router
 
-The router determines how to handle that request.
+The router determines how to handle http request.
 GoRouter uses a routing tree. Once one branch of the tree matches, only routes inside that branch are considered,
 not any routes after that branch. When instantiating router, the root node of tree is created.
 
@@ -31,7 +31,7 @@ A full route definition contain up to three parts:
 2. The URL path route. This is matched against the URL passed to the router,
 and can contain named wildcard placeholders *(e.g. {placeholder})* to match dynamic parts in the URL.
 
-3. `http.HandleFunc`, which tells the router to handle matched requests to the router with handler.
+3. `http.HandlerFunc`, which tells the router to handle matched requests to the router with handler.
 
 Take the following example:
 

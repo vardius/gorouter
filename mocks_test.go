@@ -42,7 +42,9 @@ func (mfs *mockFileSystem) Open(_ string) (http.File, error) {
 func mockMiddleware(body string) MiddlewareFunc {
 	fn := func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(body))
+			if _, err := w.Write([]byte(body)); err != nil {
+				panic(err)
+			}
 			h.ServeHTTP(w, r)
 		})
 	}
@@ -65,7 +67,9 @@ func mockServeHTTP(h http.Handler, method, path string) error {
 func mockFastHTTPMiddleware(body string) FastHTTPMiddlewareFunc {
 	fn := func(h fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
-			fmt.Fprintf(ctx, body)
+			if _, err := fmt.Fprint(ctx, body); err != nil {
+				panic(err)
+			}
 
 			h(ctx)
 		}
@@ -88,7 +92,7 @@ func checkIfHasRootRoute(t *testing.T, r interface{}, method string) {
 	switch v := r.(type) {
 	case *router:
 	case *fastHTTPRouter:
-		if rootRoute := v.routes.Find(method); rootRoute == nil {
+		if rootRoute := v.tree.Find(method); rootRoute == nil {
 			t.Error("Route not found")
 		}
 	default:

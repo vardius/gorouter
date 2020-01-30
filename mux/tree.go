@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/vardius/gorouter/v4/context"
+	"github.com/vardius/gorouter/v4/middleware"
 	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
@@ -25,17 +26,17 @@ func (t Tree) PrettyPrint() string {
 	for _, child := range t {
 		switch node := child.(type) {
 		case *staticNode:
-			fmt.Fprintf(buff, "\t%s\n", node.Name())
+			_, _ = fmt.Fprintf(buff, "\t%s\n", node.Name())
 		case *wildcardNode:
-			fmt.Fprintf(buff, "\t{%s}\n", node.Name())
+			_, _ = fmt.Fprintf(buff, "\t{%s}\n", node.Name())
 		case *regexpNode:
-			fmt.Fprintf(buff, "\t{%s:%s}\n", node.Name(), node.regexp.String())
+			_, _ = fmt.Fprintf(buff, "\t{%s:%s}\n", node.Name(), node.regexp.String())
 		case *subrouterNode:
-			fmt.Fprintf(buff, "\t_%s\n", node.Name())
+			_, _ = fmt.Fprintf(buff, "\t_%s\n", node.Name())
 		}
 
 		if len(child.Tree()) > 0 {
-			fmt.Fprintf(buff, "\t%s", child.Tree().PrettyPrint())
+			_, _ = fmt.Fprintf(buff, "\t%s", child.Tree().PrettyPrint())
 		}
 	}
 
@@ -52,6 +53,7 @@ func (t Tree) Compile() Tree {
 			case *staticNode:
 				if staticNode, ok := node.Tree()[0].(*staticNode); ok {
 					node.WithChildren(staticNode.Tree())
+					node.AppendMiddleware(staticNode.Middleware())
 					node.name = fmt.Sprintf("%s/%s", node.name, staticNode.name)
 
 					t[i] = node
@@ -67,18 +69,31 @@ func (t Tree) Compile() Tree {
 	return t
 }
 
-// Match path to Node
-func (t Tree) Match(path string) (Node, context.Params, string) {
+// MatchRoute path to first Node
+func (t Tree) MatchRoute(path string) (Route, context.Params, string) {
 	for _, child := range t {
-		if node, params, subPath := child.Match(path); node != nil {
-			return node, params, subPath
+		if route, params, subPath := child.MatchRoute(path); route != nil {
+			return route, params, subPath
 		}
 	}
 
 	return nil, nil, ""
 }
 
-// Find Node inside a tree by name
+// MatchMiddleware collects middleware from all nodes that match path
+func (t Tree) MatchMiddleware(path string) middleware.Collection {
+	var treeMiddleware = make(middleware.Collection, 0)
+
+	for _, child := range t {
+		if m := child.MatchMiddleware(path); m != nil {
+			treeMiddleware = treeMiddleware.Merge(m)
+		}
+	}
+
+	return treeMiddleware
+}
+
+// Find finds Node inside a tree by name
 func (t Tree) Find(name string) Node {
 	if name == "" {
 		return nil
@@ -94,8 +109,35 @@ func (t Tree) Find(name string) Node {
 }
 
 // WithRoute returns new Tree with Route set to Node
-// Route is set to Node under the give path, ff Node does not exist it is created
+// Route is set to Node under the give path, if Node does not exist it is created
 func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
+	path = pathutils.TrimSlash(path)
+	if path == "" {
+		return t
+	}
+
+	parts := strings.Split(path, "/")
+	name, _ := pathutils.GetNameFromPart(parts[0])
+	node := t.Find(name)
+	newTree := t
+
+	if node == nil {
+		node = NewNode(parts[0], maxParamsSize)
+		newTree = t.withNode(node).sort()
+	}
+
+	if len(parts) == 1 {
+		node.WithRoute(route)
+	} else {
+		node.WithChildren(node.Tree().WithRoute(strings.Join(parts[1:], "/"), route, node.MaxParamsSize()))
+	}
+
+	return newTree
+}
+
+// WithMiddleware returns new Tree with Collection appended to given Node
+// Collection is appended to Node under the give path, if Node does not exist it will panic
+func (t Tree) WithMiddleware(path string, m middleware.Collection, maxParamsSize uint8) Tree {
 	path = pathutils.TrimSlash(path)
 	if path == "" {
 		return t
@@ -112,9 +154,9 @@ func (t Tree) WithRoute(path string, route Route, maxParamsSize uint8) Tree {
 	}
 
 	if len(parts) == 1 {
-		node.WithRoute(route)
+		node.AppendMiddleware(m)
 	} else {
-		node.WithChildren(node.Tree().WithRoute(strings.Join(parts[1:], "/"), route, node.MaxParamsSize()))
+		node.WithChildren(node.Tree().WithMiddleware(strings.Join(parts[1:], "/"), m, maxParamsSize))
 	}
 
 	return newTree
@@ -138,7 +180,7 @@ func (t Tree) WithSubrouter(path string, route Route, maxParamsSize uint8) Tree 
 		if len(parts) == 1 {
 			node = withSubrouter(node)
 		}
-		newTree = t.withNode(node)
+		newTree = t.withNode(node).sort()
 	}
 
 	if len(parts) == 1 {
@@ -151,7 +193,6 @@ func (t Tree) WithSubrouter(path string, route Route, maxParamsSize uint8) Tree 
 }
 
 // withNode inserts node to Tree
-// Nodes are sorted static, regexp, wildcard
 func (t Tree) withNode(node Node) Tree {
 	if node == nil {
 		return t
@@ -159,12 +200,17 @@ func (t Tree) withNode(node Node) Tree {
 
 	newTree := append(t, node)
 
+	return newTree
+}
+
+// Sort sorts nodes in order: static, regexp, wildcard
+func (t Tree) sort() Tree {
 	// Sort Nodes in order [statics, regexps, wildcards]
-	sort.Slice(newTree, func(i, j int) bool {
-		return isMoreImportant(newTree[i], newTree[j])
+	sort.SliceStable(t, func(i, j int) bool {
+		return isMoreImportant(t[i], t[j])
 	})
 
-	return newTree
+	return t
 }
 
 func isMoreImportant(left Node, right Node) bool {

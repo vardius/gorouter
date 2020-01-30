@@ -21,30 +21,26 @@ func BenchmarkMux(b *testing.B) {
 	commentID := NewNode(`{commentId:\d+}`, comments.MaxParamsSize())
 	commentNew := NewNode("new", commentID.MaxParamsSize())
 
-	root.WithChildren(root.Tree().withNode(lang))
-	lang.WithChildren(lang.Tree().withNode(blog))
-	blog.WithChildren(blog.Tree().withNode(search))
-	blog.WithChildren(blog.Tree().withNode(page))
-	blog.WithChildren(blog.Tree().withNode(posts))
-	blog.WithChildren(blog.Tree().withNode(comments))
-	page.WithChildren(page.Tree().withNode(pageID))
-	posts.WithChildren(posts.Tree().withNode(postsID))
-	comments.WithChildren(comments.Tree().withNode(commentID))
-	commentID.WithChildren(commentID.Tree().withNode(commentNew))
+	root.WithChildren(root.Tree().withNode(lang).sort())
+	lang.WithChildren(lang.Tree().withNode(blog).sort())
+	blog.WithChildren(blog.Tree().withNode(search).sort())
+	blog.WithChildren(blog.Tree().withNode(page).sort())
+	blog.WithChildren(blog.Tree().withNode(posts).sort())
+	blog.WithChildren(blog.Tree().withNode(comments).sort())
+	page.WithChildren(page.Tree().withNode(pageID).sort())
+	posts.WithChildren(posts.Tree().withNode(postsID).sort())
+	comments.WithChildren(comments.Tree().withNode(commentID).sort())
+	commentID.WithChildren(commentID.Tree().withNode(commentNew).sort())
 
 	root.WithChildren(root.Tree().Compile())
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			n, _, _ := root.Tree().Match("pl/blog/comments/123/new")
+			_, _, subPath := root.Tree().MatchRoute("pl/blog/comments/123/new")
 
-			if n == nil {
-				b.Fatalf("%v", n)
-			}
-
-			if n.Name() != commentNew.Name() {
-				b.Fatalf("%s != %s", n.Name(), commentNew.Name())
+			if subPath != "" {
+				b.Fatalf("%s != %s (%s)", subPath, "pl/blog/comments/123/new", commentNew.Name())
 			}
 		}
 	})

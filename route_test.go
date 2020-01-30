@@ -11,18 +11,22 @@ import (
 
 func TestRouter(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("4"))
+		if _, err := w.Write([]byte("4")); err != nil {
+			t.Fatal(err)
+		}
 	})
 
-	buildMiddlewareFunc := func(body string) middleware.MiddlewareFunc {
-		fn := func(h interface{}) interface{} {
+	buildMiddlewareFunc := func(body string) middleware.Middleware {
+		fn := func(h middleware.Handler) middleware.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte(body))
+				if _, err := w.Write([]byte(body)); err != nil {
+					t.Fatal(err)
+				}
 				h.(http.Handler).ServeHTTP(w, r)
 			})
 		}
 
-		return fn
+		return middleware.WrapperFunc(fn)
 	}
 
 	m1 := buildMiddlewareFunc("1")
@@ -30,9 +34,8 @@ func TestRouter(t *testing.T) {
 	m3 := buildMiddlewareFunc("3")
 
 	r := newRoute(handler)
-	r.AppendMiddleware(middleware.New(m1, m2, m3))
-
-	h := r.Handler()
+	m := middleware.NewCollection(m1, m2, m3)
+	h := m.Compose(r.Handler())
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", "/", nil)

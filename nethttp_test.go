@@ -3,27 +3,12 @@ package gorouter
 import (
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/vardius/gorouter/v4/context"
 )
-
-func testBasicMethod(t *testing.T, router *router, h func(pattern string, handler http.Handler), method string) {
-	handler := &mockHandler{}
-	h("/x/y", handler)
-
-	checkIfHasRootRoute(t, router, method)
-
-	err := mockServeHTTP(router, method, "/x/y")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if handler.served != true {
-		t.Error("Handler has not been served")
-	}
-}
 
 func TestInterface(t *testing.T) {
 	var _ http.Handler = New()
@@ -48,69 +33,10 @@ func TestHandle(t *testing.T) {
 	}
 }
 
-func TestPOST(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.POST, http.MethodPost)
-}
-
-func TestGET(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.GET, http.MethodGet)
-}
-
-func TestPUT(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.PUT, http.MethodPut)
-}
-
-func TestDELETE(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.DELETE, http.MethodDelete)
-}
-
-func TestPATCH(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.PATCH, http.MethodPatch)
-}
-
-func TestHEAD(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.HEAD, http.MethodHead)
-}
-
-func TestCONNECT(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.CONNECT, http.MethodConnect)
-}
-
-func TestTRACE(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.TRACE, http.MethodTrace)
-}
-
-func TestOPTIONS(t *testing.T) {
-	t.Parallel()
-
-	router := New().(*router)
-	testBasicMethod(t, router, router.OPTIONS, http.MethodOptions)
-
+func TestOPTIONSHeaders(t *testing.T) {
 	handler := &mockHandler{}
+	router := New().(*router)
+
 	router.GET("/x/y", handler)
 	router.POST("/x/y", handler)
 
@@ -118,7 +44,7 @@ func TestOPTIONS(t *testing.T) {
 
 	w := httptest.NewRecorder()
 
-	// test all routes "*" paths
+	// test all tree "*" paths
 	req, err := http.NewRequest(http.MethodOptions, "*", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -143,6 +69,42 @@ func TestOPTIONS(t *testing.T) {
 	}
 }
 
+func TestMethods(t *testing.T) {
+	t.Parallel()
+
+	for _, method := range []string{
+		http.MethodPost,
+		http.MethodGet,
+		http.MethodPut,
+		http.MethodDelete,
+		http.MethodPatch,
+		http.MethodHead,
+		http.MethodConnect,
+		http.MethodTrace,
+		http.MethodOptions,
+	} {
+		t.Run(method, func(t *testing.T) {
+			t.Parallel()
+
+			handler := &mockHandler{}
+			router := New().(*router)
+
+			reflect.ValueOf(router).MethodByName(method).Call([]reflect.Value{reflect.ValueOf("/x/y"), reflect.ValueOf(handler)})
+
+			checkIfHasRootRoute(t, router, method)
+
+			err := mockServeHTTP(router, method, "/x/y")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if handler.served != true {
+				t.Error("Handler has not been served")
+			}
+		})
+	}
+}
+
 func TestNotFound(t *testing.T) {
 	t.Parallel()
 
@@ -164,7 +126,9 @@ func TestNotFound(t *testing.T) {
 	}
 
 	router.NotFound(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("test"))
+		if _, err := w.Write([]byte("test")); err != nil {
+			t.Fatal(err)
+		}
 	}))
 
 	if router.notFound == nil {
@@ -200,7 +164,9 @@ func TestNotAllowed(t *testing.T) {
 	}
 
 	router.NotAllowed(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("test"))
+		if _, err := w.Write([]byte("test")); err != nil {
+			t.Fatal(err)
+		}
 	}))
 
 	if router.notAllowed == nil {
@@ -345,7 +311,9 @@ func TestNilMiddleware(t *testing.T) {
 	router := New().(*router)
 
 	router.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("test"))
+		if _, err := w.Write([]byte("test")); err != nil {
+			t.Fatal(err)
+		}
 	}))
 
 	w := httptest.NewRecorder()
@@ -406,10 +374,13 @@ func TestNodeApplyMiddleware(t *testing.T) {
 			t.Fatal("Error while reading param")
 		}
 
-		w.Write([]byte(params.Value("param")))
+		if _, err := w.Write([]byte(params.Value("param"))); err != nil {
+			t.Fatal(err)
+		}
 	}))
 
-	router.USE(http.MethodGet, "/x/{param}", mockMiddleware("m"))
+	router.USE(http.MethodGet, "/x/{param}", mockMiddleware("m1"))
+	router.USE(http.MethodGet, "/x/x", mockMiddleware("m2"))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(http.MethodGet, "/x/y", nil)
@@ -419,8 +390,114 @@ func TestNodeApplyMiddleware(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	if w.Body.String() != "my" {
-		t.Errorf("Use global middleware error %s", w.Body.String())
+	if w.Body.String() != "m1y" {
+		t.Errorf("Use middleware error %s", w.Body.String())
+	}
+
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest(http.MethodGet, "/x/x", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	router.ServeHTTP(w, req)
+
+	if w.Body.String() != "m1m2x" {
+		t.Errorf("Use middleware error %s", w.Body.String())
+	}
+}
+
+func TestTreeOrphanMiddlewareOrder(t *testing.T) {
+	t.Parallel()
+
+	router := New().(*router)
+
+	router.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write([]byte("handler")); err != nil {
+			t.Fatal(err)
+		}
+	}))
+
+	// Method global middleware
+	router.USE(http.MethodGet, "/", mockMiddleware("m1->"))
+	router.USE(http.MethodGet, "/", mockMiddleware("m2->"))
+	// Path middleware
+	router.USE(http.MethodGet, "/x", mockMiddleware("mx1->"))
+	router.USE(http.MethodGet, "/x", mockMiddleware("mx2->"))
+	router.USE(http.MethodGet, "/x/y", mockMiddleware("mxy1->"))
+	router.USE(http.MethodGet, "/x/y", mockMiddleware("mxy2->"))
+	router.USE(http.MethodGet, "/x/{param}", mockMiddleware("mparam1->"))
+	router.USE(http.MethodGet, "/x/{param}", mockMiddleware("mparam2->"))
+	router.USE(http.MethodGet, "/x/y", mockMiddleware("mxy3->"))
+	router.USE(http.MethodGet, "/x/y", mockMiddleware("mxy4->"))
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, "/x/y", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	router.ServeHTTP(w, req)
+
+	if w.Body.String() != "m1->m2->mx1->mx2->mxy1->mxy2->mparam1->mparam2->mxy3->mxy4->handler" {
+		t.Errorf("Use middleware error %s", w.Body.String())
+	}
+}
+
+func TestNodeApplyMiddlewareStatic(t *testing.T) {
+	t.Parallel()
+
+	router := New().(*router)
+
+	router.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write([]byte("x")); err != nil {
+			t.Fatal(err)
+		}
+	}))
+
+	router.USE(http.MethodGet, "/x/x", mockMiddleware("m1"))
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, "/x/x", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	router.ServeHTTP(w, req)
+
+	if w.Body.String() != "m1x" {
+		t.Errorf("Use middleware error %s", w.Body.String())
+	}
+}
+
+func TestNodeApplyMiddlewareInvalidNodeReference(t *testing.T) {
+	t.Parallel()
+
+	router := New().(*router)
+
+	router.GET("/x/{param}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		params, ok := context.Parameters(r.Context())
+		if !ok {
+			t.Fatal("Error while reading param")
+		}
+
+		if _, err := w.Write([]byte(params.Value("param"))); err != nil {
+			t.Fatal(err)
+		}
+	}))
+
+	router.USE(http.MethodGet, "/x/x", mockMiddleware("m1"))
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, "/x/y", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	router.ServeHTTP(w, req)
+
+	if w.Body.String() != "y" {
+		t.Errorf("Use middleware error %s", w.Body.String())
 	}
 }
 
@@ -568,7 +645,9 @@ func TestMountSubRouter(t *testing.T) {
 	).(*router)
 
 	subRouter.GET("/y", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("[s]"))
+		if _, err := w.Write([]byte("[s]")); err != nil {
+			t.Fatal(err)
+		}
 	}))
 
 	mainRouter.Mount("/{param}", subRouter)
@@ -588,6 +667,6 @@ func TestMountSubRouter(t *testing.T) {
 	mainRouter.ServeHTTP(w, req)
 
 	if w.Body.String() != "[rg1][rg2][r1][r2][sg1][sg2][s1][s2][s]" {
-		t.Errorf("Router mount sub router middleware error: %s", w.Body.String())
+		t.Errorf("Router mount subrouter middleware error: %s", w.Body.String())
 	}
 }

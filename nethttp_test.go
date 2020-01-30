@@ -83,21 +83,25 @@ func TestMethods(t *testing.T) {
 		http.MethodTrace,
 		http.MethodOptions,
 	} {
-		handler := &mockHandler{}
-		router := New().(*router)
+		t.Run(method, func(t *testing.T) {
+			t.Parallel()
 
-		reflect.ValueOf(router).MethodByName(method).Call([]reflect.Value{reflect.ValueOf("/x/y"), reflect.ValueOf(handler)})
+			handler := &mockHandler{}
+			router := New().(*router)
 
-		checkIfHasRootRoute(t, router, method)
+			reflect.ValueOf(router).MethodByName(method).Call([]reflect.Value{reflect.ValueOf("/x/y"), reflect.ValueOf(handler)})
 
-		err := mockServeHTTP(router, method, "/x/y")
-		if err != nil {
-			t.Fatal(err)
-		}
+			checkIfHasRootRoute(t, router, method)
 
-		if handler.served != true {
-			t.Error("Handler has not been served")
-		}
+			err := mockServeHTTP(router, method, "/x/y")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if handler.served != true {
+				t.Error("Handler has not been served")
+			}
+		})
 	}
 }
 

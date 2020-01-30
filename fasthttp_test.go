@@ -81,21 +81,25 @@ func TestFastHTTPMethods(t *testing.T) {
 		fasthttp.MethodTrace,
 		fasthttp.MethodOptions,
 	} {
-		handler := &mockHandler{}
-		router := NewFastHTTPRouter().(*fastHTTPRouter)
+		t.Run(method, func(t *testing.T) {
+			t.Parallel()
 
-		reflect.ValueOf(router).MethodByName(method).Call([]reflect.Value{reflect.ValueOf("/x/y"), reflect.ValueOf(handler.HandleFastHTTP)})
+			handler := &mockHandler{}
+			router := NewFastHTTPRouter().(*fastHTTPRouter)
 
-		checkIfHasRootRoute(t, router, method)
+			reflect.ValueOf(router).MethodByName(method).Call([]reflect.Value{reflect.ValueOf("/x/y"), reflect.ValueOf(handler.HandleFastHTTP)})
 
-		err := mockHandleFastHTTP(router.HandleFastHTTP, method, "/x/y")
-		if err != nil {
-			t.Fatal(err)
-		}
+			checkIfHasRootRoute(t, router, method)
 
-		if handler.served != true {
-			t.Error("Handler has not been served")
-		}
+			err := mockHandleFastHTTP(router.HandleFastHTTP, method, "/x/y")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if handler.served != true {
+				t.Error("Handler has not been served")
+			}
+		})
 	}
 }
 

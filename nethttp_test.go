@@ -10,63 +10,6 @@ import (
 	"github.com/vardius/gorouter/v4/context"
 )
 
-func TestBasicMethod(t *testing.T) {
-	for _, m := range CreateHTTPMethodsMap() {
-		if m == "OPTIONS" {
-			router := New().(*router)
-			handler := &mockHandler{}
-			router.GET("/x/y", handler)
-			router.POST("/x/y", handler)
-
-			TestIfHasRootRoute(t)
-
-			w := httptest.NewRecorder()
-
-			// test all tree "*" paths
-			req, err := http.NewRequest(http.MethodOptions, "*", nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			router.ServeHTTP(w, req)
-
-			if allow := w.Header().Get("Allow"); !strings.Contains(allow, "POST") || !strings.Contains(allow, "GET") || !strings.Contains(allow, "OPTIONS") {
-				t.Errorf("Allow header incorrect value: %s", allow)
-			}
-
-			// test specific path
-			req, err = http.NewRequest(http.MethodOptions, "/x/y", nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			router.ServeHTTP(w, req)
-
-			if allow := w.Header().Get("Allow"); !strings.Contains(allow, "POST") || !strings.Contains(allow, "GET") || !strings.Contains(allow, "OPTIONS") {
-				t.Errorf("Allow header incorrect value: %s", allow)
-			}
-		}
-		handler := &mockHandler{}
-		router := New().(*router)
-
-		in := make([]reflect.Value, 2)
-		in[0] = reflect.ValueOf("/x/y")
-		in[1] = reflect.ValueOf(handler)
-		reflect.ValueOf(router).MethodByName(m).Call(in)
-
-		TestIfHasRootRoute(t)
-
-		err := mockServeHTTP(router, m, "/x/y")
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if handler.served != true {
-			t.Error("Handler has not been served")
-		}
-	}
-}
-
 func TestInterface(t *testing.T) {
 	var _ http.Handler = New()
 }
@@ -78,7 +21,7 @@ func TestHandle(t *testing.T) {
 	router := New().(*router)
 	router.Handle(http.MethodPost, "/x/y", handler)
 
-	TestIfHasRootRoute(t)
+	checkIfHasRootRoute(t, router, http.MethodPost)
 
 	err := mockServeHTTP(router, http.MethodPost, "/x/y")
 	if err != nil {
@@ -90,10 +33,72 @@ func TestHandle(t *testing.T) {
 	}
 }
 
+func TestOPTIONSHeaders(t *testing.T) {
+	handler := &mockHandler{}
+	router := New().(*router)
+
+	router.GET("/x/y", handler)
+	router.POST("/x/y", handler)
+
+	checkIfHasRootRoute(t, router, http.MethodGet)
+
+	w := httptest.NewRecorder()
+
+	// test all tree "*" paths
+	req, err := http.NewRequest(http.MethodOptions, "*", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	router.ServeHTTP(w, req)
+
+	if allow := w.Header().Get("Allow"); !strings.Contains(allow, "POST") || !strings.Contains(allow, "GET") || !strings.Contains(allow, "OPTIONS") {
+		t.Errorf("Allow header incorrect value: %s", allow)
+	}
+
+	// test specific path
+	req, err = http.NewRequest(http.MethodOptions, "/x/y", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	router.ServeHTTP(w, req)
+
+	if allow := w.Header().Get("Allow"); !strings.Contains(allow, "POST") || !strings.Contains(allow, "GET") || !strings.Contains(allow, "OPTIONS") {
+		t.Errorf("Allow header incorrect value: %s", allow)
+	}
+}
+
 func TestMethods(t *testing.T) {
 	t.Parallel()
 
-	TestBasicMethod(t)
+	for _, method := range []string{
+		http.MethodPost,
+		http.MethodGet,
+		http.MethodPut,
+		http.MethodDelete,
+		http.MethodPatch,
+		http.MethodHead,
+		http.MethodConnect,
+		http.MethodTrace,
+		http.MethodOptions,
+	} {
+		handler := &mockHandler{}
+		router := New().(*router)
+
+		reflect.ValueOf(router).MethodByName(method).Call([]reflect.Value{reflect.ValueOf("/x/y"), reflect.ValueOf(handler)})
+
+		checkIfHasRootRoute(t, router, method)
+
+		err := mockServeHTTP(router, method, "/x/y")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if handler.served != true {
+			t.Error("Handler has not been served")
+		}
+	}
 }
 
 func TestNotFound(t *testing.T) {

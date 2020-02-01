@@ -1,6 +1,7 @@
 package gorouter
 
 import (
+	pathutils "github.com/vardius/gorouter/v4/path"
 	"net/http"
 
 	"github.com/valyala/fasthttp"
@@ -127,32 +128,57 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 	method := string(ctx.Method())
 	path := string(ctx.Path())
 
-	if route, params, subPath := r.tree.MatchRoute(method + path); route != nil {
+	if root := r.tree.Find(method); root != nil {
 		var h fasthttp.RequestHandler
-		if r.middlewareCounter > 0 {
-			allMiddleware := r.globalMiddleware
-			if treeMiddleware := r.tree.MatchMiddleware(method + path); len(treeMiddleware) > 0 {
-				allMiddleware = allMiddleware.Merge(treeMiddleware.Sort())
+
+		if path == "/" {
+			if root.Route().Handler() != nil {
+				if r.middlewareCounter > 0 {
+					allMiddleware := r.globalMiddleware.Merge(root.Middleware().Sort())
+					computedHandler := allMiddleware.Compose(root.Route().Handler())
+
+					h = computedHandler.(fasthttp.RequestHandler)
+				} else {
+					h = root.Route().Handler().(fasthttp.RequestHandler)
+				}
+
+				h(ctx)
+				return
 			}
-
-			computedHandler := allMiddleware.Compose(route.Handler())
-
-			h = computedHandler.(fasthttp.RequestHandler)
 		} else {
-			h = route.Handler().(fasthttp.RequestHandler)
-		}
+			path = pathutils.TrimSlash(path)
 
-		if len(params) > 0 {
-			ctx.SetUserValue("params", params)
-		}
+			if route, params, subPath := root.Tree().MatchRoute(path); route != nil {
+				if r.middlewareCounter > 0 {
+					allMiddleware := r.globalMiddleware
+					if treeMiddleware := root.Tree().MatchMiddleware(path); len(treeMiddleware) > 0 {
+						allMiddleware = allMiddleware.Merge(root.Middleware().Merge(treeMiddleware).Sort())
+					} else {
+						allMiddleware = allMiddleware.Merge(root.Middleware().Sort())
+					}
 
-		if subPath != "" {
-			ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))
-		}
+					computedHandler := allMiddleware.Compose(route.Handler())
 
-		h(ctx)
-		return
+					h = computedHandler.(fasthttp.RequestHandler)
+				} else {
+					h = route.Handler().(fasthttp.RequestHandler)
+				}
+
+				if len(params) > 0 {
+					ctx.SetUserValue("params", params)
+				}
+
+				if subPath != "" {
+					ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))
+				}
+
+				h(ctx)
+				return
+			}
+		}
 	}
+
+	path = pathutils.TrimSlash(path)
 
 	// Handle OPTIONS
 	if method == http.MethodOptions {

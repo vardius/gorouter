@@ -1,15 +1,12 @@
 package gorouter
 
 import (
-	pathutils "github.com/vardius/gorouter/v4/path"
 	"net/http"
 
 	"github.com/vardius/gorouter/v4/mux"
 )
 
 func allowed(t mux.Tree, method, path string) (allow string) {
-	path = pathutils.TrimSlash(path)
-
 	if path == "*" {
 		// tree tree roots should be http method nodes only
 		for _, root := range t {

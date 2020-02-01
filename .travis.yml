@@ -6,6 +6,6 @@ go:
 script:
   - go build
   - go test ./... -v -race -cover -coverprofile=coverage.txt -covermode=atomic
-  - go test -bench=. -cpu=4 -benchmem
+  - go test -bench=. -run=^$ -cpu=4 -benchmem
 after_script:
   - bash <(curl -s https://codecov.io/bash)

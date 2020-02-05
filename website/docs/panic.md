@@ -1,7 +1,7 @@
 ---
-id: benchmark
-title: Benchmark
-sidebar_label: Benchmark
+id: panic
+title: Panic Recovery
+sidebar_label: Panic Recovery
 ---
 
 ## Recover Middleware

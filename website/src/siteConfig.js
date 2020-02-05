@@ -38,7 +38,7 @@ const siteConfig = {
 
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
-    { doc: "intro", label: "Docs" },
+    { doc: "installation", label: "Docs" },
     { page: "help", label: "Help" },
     // { page: "users", label: "Users" },
     { href: "https://github.com/vardius/gorouter", label: "GitHub" }

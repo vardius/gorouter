@@ -1,9 +1,8 @@
 {
   "docs": {
-    "Quick Start": ["intro"],
-    "Basic Usage": ["routing", "middleware"],
-    "Advanced Usage": [
-      "sub-router",
+    "Quick Start": ["installation"],
+    "Router": ["routing", "middleware", "sub-router"],
+    "Examples": [
       {
         "type": "subcategory",
         "label": "Authentication",

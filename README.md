@@ -7,6 +7,8 @@ gorouter
 [![](https://godoc.org/github.com/vardius/gorouter?status.svg)](http://godoc.org/github.com/vardius/gorouter)
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/vardius/gorouter/blob/master/LICENSE.md)
 
+<img align="right" height="180px" src="website/src/static/img/logo.png" alt="gorouter logo" />
+
 Go Server/API micro framework, HTTP request router, multiplexer, mux.
 
 ABOUT
@@ -20,12 +22,24 @@ Want to contribute ? Feel free to send pull requests!
 Have problems, bugs, feature ideas?
 We are using the github [issue tracker](https://github.com/vardius/gorouter/issues) to manage them.
 
+
+## 📚Documentation
+
+For **documentation** (_including examples_), **[visit rafallorenz.com/gorouter](http://rafallorenz.com/gorouter)**
+For **GoDoc** reference, **[visit godoc.org/github.com/vardius/gorouter](http://godoc.org/github.com/vardius/gorouter)**
+
+## 🚅Benchmark
+
+[![](http://rafallorenz.com/gorouter/img/benchmark.png)](http://rafallorenz.com/gorouter/docs/benchmark)
+
+👉 **[Click here](http://rafallorenz.com/gorouter/docs/benchmark)** to see all benchmark results.
+
+## API example setup
+
+🖥️ **[Go Server/API boilerplate](https://github.com/vardius/go-api-boilerplate)** using best practices DDD CQRS ES.
+
 HOW TO USE
 ==================================================
-
-1. [GoDoc](http://godoc.org/github.com/vardius/gorouter)
-2. [Documentation](http://rafallorenz.com/gorouter)
-3. [Go Server/API boilerplate using best practices DDD CQRS ES](https://github.com/vardius/go-api-boilerplate)
 
 ## Basic example
 ### [net/http](https://golang.org/pkg/net/http/)

@@ -37,7 +37,7 @@ class Footer extends React.Component {
           </a>
           <div>
             <h5>Docs</h5>
-            <a href={this.docUrl('intro.html', this.props.language)}>
+            <a href={this.docUrl('installation.html', this.props.language)}>
               Documentation
             </a>
             <a href="https://godoc.org/github.com/vardius/gorouter">GoDoc</a>

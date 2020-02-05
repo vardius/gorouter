@@ -13,7 +13,7 @@ import (
 	"log"
 	"net/http"
 
-        "github.com/vardius/gorouter/v4"
+    "github.com/vardius/gorouter/v4"
 )
 
 func recoverMiddleware(next http.Handler) http.Handler {

@@ -70,8 +70,8 @@ import (
 	"time"
 	"net/http"
 
-        "github.com/vardius/gorouter/v4"
-        "github.com/vardius/gorouter/v4/context"
+  "github.com/vardius/gorouter/v4"
+  "github.com/vardius/gorouter/v4/context"
 )
 
 func logger(next http.Handler) http.Handler {
@@ -126,8 +126,8 @@ import (
 	"time"
 	"net/http"
 
-        "github.com/vardius/gorouter/v4"
-        "github.com/vardius/gorouter/v4/context"
+  "github.com/vardius/gorouter/v4"
+  "github.com/vardius/gorouter/v4/context"
 )
 
 func logger(next http.Handler) http.Handler {

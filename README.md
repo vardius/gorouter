@@ -24,9 +24,8 @@ HOW TO USE
 ==================================================
 
 1. [GoDoc](http://godoc.org/github.com/vardius/gorouter)
-2. [Documentation](https://github.com/vardius/gorouter/wiki)
-3. [Benchmarks](https://github.com/vardius/gorouter/wiki/Benchmarks)
-4. [Go Server/API boilerplate using best practices DDD CQRS ES](https://github.com/vardius/go-api-boilerplate)
+2. [Documentation](http://rafallorenz.com/gorouter)
+3. [Go Server/API boilerplate using best practices DDD CQRS ES](https://github.com/vardius/go-api-boilerplate)
 
 ## Basic example
 ### [net/http](https://golang.org/pkg/net/http/)
@@ -92,16 +91,6 @@ func main() {
     log.Fatal(fasthttp.ListenAndServe(":8080", router.HandleFastHTTP))
 }
 ```
-
-## Advanced examples
-- [Routing](https://github.com/vardius/gorouter/wiki/Routing)
-- [Middleware](https://github.com/vardius/gorouter/wiki/Middleware)
-- [Mounting Sub Router](https://github.com/vardius/gorouter/wiki/Mounting-Sub-Router)
-- [Serving Files](https://github.com/vardius/gorouter/wiki/Serving-Files)
-- [Authentication](https://github.com/vardius/gorouter/wiki/Authentication)
-- [Handling Panic](https://github.com/vardius/gorouter/wiki/Handling-Panic)
-- [HTTP2](https://github.com/vardius/gorouter/wiki/HTTP2)
-- [Multidomain](https://github.com/vardius/gorouter/wiki/Multidomain)
 
 License
 -------

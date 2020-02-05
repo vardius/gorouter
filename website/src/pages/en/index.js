@@ -93,10 +93,9 @@ class HomeSplash extends React.Component {
     );
 
     const BasicExample = () => (
-      <Block background="light">
+      <Block key="example" background="light">
         {[
           {
-            key: "example",
             content: baseCodeExample,
             image: `${baseUrl}img/logo.png`,
             imageAlign: 'right',

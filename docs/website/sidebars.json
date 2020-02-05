@@ -1,0 +1,26 @@
+{
+  "docs": {
+    "Quick Start": ["intro"],
+    "Basic Usage": ["routing", "middleware"],
+    "Advanced Usage": [
+      "sub-router",
+      {
+        "type": "subcategory",
+        "label": "Authentication",
+        "ids": [
+          "basic-authentication"
+        ]
+      },
+      {
+        "type": "subcategory",
+        "label": "Serving Files",
+        "ids": ["static-files"]
+      },
+      "https",
+      "http2",
+      "multidomain",
+      "panic"
+    ],
+    "Benchmark": ["benchmark"]
+  }
+}

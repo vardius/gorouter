@@ -144,8 +144,13 @@ class Index extends React.Component {
       <Block layout="fourColumn" background="dark">
         {[
           {
+            key:"routing",
+            title: 'Routing System',
+            content: 'Routing with static and named parameters, easy setup for wildcards and regexp wildcards',
+          },
+          {
             key:"middleware",
-            title: 'Middleware',
+            title: 'Middleware System',
             content: 'Build-in middleware system with order by priority',
           },
           {
@@ -170,8 +175,13 @@ class Index extends React.Component {
           },
           {
             key:"http2",
-            title: 'HTTP2',
-            content: 'Support for HTTP2',
+            title: 'HTTP2 Support',
+            content: 'Support for HTTP2, use it if you need it.',
+          },
+          {
+            key:"memory",
+            title: 'Low memory usage',
+            content: 'Efficient and low memory usage, router implementation keeps allocations at 0!',
           },
         ]}
       </Block>

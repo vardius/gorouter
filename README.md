@@ -38,6 +38,17 @@ For **GoDoc** reference, **[visit godoc.org/github.com/vardius/gorouter](http://
 
 🖥️ **[Go Server/API boilerplate](https://github.com/vardius/go-api-boilerplate)** using best practices DDD CQRS ES.
 
+## Features
+- Routing System
+- Middleware System
+- Authentication
+- Fast HTTP
+- Serving Files
+- Multidomain
+- HTTP2 Support
+- Low memory usage
+- [Documentation](http://rafallorenz.com/gorouter/)
+
 HOW TO USE
 ==================================================
 

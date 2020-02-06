@@ -25,6 +25,7 @@ We are using the github [issue tracker](https://github.com/vardius/gorouter/issu
 ## 📚Documentation
 
 For **documentation** (_including examples_), **[visit rafallorenz.com/gorouter](http://rafallorenz.com/gorouter)**
+
 For **GoDoc** reference, **[visit godoc.org/github.com/vardius/gorouter](http://godoc.org/github.com/vardius/gorouter)**
 
 ## 🚅Benchmark
@@ -52,14 +53,12 @@ HOW TO USE
 ==================================================
 
 ## [Basic example](http://rafallorenz.com/gorouter/docs/basic-example)
-## [net/http](http://rafallorenz.com/gorouter/docs/basic-example#nethttp)
-## [fasthttp](http://rafallorenz.com/gorouter/docs/basic-example#fasthttp)
+### [net/http](http://rafallorenz.com/gorouter/docs/basic-example#nethttp)
+### [fasthttp](http://rafallorenz.com/gorouter/docs/basic-example#fasthttp)
 
-License
+[License](LICENSE.md)
 -------
 
 This package is released under the MIT license. See the complete license in the package:
-
-[LICENSE](LICENSE.md)
 
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fvardius%2Fgorouter.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fvardius%2Fgorouter?ref=badge_large)

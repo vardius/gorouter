@@ -15,9 +15,7 @@ const GridBlock = CompLibrary.GridBlock;
 
 const pre = "```";
 
-const baseCodeExample = `<!--DOCUSAURUS_CODE_TABS-->
-<!--net/http-->
-${pre}go
+const baseCodeExample = `${pre}go
 package main
 
 import (
@@ -40,31 +38,7 @@ func main() {
 
     log.Fatal(http.ListenAndServe(":8080", router))
 }
-${pre}
-<!--valyala/fasthttp-->
-${pre}go
-package main
-
-import (
-    "fmt"
-    "log"
-
-    "github.com/valyala/fasthttp"
-    "github.com/vardius/gorouter/v4"
-)
-
-func index(_ *fasthttp.RequestCtx) {
-    fmt.Print("Welcome!\\n")
-}
-
-func main() {
-    router := gorouter.NewFastHTTPRouter()
-    router.GET("/", index)
-
-    log.Fatal(fasthttp.ListenAndServe(":8080", router.HandleFastHTTP))
-}
-${pre}
-<!--END_DOCUSAURUS_CODE_TABS-->`;
+${pre}`;
 
 class HomeSplash extends React.Component {
   render() {

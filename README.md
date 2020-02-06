@@ -30,7 +30,17 @@ For **GoDoc** reference, **visit [godoc.org/github.com/vardius/gorouter](http://
 
 ## 🚅 Benchmark
 
-[![](../master/website/src/static/benchmarks/benchmark.png)](http://rafallorenz.com/gorouter/docs/benchmark)
+```go
+➜  gorouter git:(master) ✗ go test -bench=. -cpu=4 -benchmem
+test
+goos: darwin
+goarch: amd64
+pkg: github.com/vardius/gorouter/v4
+BenchmarkNetHTTP-4              	65005786	        17.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFastHTTP-4             	69810878	        16.5 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/vardius/gorouter/v4	3.808s
+```
 
 👉 **[Click here](http://rafallorenz.com/gorouter/docs/benchmark)** to see all benchmark results.
 

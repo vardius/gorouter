@@ -84,6 +84,24 @@ func benchmarkRegexp(t int, b *testing.B) {
 	})
 }
 
+func BenchmarkNetHTTP(b *testing.B) {
+	s := New()
+	s.GET("/", http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, "/", nil)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			s.ServeHTTP(w, req)
+		}
+	})
+}
+
 func BenchmarkStatic1(b *testing.B)  { benchmarkStatic(1, b) }
 func BenchmarkStatic2(b *testing.B)  { benchmarkStatic(2, b) }
 func BenchmarkStatic3(b *testing.B)  { benchmarkStatic(3, b) }
@@ -160,6 +178,20 @@ func benchmarkFastHTTPRegexp(t int, b *testing.B) {
 	s.GET(path, func(_ *fasthttp.RequestCtx) {})
 
 	ctx := buildFastHTTPRequestContext(http.MethodGet, rpath)
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			s.HandleFastHTTP(ctx)
+		}
+	})
+}
+
+func BenchmarkFastHTTP(b *testing.B) {
+	s := NewFastHTTPRouter()
+	s.GET("/", func(_ *fasthttp.RequestCtx) {})
+
+	ctx := buildFastHTTPRequestContext(http.MethodGet, "/")
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

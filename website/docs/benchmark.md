@@ -15,33 +15,33 @@ sidebar_label: Benchmark
 
 The first test case is to mock 0 ms, 10 ms, 100 ms, 500 ms processing time in handlers.
 
-![](static/benchmarks/benchmark.png)
+![](/benchmarks/benchmark.png)
 
 the concurrency clients are 5000.
 
-![](static/benchmarks/benchmark_latency.png)
+![](/benchmarks/benchmark_latency.png)
 
 Latency is the time of real processing time by web servers. The smaller is the better.
 
-![](static/benchmarks/benchmark_alloc.png)
+![](/benchmarks/benchmark_alloc.png)
 
 Allocs is the heap allocations by web servers when test is running. The unit is MB. The smaller is the better.
 
 If we enable http pipelining, test result as below:
 
-![](static/benchmarks/benchmark-pipeline.png)
+![](/benchmarks/benchmark-pipeline.png)
 
 Concurrency test in 30 ms processing time, the test result for 100, 1000, 5000 clients is:
 
-![](static/benchmarks/concurrency.png)
+![](/benchmarks/concurrency.png)
 
-![](static/benchmarks/concurrency_latency.png)
+![](/benchmarks/concurrency_latency.png)
 
-![](static/benchmarks/concurrency_alloc.png)
+![](/benchmarks/concurrency_alloc.png)
 
 If we enable http pipelining, test result as below:
 
-![](static/benchmarks/concurrency-pipeline.png)
+![](/benchmarks/concurrency-pipeline.png)
 
 ### Built-in
 

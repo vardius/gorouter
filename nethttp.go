@@ -134,7 +134,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		var h http.Handler
 
 		if req.URL.Path == "/" {
-			if root.Route().Handler() != nil {
+			if root.Route() != nil && root.Route().Handler() != nil {
 				if r.middlewareCounter > 0 {
 					allMiddleware := r.globalMiddleware.Merge(root.Middleware().Sort())
 					computedHandler := allMiddleware.Compose(root.Route().Handler())

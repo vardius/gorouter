@@ -15,28 +15,56 @@ const GridBlock = CompLibrary.GridBlock;
 
 const pre = "```";
 
-const baseCodeExample = `${pre}go
+const baseCodeExample = `<!--DOCUSAURUS_CODE_TABS-->
+<!--net/http-->
+${pre}go
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
+    "fmt"
+    "log"
+    "net/http"
 
-	"github.com/vardius/gorouter/v4"
+    "github.com/vardius/gorouter/v4"
+    "github.com/vardius/gorouter/v4/context"
 )
 
 func index(w http.ResponseWriter, _ *http.Request) {
-	fmt.Fprint(w, "Welcome!")
+    fmt.Fprint(w, "Welcome!\\n")
+}
+
+
+func main() {
+    router := gorouter.New()
+    router.GET("/", http.HandlerFunc(index))
+
+    log.Fatal(http.ListenAndServe(":8080", router))
+}
+${pre}
+<!--valyala/fasthttp-->
+${pre}go
+package main
+
+import (
+    "fmt"
+    "log"
+
+    "github.com/valyala/fasthttp"
+    "github.com/vardius/gorouter/v4"
+)
+
+func index(_ *fasthttp.RequestCtx) {
+    fmt.Print("Welcome!\\n")
 }
 
 func main() {
-	router := gorouter.New()
-	router.GET("/", http.HandlerFunc(index))
+    router := gorouter.NewFastHTTPRouter()
+    router.GET("/", index)
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+    log.Fatal(fasthttp.ListenAndServe(":8080", router.HandleFastHTTP))
 }
-${pre}`;
+${pre}
+<!--END_DOCUSAURUS_CODE_TABS-->`;
 
 class HomeSplash extends React.Component {
   render() {

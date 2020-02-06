@@ -1,4 +1,4 @@
-gorouter
+🍃 gorouter
 ================
 [![Build Status](https://travis-ci.com/vardius/gorouter.svg?branch=master)](https://travis-ci.com/vardius/gorouter)
 [![Go Report Card](https://goreportcard.com/badge/github.com/vardius/gorouter)](https://goreportcard.com/report/github.com/vardius/gorouter)
@@ -7,11 +7,11 @@ gorouter
 [![](https://godoc.org/github.com/vardius/gorouter?status.svg)](http://godoc.org/github.com/vardius/gorouter)
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/vardius/gorouter/blob/master/LICENSE.md)
 
-<img align="right" height="180px" src="website/src/static/img/logo.png" alt="gorouter logo" />
+<img align="right" height="180px" src="website/src/static/img/logo.png" alt="logo" />
 
 Go Server/API micro framework, HTTP request router, multiplexer, mux.
 
-ABOUT
+📖 ABOUT
 ==================================================
 Contributors:
 
@@ -45,7 +45,7 @@ For **GoDoc** reference, **visit [godoc.org/github.com/vardius/gorouter](http://
 - Low memory usage
 - [Documentation](http://rafallorenz.com/gorouter/)
 
-HOW TO USE
+🚏 HOW TO USE
 ==================================================
 
 - [Basic example](http://rafallorenz.com/gorouter/docs/basic-example)
@@ -56,7 +56,7 @@ HOW TO USE
 
 - **[Go Server/API boilerplate](https://github.com/vardius/go-api-boilerplate)** using best practices DDD CQRS ES.
 
-[License](LICENSE.md)
+📜 [License](LICENSE.md)
 -------
 
 This package is released under the MIT license. See the complete license in the package:

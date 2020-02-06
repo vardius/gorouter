@@ -1,7 +1,7 @@
 ---
 id: sub-router
-title: Sub Router
-sidebar_label: Mounting Sub Router
+title: Mounting Sub-Router
+sidebar_label: Mounting Sub-Router
 ---
 
 When having multiple instance of a router you might want to mount one as a sub router of another under some route path, still keeping all middleware.

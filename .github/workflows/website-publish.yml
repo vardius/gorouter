@@ -11,23 +11,16 @@ on:
       - master
 jobs:
   build:
-    env:
-      SSH_PATH: /root/.ssh
     runs-on: ubuntu-latest
     steps:
     - name: Setup ssh
+      env:
+        SSH_PATH: /root/.ssh
+        DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
       run: |
-        mkdir "$SSH_PATH"
-        touch "$SSH_PATH/known_hosts"
-
-        echo "$DEPLOY_SSH_KEY" > "$SSH_PATH/id_rsa"
-
-        chmod 700 "$SSH_PATH"
-        chmod 600 "$SSH_PATH/known_hosts"
-        chmod 600 "$SSH_PATH/id_rsa"
-
-        eval $(ssh-agent)
-        ssh-add "$SSH_PATH/id_rsa"
+        eval "$(ssh-agent -s)"
+        ssh-add - <<< "${DEPLOY_SSH_KEY}"
 
         ssh-keyscan -t rsa "github.com" >> "$SSH_PATH/known_hosts"
         echo "StrictHostKeyChecking no" >> "$SSH_PATH/config"

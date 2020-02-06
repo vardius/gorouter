@@ -22,17 +22,25 @@ function Help(props) {
   const supportLinks = [
     {
       content: `Learn more using the [documentation on this site.](${docUrl(
-        'doc1.html',
+        'installation.html',
       )})`,
       title: 'Browse Docs',
     },
     {
-      content: 'Ask questions about the documentation and project',
+      content: '[Ask questions](https://github.com/vardius/gorouter/issues) about the documentation and project',
       title: 'Join the community',
     },
     {
-      content: "Find out what's new with this project",
+      content: "Find out [what's new](https://github.com/vardius/gorouter/watchers) with this project",
       title: 'Stay up to date',
+    },
+    {
+      content: "Consider support this project by [sponsoring](https://github.com/sponsors/vardius)",
+      title: 'Support',
+    },
+    {
+      content: "Contribute by [forking](https://github.com/vardius/gorouter/network/members) and improving this project",
+      title: 'Contribute',
     },
   ];
 

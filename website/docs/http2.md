@@ -7,6 +7,8 @@ sidebar_label: HTTP2
 ## [The Go Blog - HTTP/2 Server Push](https://blog.golang.org/h2push)
 
 ## Pusher
+<!--DOCUSAURUS_CODE_TABS-->
+<!--net/http-->
 ```go
 package main
 
@@ -41,3 +43,8 @@ func main() {
     log.Fatal(router.ListenAndServeTLS("router.crt", "router.key"))
 }
 ```
+<!--valyala/fasthttp-->
+```go
+// Example coming soon...
+```
+<!--END_DOCUSAURUS_CODE_TABS-->

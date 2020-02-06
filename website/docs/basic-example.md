@@ -4,7 +4,13 @@ title: Basic example
 sidebar_label: Basic example
 ---
 
-## [net/http](https://golang.org/pkg/net/http/)
+[gorouter](github.com/vardius/gorouter) supports following http implementations:
+
+- [net/http](https://golang.org/pkg/net/http/)
+- [fasthttp](https://github.com/valyala/fasthttp)
+
+<!--DOCUSAURUS_CODE_TABS-->
+<!--net/http-->
 ```go
 package main
 
@@ -12,7 +18,7 @@ import (
     "fmt"
     "log"
     "net/http"
-	
+
     "github.com/vardius/gorouter/v4"
     "github.com/vardius/gorouter/v4/context"
 )
@@ -38,8 +44,7 @@ func main() {
     log.Fatal(http.ListenAndServe(":8080", router))
 }
 ```
-
-## [fasthttp](https://github.com/valyala/fasthttp)
+<!--valyala/fasthttp-->
 ```go
 package main
 
@@ -68,3 +73,4 @@ func main() {
     log.Fatal(fasthttp.ListenAndServe(":8080", router.HandleFastHTTP))
 }
 ```
+<!--END_DOCUSAURUS_CODE_TABS-->

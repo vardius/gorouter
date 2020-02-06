@@ -5,6 +5,9 @@ sidebar_label: Static Files
 ---
 
 ## Static Files
+
+<!--DOCUSAURUS_CODE_TABS-->
+<!--net/http-->
 ```go
 package main
 
@@ -38,3 +41,8 @@ func main() {
     log.Fatal(http.ListenAndServe(":8080", router))
 }
 ```
+<!--valyala/fasthttp-->
+```go
+// Example coming soon...
+```
+<!--END_DOCUSAURUS_CODE_TABS-->

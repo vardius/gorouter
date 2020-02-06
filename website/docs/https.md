@@ -5,6 +5,8 @@ sidebar_label: HTTPS
 ---
 
 ## Autocert
+<!--DOCUSAURUS_CODE_TABS-->
+<!--net/http-->
 ```go
 package main
 
@@ -86,3 +88,8 @@ func setupServer(cfg *config, router gorouter.Router) *http.Server {
 	return srv
 }
 ```
+<!--valyala/fasthttp-->
+```go
+Coming soon
+```
+<!--END_DOCUSAURUS_CODE_TABS-->

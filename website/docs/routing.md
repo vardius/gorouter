@@ -20,6 +20,9 @@ A full route definition contain up to three parts:
 2. The URL path route. This is matched against the URL passed to the router, and can contain named wildcard placeholders *(e.g. :placeholders)* to match dynamic parts in the URL.
 3. `http.HandleFunc`, which tells the router to handle matched requests to the router with handler.
 Take the following example:
+
+<!--DOCUSAURUS_CODE_TABS-->
+<!--net/http-->
 ```go
 import "github.com/vardius/gorouter/v4/context"
 
@@ -28,4 +31,15 @@ router.GET("/hello/{name:r([a-z]+)go}", http.HandlerFunc(func(w http.ResponseWri
     fmt.Fprintf(w, "hello, %s!\n", params.Value("name"))
 }))
 ```
+<!--valyala/fasthttp-->
+```go
+import "github.com/vardius/gorouter/v4/context"
+
+router.GET("/hello/{name:r([a-z]+)go}", http.HandlerFunc(func(ctx *fasthttp.RequestCtx) {
+    params := ctx.UserValue("params").(context.Params)
+    fmt.Printf("hello, %s!\n", params.Value("name"))
+}))
+```
+<!--END_DOCUSAURUS_CODE_TABS-->
+
 In this case, the route is matched by `/hello/rxxxxxgo` for example, because the `{name}` wildcard matches the regular expression wildcard given (`r([a-z]+)go`). However, `/hello/foo` does not match, because "foo" fails the *name* wildcard. When using wildcards, these are returned in the map from request context. The part of the path that the wildcard matched (e.g. *rxxxxxgo*) is used as value.

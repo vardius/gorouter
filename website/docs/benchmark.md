@@ -15,33 +15,33 @@ sidebar_label: Benchmark
 
 The first test case is to mock 0 ms, 10 ms, 100 ms, 500 ms processing time in handlers.
 
-![](/benchmarks/benchmark.png)
+![](/gorouter/benchmarks/benchmark.png)
 
 the concurrency clients are 5000.
 
-![](/benchmarks/benchmark_latency.png)
+![](/gorouter/benchmarks/benchmark_latency.png)
 
 Latency is the time of real processing time by web servers. The smaller is the better.
 
-![](/benchmarks/benchmark_alloc.png)
+![](/gorouter/benchmarks/benchmark_alloc.png)
 
 Allocs is the heap allocations by web servers when test is running. The unit is MB. The smaller is the better.
 
 If we enable http pipelining, test result as below:
 
-![](/benchmarks/benchmark-pipeline.png)
+![](/gorouter/benchmarks/benchmark-pipeline.png)
 
 Concurrency test in 30 ms processing time, the test result for 100, 1000, 5000 clients is:
 
-![](/benchmarks/concurrency.png)
+![](/gorouter/benchmarks/concurrency.png)
 
-![](/benchmarks/concurrency_latency.png)
+![](/gorouter/benchmarks/concurrency_latency.png)
 
-![](/benchmarks/concurrency_alloc.png)
+![](/gorouter/benchmarks/concurrency_alloc.png)
 
 If we enable http pipelining, test result as below:
 
-![](/benchmarks/concurrency-pipeline.png)
+![](/gorouter/benchmarks/concurrency-pipeline.png)
 
 ### Built-in
 

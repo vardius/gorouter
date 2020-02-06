@@ -18,8 +18,12 @@ jobs:
         SSH_PATH: /root/.ssh
         DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
       run: |
-        eval "$(ssh-agent -s)"
-        ssh-add - <<< "${DEPLOY_SSH_KEY}"
+        mkdir ~/.ssh
+        echo "${DEPLOY_SSH_KEY}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+
+        # eval "$(ssh-agent -s)"
+        # ssh-add - <<< "${DEPLOY_SSH_KEY}"
 
         ssh -o StrictHostKeyChecking=no
         # ssh-keyscan -t rsa "github.com" >> "$SSH_PATH/known_hosts"

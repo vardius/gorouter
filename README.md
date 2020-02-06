@@ -52,9 +52,9 @@ For **GoDoc** reference, **[visit godoc.org/github.com/vardius/gorouter](http://
 HOW TO USE
 ==================================================
 
-## [Basic example](http://rafallorenz.com/gorouter/docs/basic-example)
-### [net/http](http://rafallorenz.com/gorouter/docs/basic-example#nethttp)
-### [fasthttp](http://rafallorenz.com/gorouter/docs/basic-example#fasthttp)
+- [Basic example](http://rafallorenz.com/gorouter/docs/basic-example)
+- [net/http](http://rafallorenz.com/gorouter/docs/basic-example#nethttp)
+- [fasthttp](http://rafallorenz.com/gorouter/docs/basic-example#fasthttp)
 
 [License](LICENSE.md)
 -------

@@ -22,21 +22,17 @@ Want to contribute ? Feel free to send pull requests!
 Have problems, bugs, feature ideas?
 We are using the github [issue tracker](https://github.com/vardius/gorouter/issues) to manage them.
 
-## 📚Documentation
+## 📚 Documentation
 
 For **documentation** (_including examples_), **[visit rafallorenz.com/gorouter](http://rafallorenz.com/gorouter)**
 
 For **GoDoc** reference, **[visit godoc.org/github.com/vardius/gorouter](http://godoc.org/github.com/vardius/gorouter)**
 
-## 🚅Benchmark
+## 🚅 Benchmark
 
 [![](http://rafallorenz.com/gorouter/img/benchmark.png)](http://rafallorenz.com/gorouter/docs/benchmark)
 
 👉 **[Click here](http://rafallorenz.com/gorouter/docs/benchmark)** to see all benchmark results.
-
-## API example setup
-
-🖥️ **[Go Server/API boilerplate](https://github.com/vardius/go-api-boilerplate)** using best practices DDD CQRS ES.
 
 ## Features
 - Routing System
@@ -55,6 +51,10 @@ HOW TO USE
 - [Basic example](http://rafallorenz.com/gorouter/docs/basic-example)
 - [net/http](http://rafallorenz.com/gorouter/docs/basic-example#nethttp)
 - [fasthttp](http://rafallorenz.com/gorouter/docs/basic-example#fasthttp)
+
+## 🖥️ API example setup
+
+- **[Go Server/API boilerplate](https://github.com/vardius/go-api-boilerplate)** using best practices DDD CQRS ES.
 
 [License](LICENSE.md)
 -------

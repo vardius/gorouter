@@ -62,20 +62,20 @@
 <li><strong>MEM</strong> 32 GB 2400 MHz DDR4</li>
 </ul>
 <p>The first test case is to mock 0 ms, 10 ms, 100 ms, 500 ms processing time in handlers.</p>
-<p><img src="/benchmarks/benchmark.png" alt=""></p>
+<p><img src="/gorouter/benchmarks/benchmark.png" alt=""></p>
 <p>the concurrency clients are 5000.</p>
-<p><img src="/benchmarks/benchmark_latency.png" alt=""></p>
+<p><img src="/gorouter/benchmarks/benchmark_latency.png" alt=""></p>
 <p>Latency is the time of real processing time by web servers. The smaller is the better.</p>
-<p><img src="/benchmarks/benchmark_alloc.png" alt=""></p>
+<p><img src="/gorouter/benchmarks/benchmark_alloc.png" alt=""></p>
 <p>Allocs is the heap allocations by web servers when test is running. The unit is MB. The smaller is the better.</p>
 <p>If we enable http pipelining, test result as below:</p>
-<p><img src="/benchmarks/benchmark-pipeline.png" alt=""></p>
+<p><img src="/gorouter/benchmarks/benchmark-pipeline.png" alt=""></p>
 <p>Concurrency test in 30 ms processing time, the test result for 100, 1000, 5000 clients is:</p>
-<p><img src="/benchmarks/concurrency.png" alt=""></p>
-<p><img src="/benchmarks/concurrency_latency.png" alt=""></p>
-<p><img src="/benchmarks/concurrency_alloc.png" alt=""></p>
+<p><img src="/gorouter/benchmarks/concurrency.png" alt=""></p>
+<p><img src="/gorouter/benchmarks/concurrency_latency.png" alt=""></p>
+<p><img src="/gorouter/benchmarks/concurrency_alloc.png" alt=""></p>
 <p>If we enable http pipelining, test result as below:</p>
-<p><img src="/benchmarks/concurrency-pipeline.png" alt=""></p>
+<p><img src="/gorouter/benchmarks/concurrency-pipeline.png" alt=""></p>
 <h3><a class="anchor" aria-hidden="true" id="built-in"></a><a href="#built-in" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Built-in</h3>
 <pre><code class="hljs">$ go test -bench=. -run=^$ -cpu=<span class="hljs-number">4</span> -benchmem
 goos: linux

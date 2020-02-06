@@ -30,7 +30,7 @@ For **GoDoc** reference, **visit [godoc.org/github.com/vardius/gorouter](http://
 
 ## 🚅 Benchmark
 
-[![](http://rafallorenz.com/gorouter/img/benchmark.png)](http://rafallorenz.com/gorouter/docs/benchmark)
+[![](http://rafallorenz.com/gorouter/website/src/static/img/benchmark.png)](http://rafallorenz.com/gorouter/docs/benchmark)
 
 👉 **[Click here](http://rafallorenz.com/gorouter/docs/benchmark)** to see all benchmark results.
 

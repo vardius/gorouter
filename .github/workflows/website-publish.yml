@@ -17,13 +17,13 @@ jobs:
       env:
         SSH_PATH: /root/.ssh
         DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-        GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
       run: |
         eval "$(ssh-agent -s)"
         ssh-add - <<< "${DEPLOY_SSH_KEY}"
 
-        ssh-keyscan -t rsa "github.com" >> "$SSH_PATH/known_hosts"
-        echo "StrictHostKeyChecking no" >> "$SSH_PATH/config"
+        ssh -o StrictHostKeyChecking=no
+        # ssh-keyscan -t rsa "github.com" >> "$SSH_PATH/known_hosts"
+        # echo "StrictHostKeyChecking no" >> "$SSH_PATH/config"
     - name: Copy Files
       uses: actions/checkout@v2
     - name: Setup Git

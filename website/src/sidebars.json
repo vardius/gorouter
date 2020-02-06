@@ -1,6 +1,6 @@
 {
   "docs": {
-    "Quick Start": ["installation"],
+    "Quick Start": ["installation", "basic-example"],
     "Router": ["routing", "middleware", "sub-router"],
     "Examples": [
       {

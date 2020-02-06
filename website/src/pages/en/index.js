@@ -15,7 +15,7 @@ const GridBlock = CompLibrary.GridBlock;
 
 const pre = "```";
 
-const baseCodeExample = `${pre}
+const baseCodeExample = `${pre}go
 package main
 
 import (
@@ -83,36 +83,14 @@ class HomeSplash extends React.Component {
       </div>
     );
 
-    const Block = props => (
-      <GridBlock
-        background={props.background}
-        className="codeSample"
-        contents={props.children}
-        layout={props.layout}
-      />
-    );
-
-    const BasicExample = () => (
-      <Block background="light">
-        {[
-          {
-            key:"example",
-            content: baseCodeExample,
-            image: `${baseUrl}img/logo.png`,
-            imageAlign: 'right',
-          },
-        ]}
-      </Block>
-    );
-
     return (
       <SplashContainer>
-        {/* <Logo img_src={`${baseUrl}img/logo.png`} /> */}
+        <Logo img_src={`${baseUrl}img/logo.png`} />
         <div className="inner">
           <ProjectTitle tagline={siteConfig.tagline} title={siteConfig.title} />
-
-          <BasicExample />
-
+          <Container className="codeSample">
+            <MarkdownBlock>{baseCodeExample}</MarkdownBlock>
+          </Container>
           <PromoSection>
             <Button href={docUrl('installation.html')}>Get Started</Button>
           </PromoSection>
@@ -141,50 +119,53 @@ class Index extends React.Component {
     );
 
     const Features = () => (
-      <Block layout="fourColumn" background="dark">
-        {[
-          {
-            key:"routing",
-            title: 'Routing System',
-            content: 'Routing with static and named parameters, easy setup for wildcards and regexp wildcards',
-          },
-          {
-            key:"middleware",
-            title: 'Middleware System',
-            content: 'Build-in middleware system with order by priority',
-          },
-          {
-            key:"authentication",
-            title: 'Authentication',
-            content: 'Easy authentication',
-          },
-          {
-            key:"fasthttp",
-            title: 'Fast HTTP',
-            content: 'Multiple implementations. Support for native net/http or valyala/fasthttp.',
-          },
-          {
-            key:"files",
-            title: 'Serving Files',
-            content: 'Out fof box static files serving',
-          },
-          {
-            key:"multidomain",
-            title: 'Multidomain',
-            content: 'Easy multidomain setup',
-          },
-          {
-            key:"http2",
-            title: 'HTTP2 Support',
-            content: 'Support for HTTP2, use it if you need it.',
-          },
-          {
-            key:"memory",
-            title: 'Low memory usage',
-            content: 'Efficient and low memory usage, router implementation keeps allocations at 0!',
-          },
-        ]}
-      </Block>
+      <div>
+        <h1 className="paddingBottom" style={{textAlign: 'center'}} >Features</h1>
+        <Block layout="fourColumn" background="dark">
+          {[
+            {
+              key:"routing",
+              title: 'Routing System',
+              content: 'Routing with static and named parameters, easy setup for wildcards and regexp wildcards',
+            },
+            {
+              key:"middleware",
+              title: 'Middleware System',
+              content: 'Build-in middleware system with order by priority',
+            },
+            {
+              key:"authentication",
+              title: 'Authentication',
+              content: 'Easy authentication',
+            },
+            {
+              key:"fasthttp",
+              title: 'Fast HTTP',
+              content: 'Multiple implementations. Support for native net/http or valyala/fasthttp.',
+            },
+            {
+              key:"files",
+              title: 'Serving Files',
+              content: 'Out fof box static files serving',
+            },
+            {
+              key:"multidomain",
+              title: 'Multidomain',
+              content: 'Easy multidomain setup',
+            },
+            {
+              key:"http2",
+              title: 'HTTP2 Support',
+              content: 'Support for HTTP2, use it if you need it.',
+            },
+            {
+              key:"memory",
+              title: 'Low memory usage',
+              content: 'Efficient and low memory usage, router implementation keeps allocations at 0!',
+            },
+          ]}
+        </Block>
+      </div>
     );
 
     const Showcase = () => {

@@ -43,8 +43,9 @@ If we enable http pipelining, test result as below:
 
 ![](static/benchmarks/concurrency-pipeline.png)
 
-#### Built-in
+### Built-in
 
+```
 $ go test -bench=. -run=^$ -cpu=4 -benchmem
 goos: linux
 goarch: amd64

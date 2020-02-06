@@ -6,6 +6,15 @@ sidebar_label: Benchmark
 
 **gorouter** allows you to use *regex* wildcards on top of letting you pick native handler implementation `http.Handler` or fasthttp handler implementation. The request parameters are passed in the **request context**. **gorouter** also provides middleware system with blazing fast performance.
 
+**Last Test Updated:** 2020-02-07
+
+*test environment*
+
+- **Processor** 3.3 GHz Dual-Core Intel Core i7
+- **Memory** 16 GB 2133 MHz LPDDR3
+- **Go** go1.13.1 darwin/amd64
+- **OS** macOs Catalina 10.15.3
+
 ### Built-in
 
 <!--DOCUSAURUS_CODE_TABS-->
@@ -72,9 +81,6 @@ ok  	github.com/vardius/gorouter/v4	28.686s
 #### Go-Web
 
 [go-web-framework-benchmark](https://github.com/smallnest/go-web-framework-benchmark)
-
-- **Processor** 3.3 GHz Dual-Core Intel Core i7
-- **Memory** 16 GB 2133 MHz LPDDR3
 
 The first test case is to mock 0 ms, 10 ms, 100 ms, 500 ms processing time in handlers.
 

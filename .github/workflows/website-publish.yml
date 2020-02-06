@@ -1,0 +1,35 @@
+
+name: Publish website to GitHub Pages
+on:
+  release:
+    types: [published]
+jobs:
+  build:
+    env:
+      SSH_PATH: /root/.ssh
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup ssh
+      run: |
+        mkdir "$SSH_PATH"
+        touch "$SSH_PATH/known_hosts"
+
+        echo "$DEPLOY_SSH_KEY" > "$SSH_PATH/id_rsa"
+
+        chmod 700 "$SSH_PATH"
+        chmod 600 "$SSH_PATH/known_hosts"
+        chmod 600 "$SSH_PATH/id_rsa"
+
+        eval $(ssh-agent)
+        ssh-add "$SSH_PATH/id_rsa"
+
+        ssh-keyscan -t rsa "github.com" >> "$SSH_PATH/known_hosts"
+        echo "StrictHostKeyChecking no" >> "$SSH_PATH/config"
+    - name: Copy Files
+      uses: actions/checkout@v2
+    - name: Setup Git
+      run: |
+        git config --global user.name "$GITHUB_ACTOR"
+        git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
+    - name: Publish website
+      run: cd website/src && yarn install && GIT_USER=$GITHUB_ACTOR CURRENT_BRANCH=master USE_SSH=true yarn run publish-gh-pages

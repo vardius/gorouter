@@ -7,6 +7,7 @@ sidebar_label: Middleware
 Passing middleware as follow `A, B, C` will result in `A(B(C( handler )))` where handler is your handler method.
 
 ## Global Middleware
+
 <!--DOCUSAURUS_CODE_TABS-->
 <!--net/http-->
 ```go
@@ -67,7 +68,9 @@ func main() {
 // Example coming soon...
 ```
 <!--END_DOCUSAURUS_CODE_TABS-->
+
 ## Method Middleware
+
 <!--DOCUSAURUS_CODE_TABS-->
 <!--net/http-->
 ```go
@@ -130,7 +133,9 @@ func main() {
 // Example coming soon...
 ```
 <!--END_DOCUSAURUS_CODE_TABS-->
+
 ## Route Middleware
+
 <!--DOCUSAURUS_CODE_TABS-->
 <!--net/http-->
 ```go

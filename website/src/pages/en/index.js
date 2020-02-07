@@ -31,7 +31,6 @@ func index(w http.ResponseWriter, _ *http.Request) {
     fmt.Fprint(w, "Welcome!\\n")
 }
 
-
 func main() {
     router := gorouter.New()
     router.GET("/", http.HandlerFunc(index))

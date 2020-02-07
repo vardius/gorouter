@@ -32,4 +32,8 @@ jobs:
     - name: build
       run: cd website/src && yarn build
     - name: Publish website
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: cd website/src && GIT_USER=$GITHUB_ACTOR:CURRENT_BRANCH=master yarn run publish-gh-pages
+    - name: Publish website
       run: cd website/src && GIT_USER=$GITHUB_ACTOR CURRENT_BRANCH=master USE_SSH=true yarn run publish-gh-pages

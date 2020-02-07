@@ -24,7 +24,7 @@ jobs:
       run: |
         eval $(ssh-agent)
         ssh-add - <<< "${{ secrets.DEPLOY_SSH_KEY }}"
-        ssh -o StrictHostKeyChecking=no
+        eval$(ssh -o StrictHostKeyChecking=no)
     - name: Copy Files
       uses: actions/checkout@v2
     - name: Setup Git

@@ -13,12 +13,6 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-    # mkdir ~/.ssh
-    # echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_rsa
-    # chmod 600 ~/.ssh/id_rsa
-    # ssh-keyscan -t rsa "github.com" >> "$SSH_PATH/known_hosts"
-    # echo "StrictHostKeyChecking no" >> "$SSH_PATH/config"
-    # eval$(ssh -o StrictHostKeyChecking=no)
     - name: Setup ssh
       env:
         SSH_PATH: /root/.ssh
@@ -33,5 +27,9 @@ jobs:
       run: |
         git config --global user.name "$GITHUB_ACTOR"
         git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
+    - name: install
+      run: cd website/src && yarn install
+    - name: build
+      run: cd website/src && yarn build
     - name: Publish website
-      run: cd website/src && yarn install && GIT_USER=$GITHUB_ACTOR CURRENT_BRANCH=master USE_SSH=true yarn run publish-gh-pages
+      run: cd website/src && GIT_USER=$GITHUB_ACTOR CURRENT_BRANCH=master USE_SSH=true yarn run publish-gh-pages

@@ -10,7 +10,7 @@ on:
     branches:
       - master
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     steps:
     # mkdir ~/.ssh

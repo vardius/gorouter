@@ -13,14 +13,6 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-    - name: Setup ssh
-      env:
-        SSH_PATH: /root/.ssh
-      run: |
-        eval $(ssh-agent)
-        ssh-add - <<< "${{ secrets.DEPLOY_SSH_KEY }}"
-        eval$(ssh -o StrictHostKeyChecking=no)
-        ssh-keyscan -t rsa github.com
     - name: Copy Files
       uses: actions/checkout@v2
     - name: Setup Git
@@ -35,5 +27,3 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: cd website/src && GIT_USER="$GITHUB_ACTOR:$GITHUB_TOKEN" CURRENT_BRANCH=master yarn run publish-gh-pages
-    - name: Publish website
-      run: cd website/src && GIT_USER=$GITHUB_ACTOR CURRENT_BRANCH=master USE_SSH=true yarn run publish-gh-pages

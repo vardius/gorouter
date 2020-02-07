@@ -22,7 +22,7 @@ jobs:
       env:
         SSH_PATH: /root/.ssh
       run: |
-        eval "$(ssh-agent -s)"
+        eval $(ssh-agent)
         ssh-add - <<< "${{ secrets.DEPLOY_SSH_KEY }}"
         ssh -o StrictHostKeyChecking=no
     - name: Copy Files

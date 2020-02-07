@@ -22,7 +22,7 @@ const users = [
 
 const siteConfig = {
   title: "gorouter", // Title for your website.
-  tagline: "Go Server/API micro framwework, HTTP request router, multiplexer, mux",
+  tagline: "Go Server/API micro framework, HTTP request router, multiplexer, mux",
   url: "http://rafallorenz.com/", // Your website URL
   baseUrl: "/gorouter/", // Base URL for your project */
   // For github.io type URLs, you would set the url and baseUrl like:

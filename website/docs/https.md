@@ -33,7 +33,7 @@ var localHostAddresses = map[string]bool{
 	"localhost": true,
 }
 
-func Index(w http.ResponseWriter, r *http.Request) {
+func index(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Hello!\n")
 }
 
@@ -42,7 +42,7 @@ func main() {
 	env.Parse(&cfg)
 
 	router := gorouter.New()
-	router.GET("/", http.HandlerFunc(Index))	
+	router.GET("/", http.HandlerFunc(index))	
 
 	srv := setupServer(&cfg, router)
 

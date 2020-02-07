@@ -149,5 +149,5 @@ If we enable http pipelining, test result as below:
 <!--net/http-->
 ![](/gorouter/benchmarks/nethttp/concurrency-pipeline.png)
 <!--valyala/fasthttp-->
-![](/gorouter/benchmarks/nethttp/fastency-pipeline.png)
+![](/gorouter/benchmarks/fasthttp/concurrency-pipeline.png)
 <!--END_DOCUSAURUS_CODE_TABS-->

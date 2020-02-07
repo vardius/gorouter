@@ -90,6 +90,6 @@ func setupServer(cfg *config, router gorouter.Router) *http.Server {
 ```
 <!--valyala/fasthttp-->
 ```go
-Coming soon
+Example coming soon...
 ```
 <!--END_DOCUSAURUS_CODE_TABS-->

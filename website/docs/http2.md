@@ -44,7 +44,5 @@ func main() {
 }
 ```
 <!--valyala/fasthttp-->
-```go
-// Example coming soon...
-```
+HTTP/2 implementation for fasthttp is [under construction...](https://github.com/fasthttp/http2)
 <!--END_DOCUSAURUS_CODE_TABS-->

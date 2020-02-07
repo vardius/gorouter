@@ -24,9 +24,8 @@ jobs:
         SSH_PATH: /root/.ssh
       run: |
         eval $(ssh-agent)
-        ssh-keyscan -t rsa "github.com" >> "$SSH_PATH/known_hosts"
         ssh-add - <<< "${{ secrets.DEPLOY_SSH_KEY }}"
-        echo "StrictHostKeyChecking no" >> "$SSH_PATH/config"
+        eval$(ssh -o StrictHostKeyChecking=no)
     - name: Copy Files
       uses: actions/checkout@v2
     - name: Setup Git

@@ -13,20 +13,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+    # mkdir ~/.ssh
+    # echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_rsa
+    # chmod 600 ~/.ssh/id_rsa
+    # ssh-keyscan -t rsa "github.com" >> "$SSH_PATH/known_hosts"
+    # echo "StrictHostKeyChecking no" >> "$SSH_PATH/config"
     - name: Setup ssh
       env:
         SSH_PATH: /root/.ssh
       run: |
-        # mkdir ~/.ssh
-        # echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_rsa
-        # chmod 600 ~/.ssh/id_rsa
-
         eval "$(ssh-agent -s)"
         ssh-add - <<< "${{ secrets.DEPLOY_SSH_KEY }}"
-
         ssh -o StrictHostKeyChecking=no
-        # ssh-keyscan -t rsa "github.com" >> "$SSH_PATH/known_hosts"
-        # echo "StrictHostKeyChecking no" >> "$SSH_PATH/config"
     - name: Copy Files
       uses: actions/checkout@v2
     - name: Setup Git

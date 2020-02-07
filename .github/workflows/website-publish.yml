@@ -26,6 +26,7 @@ jobs:
         eval $(ssh-agent)
         ssh-add - <<< "${{ secrets.DEPLOY_SSH_KEY }}"
         eval$(ssh -o StrictHostKeyChecking=no)
+        ssh-keyscan -t rsa github.com
     - name: Copy Files
       uses: actions/checkout@v2
     - name: Setup Git

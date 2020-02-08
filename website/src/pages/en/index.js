@@ -62,6 +62,7 @@ class HomeSplash extends React.Component {
     const docsPart = `${docsUrl ? `${docsUrl}/` : ''}`;
     const langPart = `${language ? `${language}/` : ''}`;
     const docUrl = doc => `${baseUrl}${docsPart}${langPart}${doc}`;
+    const pageUrl = page => `${baseUrl}${langPart}${page}`;
 
     const SplashContainer = props => (
       <div className="homeContainer">
@@ -109,7 +110,9 @@ class HomeSplash extends React.Component {
             <MarkdownBlock>{baseCodeExample}</MarkdownBlock>
           </Container>
           <PromoSection>
-            <Button href={docUrl('installation.html')}>Get Started</Button>
+            <Button href={docUrl('installation.html')}>Documentation</Button>
+            <Button href={pageUrl('help')}>Help</Button>
+            <Button href="https://github.com/vardius/gorouter">GitHub</Button>
           </PromoSection>
         </div>
       </SplashContainer>

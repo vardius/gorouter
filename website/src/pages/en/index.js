@@ -5,9 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-const React = require('react');
+const React = require("react");
 
-const CompLibrary = require('../../core/CompLibrary.js');
+const CompLibrary = require("../../core/CompLibrary.js");
 
 const MarkdownBlock = CompLibrary.MarkdownBlock; /* Used to read markdown */
 const Container = CompLibrary.Container;
@@ -57,10 +57,10 @@ allows you to keep your business logic decoupled from external dependencies.
 
 class HomeSplash extends React.Component {
   render() {
-    const {siteConfig, language = ''} = this.props;
-    const {baseUrl, docsUrl} = siteConfig;
-    const docsPart = `${docsUrl ? `${docsUrl}/` : ''}`;
-    const langPart = `${language ? `${language}/` : ''}`;
+    const { siteConfig, language = "" } = this.props;
+    const { baseUrl, docsUrl } = siteConfig;
+    const docsPart = `${docsUrl ? `${docsUrl}/` : ""}`;
+    const langPart = `${language ? `${language}/` : ""}`;
     const docUrl = doc => `${baseUrl}${docsPart}${langPart}${doc}`;
     const pageUrl = page => `${baseUrl}${langPart}${page}`;
 
@@ -110,8 +110,8 @@ class HomeSplash extends React.Component {
             <MarkdownBlock>{baseCodeExample}</MarkdownBlock>
           </Container>
           <PromoSection>
-            <Button href={docUrl('installation.html')}>Documentation</Button>
-            <Button href={pageUrl('help')}>Help</Button>
+            <Button href={docUrl("installation.html")}>Documentation</Button>
+            <Button href={pageUrl("help")}>Help</Button>
             <Button href="https://github.com/vardius/gorouter">GitHub</Button>
           </PromoSection>
         </div>
@@ -122,16 +122,21 @@ class HomeSplash extends React.Component {
 
 class Index extends React.Component {
   render() {
-    const {config: siteConfig, language = ''} = this.props;
-    const {baseUrl} = siteConfig;
+    const { config: siteConfig, language = "" } = this.props;
+    const { baseUrl, docsUrl } = siteConfig;
+    const docsPart = `${docsUrl ? `${docsUrl}/` : ""}`;
+    const langPart = `${language ? `${language}/` : ""}`;
+    const docUrl = doc => `${baseUrl}${docsPart}${langPart}${doc}`;
+    const imgUrl = image => `${baseUrl}img/${image}`;
 
     const Block = props => (
       <Container
-        padding={['bottom', 'top']}
+        padding={["bottom", "top"]}
         id={props.id}
-        background={props.background}>
+        background={props.background}
+      >
         <GridBlock
-          align={props.align || 'center'}
+          align={props.align || "center"}
           contents={props.children}
           layout={props.layout}
         />
@@ -140,62 +145,93 @@ class Index extends React.Component {
 
     const Description = () => (
       <Block background="light" align="left">
-          {[
-            {
-              title: 'Are you looking for a router that can handle deep route trees and large response sizes ?',
-              content: description,
-              image: baseUrl + 'img/logo.png',
-              imageAlign: 'left',
-            }
+        {[
+          {
+            title:
+              "Are you looking for a router that can handle deep route trees and large response sizes ?",
+            content: description,
+            image: imgUrl("gopher_search.png"),
+            imageAlign: "left",
+            imageLink: docUrl("installation.html")
+          }
         ]}
       </Block>
     );
 
     const Features = () => (
       <div>
-        <h1 className="paddingBottom" style={{textAlign: 'center'}} >Features</h1>
+        <h1 className="paddingBottom" style={{ textAlign: "center" }}>
+          Features
+        </h1>
         <Block layout="fourColumn" background="dark">
           {[
             {
-              key:"routing",
-              title: 'Routing System',
-              content: 'Parameters with flexible patterns including regexp wildcards.',
+              key: "routing",
+              title: "Routing System",
+              content:
+                "Parameters with flexible patterns including regexp wildcards.",
+              image: imgUrl("logo.png"),
+              imageAlign: "top",
+              imageLink: docUrl("routing.html")
             },
             {
-              key:"middleware",
-              title: 'Middleware System',
-              content: 'Build-in middleware system with order by priority.',
+              key: "middleware",
+              title: "Middleware System",
+              content: "Build-in middleware system with order by priority.",
+              image: imgUrl("gopher_middleware.png"),
+              imageAlign: "top",
+              imageLink: docUrl("middleware.html")
             },
             {
-              key:"authentication",
-              title: 'Authentication',
-              content: 'Easy authentication.',
+              key: "authentication",
+              title: "Authentication",
+              content: "Easy authentication.",
+              image: imgUrl("gopher_authentication.png"),
+              imageAlign: "top",
+              imageLink: docUrl("basic-authentication.html")
             },
             {
-              key:"fasthttp",
-              title: 'Fast HTTP',
-              content: 'Multiple implementations. Support for native net/http or valyala/fasthttp.',
+              key: "fasthttp",
+              title: "Fast HTTP",
+              content:
+                "Multiple implementations. Support for native net/http or valyala/fasthttp.",
+              image: imgUrl("fasthttp.png"),
+              imageAlign: "top",
+              imageLink: docUrl("basic-example.html")
             },
             {
-              key:"files",
-              title: 'Serving Files',
-              content: 'Out of box static files serving.',
+              key: "files",
+              title: "Serving Files",
+              content: "Out of box static files serving.",
+              image: imgUrl("gopher_files.png"),
+              imageAlign: "top",
+              imageLink: docUrl("static-files.html")
             },
             {
-              key:"multidomain",
-              title: 'Multidomain',
-              content: 'Easy multidomain setup.',
+              key: "multidomain",
+              title: "Multidomain",
+              content: "Easy multidomain setup.",
+              image: imgUrl("gpher_multidomain.png"),
+              imageAlign: "top",
+              imageLink: docUrl("multidomain.html")
             },
             {
-              key:"http2",
-              title: 'HTTP2 Support',
-              content: 'Support for HTTP2.',
+              key: "http2",
+              title: "HTTP2 Support",
+              content: "Support for HTTP2.",
+              image: imgUrl("gopher_http2.png"),
+              imageAlign: "top",
+              imageLink: docUrl("http2.html")
             },
             {
-              key:"memory",
-              title: 'Low memory usage',
-              content: 'Efficient and low memory usage, performent and flexible for any response size, no matter depth of the route tree.',
-            },
+              key: "memory",
+              title: "Low memory usage",
+              content:
+                "Efficient and low memory usage, performent and flexible for any response size, no matter depth of the route tree.",
+              image: imgUrl("gopher_lowmemory.png"),
+              imageAlign: "top",
+              imageLink: docUrl("benchmark.html")
+            }
           ]}
         </Block>
       </div>
@@ -214,7 +250,7 @@ class Index extends React.Component {
           </a>
         ));
 
-      const pageUrl = page => baseUrl + (language ? `${language}/` : '') + page;
+      const pageUrl = page => `${baseUrl}${langPart}${page}`;
 
       return (
         <div className="productShowcaseSection paddingBottom">
@@ -222,7 +258,7 @@ class Index extends React.Component {
           <p>This project is used by all these people</p>
           <div className="logos">{showcase}</div>
           <div className="more-users">
-            <a className="button" href={pageUrl('users.html')}>
+            <a className="button" href={pageUrl("users.html")}>
               More {siteConfig.title} Users
             </a>
           </div>

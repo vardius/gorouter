@@ -5,20 +5,20 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-const React = require('react');
+const React = require("react");
 
 class Footer extends React.Component {
   docUrl(doc, language) {
     const baseUrl = this.props.config.baseUrl;
     const docsUrl = this.props.config.docsUrl;
-    const docsPart = `${docsUrl ? `${docsUrl}/` : ''}`;
-    const langPart = `${language ? `${language}/` : ''}`;
+    const docsPart = `${docsUrl ? `${docsUrl}/` : ""}`;
+    const langPart = `${language ? `${language}/` : ""}`;
     return `${baseUrl}${docsPart}${langPart}${doc}`;
   }
 
   pageUrl(doc, language) {
     const baseUrl = this.props.config.baseUrl;
-    return baseUrl + (language ? `${language}/` : '') + doc;
+    return baseUrl + (language ? `${language}/` : "") + doc;
   }
 
   render() {
@@ -37,18 +37,16 @@ class Footer extends React.Component {
           </a>
           <div>
             <h5>Docs</h5>
-            <a href={this.docUrl('installation.html', this.props.language)}>
+            <a href={this.docUrl("installation.html", this.props.language)}>
               Documentation
             </a>
             <a href="https://godoc.org/github.com/vardius/gorouter">GoDoc</a>
           </div>
           <div>
             <h5>Community</h5>
-            <a href="https://github.com/sponsors/vardius">
-              Support
-            </a>
+            <a href="https://github.com/sponsors/vardius">Support</a>
             {(this.props.config.users || []).length > 0 && (
-              <a href={this.pageUrl('users.html', this.props.language)}>
+              <a href={this.pageUrl("users.html", this.props.language)}>
                 User Showcase
               </a>
             )}
@@ -64,14 +62,16 @@ class Footer extends React.Component {
               data-count-href="/vardius/gorouter/stargazers"
               data-show-count="true"
               data-count-aria-label="# stargazers on GitHub"
-              aria-label="Star this project on GitHub">
+              aria-label="Star this project on GitHub"
+            >
               Star
             </a>
             {this.props.config.twitterUsername && (
               <div className="social">
                 <a
                   href={`https://twitter.com/${this.props.config.twitterUsername}`}
-                  className="twitter-follow-button">
+                  className="twitter-follow-button"
+                >
                   Follow @{this.props.config.twitterUsername}
                 </a>
               </div>

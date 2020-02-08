@@ -22,7 +22,8 @@ const users = [
 
 const siteConfig = {
   title: "gorouter", // Title for your website.
-  tagline: "Go Server/API micro framework, HTTP request router, multiplexer, mux",
+  tagline:
+    "Go Server/API micro framework, HTTP request router, multiplexer, mux",
   url: "http://rafallorenz.com/", // Your website URL
   baseUrl: "/gorouter/", // Base URL for your project */
   // For github.io type URLs, you would set the url and baseUrl like:
@@ -53,9 +54,9 @@ const siteConfig = {
   users,
 
   /* path to images for header/footer */
-  headerIcon: "img/favicon.ico",
-  footerIcon: "img/favicon.ico",
-  favicon: "img/favicon.ico",
+  headerIcon: "img/apple-touch-icon.png",
+  footerIcon: "img/apple-touch-icon.png",
+  favicon: "favicon/favicon.ico",
 
   /* Colors for website */
   colors: {
@@ -109,8 +110,8 @@ const siteConfig = {
 
   // You may provide arbitrary config keys to be used as needed by your
   // template. For example, if you need your repo's URL...
-  repoUrl: 'https://github.com/vardius/gorouter',
-  gaTrackingId: 'UA-42622274-2'
+  repoUrl: "https://github.com/vardius/gorouter",
+  gaTrackingId: "UA-42622274-2"
 };
 
 module.exports = siteConfig;

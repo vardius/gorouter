@@ -39,6 +39,22 @@ func main() {
 }
 ${pre}`;
 
+const description = `
+Pick router that **does not** slow down with response size and maintains high performance for large and deep route tree.
+
+Most of the router benchmarks out there test only against root route, which does not give a great feedback.
+
+**gorouter** is designed to scale well against deep route tree.
+It's architecture allows to keep high performance with low memory usage no matter how deep and big route tree is.
+Built-in middleware system allows you to build complex solutions keeping performance at its best!
+
+- extensive set of features
+- compatible with multiple http packages
+- use of native context
+
+allows you to keep your business logic decoupled from external dependencies.
+`;
+
 class HomeSplash extends React.Component {
   render() {
     const {siteConfig, language = ''} = this.props;
@@ -112,11 +128,24 @@ class Index extends React.Component {
         id={props.id}
         background={props.background}>
         <GridBlock
-          align="center"
+          align={props.align || 'center'}
           contents={props.children}
           layout={props.layout}
         />
       </Container>
+    );
+
+    const Description = () => (
+      <Block background="light" align="left">
+          {[
+            {
+              title: 'Are you looking for a router that can handle deep route tree and large response size ?',
+              content: description,
+              image: baseUrl + 'img/logo.png',
+              imageAlign: 'left',
+            }
+        ]}
+      </Block>
     );
 
     const Features = () => (
@@ -127,17 +156,17 @@ class Index extends React.Component {
             {
               key:"routing",
               title: 'Routing System',
-              content: 'Routing with static and named parameters, easy setup for wildcards and regexp wildcards',
+              content: 'Parameters with flexible patterns including regexp wildcards.',
             },
             {
               key:"middleware",
               title: 'Middleware System',
-              content: 'Build-in middleware system with order by priority',
+              content: 'Build-in middleware system with order by priority.',
             },
             {
               key:"authentication",
               title: 'Authentication',
-              content: 'Easy authentication',
+              content: 'Easy authentication.',
             },
             {
               key:"fasthttp",
@@ -147,22 +176,22 @@ class Index extends React.Component {
             {
               key:"files",
               title: 'Serving Files',
-              content: 'Out fof box static files serving',
+              content: 'Out of box static files serving.',
             },
             {
               key:"multidomain",
               title: 'Multidomain',
-              content: 'Easy multidomain setup',
+              content: 'Easy multidomain setup.',
             },
             {
               key:"http2",
               title: 'HTTP2 Support',
-              content: 'Support for HTTP2, use it if you need it.',
+              content: 'Support for HTTP2.',
             },
             {
               key:"memory",
               title: 'Low memory usage',
-              content: 'Efficient and low memory usage, router implementation keeps allocations at 0!',
+              content: 'Efficient and low memory usage, performent and flexible for any response size, no matter depth of the route tree.',
             },
           ]}
         </Block>
@@ -202,6 +231,7 @@ class Index extends React.Component {
       <div>
         <HomeSplash siteConfig={siteConfig} language={language} />
         <div className="mainContainer">
+          <Description />
           <Features />
           <Showcase />
         </div>

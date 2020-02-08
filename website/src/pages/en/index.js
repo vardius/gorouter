@@ -142,7 +142,7 @@ class Index extends React.Component {
       <Block background="light" align="left">
           {[
             {
-              title: 'Are you looking for a router that can handle deep route tree and large response size ?',
+              title: 'Are you looking for a router that can handle deep route trees and large response sizes ?',
               content: description,
               image: baseUrl + 'img/logo.png',
               imageAlign: 'left',

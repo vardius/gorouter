@@ -45,8 +45,8 @@ Pick router that **does not** slow down with response size and maintains high pe
 Most of the router benchmarks out there test only against root route, which does not give a great feedback.
 
 **gorouter** is designed to scale well against deep route tree.
-It's architecture allows to keep high performance with low memory usage no matter how deep and big route tree is.
-Built-in middleware system allows you to build complex solutions keeping performance at its best!
+Its architecture allows to keep high performance with low memory usage no matter how deep and big route tree is.
+Built-in middleware system enables you to build complex solutions keeping performance at its best!
 
 - extensive set of features
 - compatible with multiple http packages

@@ -15,7 +15,7 @@ Go Server/API micro framework, HTTP request router, multiplexer, mux.
 ==================================================
 Contributors:
 
-* [Rafał Lorenz](http://rafallorenz.com)
+* [Rafał Lorenz](https://rafallorenz.com)
 
 Want to contribute ? Feel free to send pull requests!
 
@@ -24,7 +24,7 @@ We are using the github [issue tracker](https://github.com/vardius/gorouter/issu
 
 ## 📚 Documentation
 
-For **documentation** (_including examples_), **visit [rafallorenz.com/gorouter](http://rafallorenz.com/gorouter)**
+For **documentation** (_including examples_), **visit [rafallorenz.com/gorouter](https://rafallorenz.com/gorouter)**
 
 For **GoDoc** reference, **visit [godoc.org/github.com/vardius/gorouter](http://godoc.org/github.com/vardius/gorouter)**
 
@@ -42,7 +42,7 @@ PASS
 ok  	github.com/vardius/gorouter/v4	3.808s
 ```
 
-👉 **[Click here](http://rafallorenz.com/gorouter/docs/benchmark)** to see all benchmark results.
+👉 **[Click here](https://rafallorenz.com/gorouter/docs/benchmark)** to see all benchmark results.
 
 ## Features
 - Routing System
@@ -53,14 +53,14 @@ ok  	github.com/vardius/gorouter/v4	3.808s
 - Multidomain
 - HTTP2 Support
 - Low memory usage
-- [Documentation](http://rafallorenz.com/gorouter/)
+- [Documentation](https://rafallorenz.com/gorouter/)
 
 🚏 HOW TO USE
 ==================================================
 
-- [Basic example](http://rafallorenz.com/gorouter/docs/basic-example)
-- [net/http](http://rafallorenz.com/gorouter/docs/basic-example#nethttp)
-- [fasthttp](http://rafallorenz.com/gorouter/docs/basic-example#fasthttp)
+- [Basic example](https://rafallorenz.com/gorouter/docs/basic-example)
+- [net/http](https://rafallorenz.com/gorouter/docs/basic-example#nethttp)
+- [fasthttp](https://rafallorenz.com/gorouter/docs/basic-example#fasthttp)
 
 ## 🖥️ API example setup
 

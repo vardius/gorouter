@@ -1,10 +1,12 @@
 package gorouter
 
 import (
-	pathutils "github.com/vardius/gorouter/v4/path"
 	"net/http"
 
+	pathutils "github.com/vardius/gorouter/v4/path"
+
 	"github.com/valyala/fasthttp"
+
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
 )

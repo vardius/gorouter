@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/valyala/fasthttp"
+
 	"github.com/vardius/gorouter/v4/context"
 )
 
@@ -515,7 +516,7 @@ func TestFastHTTPChainCalls(t *testing.T) {
 		t.Fatal("First not served")
 	}
 
-	//SECOND CALL
+	// SECOND CALL
 	served = false
 	err = mockHandleFastHTTP(router.HandleFastHTTP, fasthttp.MethodGet, "/applications/client_id/tokens")
 	if err != nil {
@@ -526,7 +527,7 @@ func TestFastHTTPChainCalls(t *testing.T) {
 		t.Fatal("Second not served")
 	}
 
-	//THIRD CALL
+	// THIRD CALL
 	served = false
 	err = mockHandleFastHTTP(router.HandleFastHTTP, fasthttp.MethodGet, "/applications/client_id/tokens/access_token")
 	if err != nil {
@@ -537,7 +538,7 @@ func TestFastHTTPChainCalls(t *testing.T) {
 		t.Fatal("Third not served")
 	}
 
-	//FOURTH CALL
+	// FOURTH CALL
 	served = false
 	err = mockHandleFastHTTP(router.HandleFastHTTP, fasthttp.MethodGet, "/users/user1/received_events")
 	if err != nil {
@@ -548,7 +549,7 @@ func TestFastHTTPChainCalls(t *testing.T) {
 		t.Fatal("Fourth not served")
 	}
 
-	//FIFTH CALL
+	// FIFTH CALL
 	served = false
 	err = mockHandleFastHTTP(router.HandleFastHTTP, fasthttp.MethodGet, "/users/user2/received_events/public")
 	if err != nil {

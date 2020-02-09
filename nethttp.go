@@ -1,12 +1,13 @@
 package gorouter
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/vardius/gorouter/v4/context"
 	"github.com/vardius/gorouter/v4/middleware"
 	"github.com/vardius/gorouter/v4/mux"
 	pathutils "github.com/vardius/gorouter/v4/path"
-	"net/http"
-	"strings"
 )
 
 // New creates new net/http Router instance, returns pointer

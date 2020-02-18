@@ -60,7 +60,7 @@ ok  	github.com/vardius/gorouter/v4	3.808s
 
 - [Basic example](https://rafallorenz.com/gorouter/docs/basic-example)
 - [net/http](https://rafallorenz.com/gorouter/docs/basic-example#nethttp)
-- [fasthttp](https://rafallorenz.com/gorouter/docs/basic-example#fasthttp)
+- [valyala/fasthttp](https://rafallorenz.com/gorouter/docs/basic-example#fasthttp)
 
 ## 🖥️ API example setup
 

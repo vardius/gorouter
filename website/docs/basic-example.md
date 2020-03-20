@@ -54,6 +54,7 @@ import (
 
     "github.com/valyala/fasthttp"
     "github.com/vardius/gorouter/v4"
+    "github.com/vardius/gorouter/v4/context"
 )
 
 func index(_ *fasthttp.RequestCtx) {

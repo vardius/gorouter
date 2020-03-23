@@ -26,7 +26,7 @@ We are using the github [issue tracker](https://github.com/vardius/gorouter/issu
 
 For **documentation** (_including examples_), **visit [rafallorenz.com/gorouter](https://rafallorenz.com/gorouter)**
 
-For **GoDoc** reference, **visit [pkg.go.dev/github.com/vardius/gorouter](https://pkg.go.dev/github.com/vardius/gorouter)**
+For **GoDoc** reference, **visit [pkg.go.dev](https://pkg.go.dev/github.com/vardius/gorouter)**
 
 ## 🚅 Benchmark
 

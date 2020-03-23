@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/vardius/gorouter)](https://goreportcard.com/report/github.com/vardius/gorouter)
 [![codecov](https://codecov.io/gh/vardius/gorouter/branch/master/graph/badge.svg)](https://codecov.io/gh/vardius/gorouter)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fvardius%2Fgorouter.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fvardius%2Fgorouter?ref=badge_shield)
-[![](https://godoc.org/github.com/vardius/gorouter?status.svg)](http://godoc.org/github.com/vardius/gorouter)
+[![](https://godoc.org/github.com/vardius/gorouter?status.svg)](https://pkg.go.dev/github.com/vardius/gorouter)
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/vardius/gorouter/blob/master/LICENSE.md)
 
 <img align="right" height="180px" src="website/src/static/img/logo.png" alt="logo" />
@@ -26,7 +26,7 @@ We are using the github [issue tracker](https://github.com/vardius/gorouter/issu
 
 For **documentation** (_including examples_), **visit [rafallorenz.com/gorouter](https://rafallorenz.com/gorouter)**
 
-For **GoDoc** reference, **visit [godoc.org/github.com/vardius/gorouter](http://godoc.org/github.com/vardius/gorouter)**
+For **GoDoc** reference, **visit [pkg.go.dev/github.com/vardius/gorouter](https://pkg.go.dev/github.com/vardius/gorouter)**
 
 ## 🚅 Benchmark
 

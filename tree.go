@@ -8,7 +8,7 @@ import (
 
 func allowed(t mux.Tree, method, path string) (allow string) {
 	if path == "*" {
-		// tree tree roots should be http method nodes only
+		// tree roots should be http method nodes only
 		for _, root := range t {
 			if root.Name() == http.MethodOptions {
 				continue
@@ -20,7 +20,7 @@ func allowed(t mux.Tree, method, path string) (allow string) {
 			}
 		}
 	} else {
-		// tree tree roots should be http method nodes only
+		// tree roots should be http method nodes only
 		for _, root := range t {
 			if root.Name() == method || root.Name() == http.MethodOptions {
 				continue

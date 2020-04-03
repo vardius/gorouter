@@ -183,23 +183,23 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	path = pathutils.TrimSlash(req.URL.Path)
 
-	// Handle OPTIONS
-	if req.Method == http.MethodOptions {
-		if allow := allowed(r.tree, req.Method, path); len(allow) > 0 {
-			w.Header().Set("Allow", allow)
-			return
-		}
-	} else if req.Method == http.MethodGet && r.fileServer != nil {
-		// Handle file serve
+	// Handle file serve
+	if req.Method == http.MethodGet && r.fileServer != nil {
 		r.fileServer.ServeHTTP(w, req)
 		return
-	} else {
-		// Handle 405
-		if allow := allowed(r.tree, req.Method, path); len(allow) > 0 {
-			w.Header().Set("Allow", allow)
-			r.serveNotAllowed(w, req)
+	}
+
+	// Handle OPTIONS
+	if allow := allowed(r.tree, req.Method, path); len(allow) > 0 {
+		w.Header().Set("Allow", allow)
+
+		if req.Method == http.MethodOptions {
 			return
 		}
+
+		// Handle 405
+		r.serveNotAllowed(w, req)
+		return
 	}
 
 	// Handle 404

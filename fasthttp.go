@@ -1,8 +1,6 @@
 package gorouter
 
 import (
-	"net/http"
-
 	pathutils "github.com/vardius/gorouter/v4/path"
 
 	"github.com/valyala/fasthttp"
@@ -35,39 +33,39 @@ func (r *fastHTTPRouter) PrettyPrint() string {
 }
 
 func (r *fastHTTPRouter) POST(p string, f fasthttp.RequestHandler) {
-	r.Handle(http.MethodPost, p, f)
+	r.Handle(fasthttp.MethodPost, p, f)
 }
 
 func (r *fastHTTPRouter) GET(p string, f fasthttp.RequestHandler) {
-	r.Handle(http.MethodGet, p, f)
+	r.Handle(fasthttp.MethodGet, p, f)
 }
 
 func (r *fastHTTPRouter) PUT(p string, f fasthttp.RequestHandler) {
-	r.Handle(http.MethodPut, p, f)
+	r.Handle(fasthttp.MethodPut, p, f)
 }
 
 func (r *fastHTTPRouter) DELETE(p string, f fasthttp.RequestHandler) {
-	r.Handle(http.MethodDelete, p, f)
+	r.Handle(fasthttp.MethodDelete, p, f)
 }
 
 func (r *fastHTTPRouter) PATCH(p string, f fasthttp.RequestHandler) {
-	r.Handle(http.MethodPatch, p, f)
+	r.Handle(fasthttp.MethodPatch, p, f)
 }
 
 func (r *fastHTTPRouter) OPTIONS(p string, f fasthttp.RequestHandler) {
-	r.Handle(http.MethodOptions, p, f)
+	r.Handle(fasthttp.MethodOptions, p, f)
 }
 
 func (r *fastHTTPRouter) HEAD(p string, f fasthttp.RequestHandler) {
-	r.Handle(http.MethodHead, p, f)
+	r.Handle(fasthttp.MethodHead, p, f)
 }
 
 func (r *fastHTTPRouter) CONNECT(p string, f fasthttp.RequestHandler) {
-	r.Handle(http.MethodConnect, p, f)
+	r.Handle(fasthttp.MethodConnect, p, f)
 }
 
 func (r *fastHTTPRouter) TRACE(p string, f fasthttp.RequestHandler) {
-	r.Handle(http.MethodTrace, p, f)
+	r.Handle(fasthttp.MethodTrace, p, f)
 }
 
 func (r *fastHTTPRouter) USE(method, path string, fs ...FastHTTPMiddlewareFunc) {
@@ -88,15 +86,15 @@ func (r *fastHTTPRouter) Handle(method, path string, h fasthttp.RequestHandler) 
 
 func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
 	for _, method := range []string{
-		http.MethodGet,
-		http.MethodHead,
-		http.MethodPost,
-		http.MethodPut,
-		http.MethodPatch,
-		http.MethodDelete,
-		http.MethodConnect,
-		http.MethodOptions,
-		http.MethodTrace,
+		fasthttp.MethodGet,
+		fasthttp.MethodHead,
+		fasthttp.MethodPost,
+		fasthttp.MethodPut,
+		fasthttp.MethodPatch,
+		fasthttp.MethodDelete,
+		fasthttp.MethodConnect,
+		fasthttp.MethodOptions,
+		fasthttp.MethodTrace,
 	} {
 		route := newRoute(h)
 
@@ -182,23 +180,23 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 
 	path = pathutils.TrimSlash(path)
 
-	// Handle OPTIONS
-	if method == http.MethodOptions {
-		if allow := allowed(r.tree, method, path); len(allow) > 0 {
-			ctx.Response.Header.Set("Allow", allow)
-			return
-		}
-	} else if method == http.MethodGet && r.fileServer != nil {
-		// Handle file serve
+	// Handle file serve
+	if method == fasthttp.MethodGet && r.fileServer != nil {
 		r.fileServer(ctx)
 		return
-	} else {
-		// Handle 405
-		if allow := allowed(r.tree, method, path); len(allow) > 0 {
-			ctx.Response.Header.Set("Allow", allow)
-			r.serveNotAllowed(ctx)
+	}
+
+	// Handle OPTIONS
+	if allow := allowed(r.tree, method, path); len(allow) > 0 {
+		ctx.Response.Header.Set("Allow", allow)
+
+		if method == fasthttp.MethodOptions {
 			return
 		}
+
+		// Handle 405
+		r.serveNotAllowed(ctx)
+		return
 	}
 
 	// Handle 404

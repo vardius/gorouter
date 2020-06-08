@@ -28,7 +28,7 @@ func BasicAuth(next http.Handler) http.Handler {
         user, password, hasAuth := r.BasicAuth()
         
         if hasAuth && user == requiredUser && password == requiredPassword {
-            return
+		    next.ServeHTTP(w, r)
         } else {
             w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
             http.Error(w,
@@ -36,7 +36,6 @@ func BasicAuth(next http.Handler) http.Handler {
                 http.StatusUnauthorized,
             )
         }
-		next.ServeHTTP(w, r)
 	}
 
 	return http.HandlerFunc(fn)

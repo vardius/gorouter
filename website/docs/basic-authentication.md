@@ -16,7 +16,7 @@ import (
 	"log"
 	"net/http"
 
-    "github.com/vardius/gorouter/v4"
+	"github.com/vardius/gorouter/v4"
 )
 
 func BasicAuth(next http.Handler) http.Handler {
@@ -28,15 +28,13 @@ func BasicAuth(next http.Handler) http.Handler {
         user, password, hasAuth := r.BasicAuth()
         
         if hasAuth && user == requiredUser && password == requiredPassword {
-            return
+            next.ServeHTTP(w, r)
         } else {
             w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
             http.Error(w,
                 http.StatusText(http.StatusUnauthorized),
                 http.StatusUnauthorized,
             )
-        }
-		next.ServeHTTP(w, r)
 	}
 
 	return http.HandlerFunc(fn)
@@ -67,19 +65,19 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
-    "fmt"
-    "log"
+	"fmt"
+	"log"
 
-    "github.com/valyala/fasthttp"
-    "github.com/vardius/gorouter/v4"
+	"github.com/valyala/fasthttp"
+	"github.com/vardius/gorouter/v4"
 )
 
 var basicAuthPrefix = []byte("Basic ")
 
 func BasicAuth(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	fn := func(ctx *fasthttp.RequestCtx) {
-        requiredUser := []byte("gordon")
-        requiredPassword := []byte("secret!")
+        	requiredUser := []byte("gordon")
+        	requiredPassword := []byte("secret!")
 
 		// Get the Basic Authentication credentials
 		auth := ctx.Request.Header.Peek("Authorization")
@@ -119,7 +117,7 @@ func main() {
     router.GET("/", index)
     router.GET("/protected", protected)
 
-	router.USE("GET", "/protected", BasicAuth)
+    router.USE("GET", "/protected", BasicAuth)
 
     log.Fatal(fasthttp.ListenAndServe(":8080", router.HandleFastHTTP))
 }

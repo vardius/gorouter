@@ -30,7 +30,7 @@ func BasicAuth(next http.Handler) http.Handler {
 		// Get the Basic Authentication credentials
 		user, password, hasAuth := r.BasicAuth()
 
-		if !hasAuth || subtle.ConstantTimeCompare([]byte(user), requiredUser) != 1 || subtle.ConstantTimeCompare([]byte(pass), requiredPassword) != 1 {
+		if !hasAuth || subtle.ConstantTimeCompare(requiredUser, []byte(user)) != 1 || subtle.ConstantTimeCompare(requiredPassword, []byte(pass)) != 1 {
 			w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
@@ -90,7 +90,7 @@ func BasicAuth(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 			payload, err := base64.StdEncoding.DecodeString(string(auth[len(basicAuthPrefix):]))
 			if err == nil {
 				pair := bytes.SplitN(payload, []byte(":"), 2)
-				if len(pair) == 2 && subtle.ConstantTimeCompare(pair[0], requiredUser) == 1 && subtle.ConstantTimeCompare(pair[1], requiredPassword) == 1 {
+				if len(pair) == 2 && subtle.ConstantTimeCompare(requiredUser, pair[0]) == 1 && subtle.ConstantTimeCompare(requiredPassword, pair[1]) == 1 {
 					// Delegate request to the given handle
 					next(ctx)
 					return

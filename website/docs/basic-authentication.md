@@ -30,7 +30,7 @@ func BasicAuth(next http.Handler) http.Handler {
 		// Get the Basic Authentication credentials
 		user, password, hasAuth := r.BasicAuth()
 
-		if !hasAuth || subtle.ConstantTimeCompare(requiredUser, []byte(user)) != 1 || subtle.ConstantTimeCompare(requiredPassword, []byte(pass)) != 1 {
+		if !hasAuth || subtle.ConstantTimeCompare(requiredUser, []byte(user)) != 1 || subtle.ConstantTimeCompare(requiredPassword, []byte(password)) != 1 {
 			w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return

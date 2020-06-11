@@ -20,7 +20,7 @@ import (
 	"github.com/vardius/gorouter/v4"
 )
 
-const (
+var (
 	requiredUser     = []byte("gordon")
 	requiredPassword = []byte("secret!")
 )
@@ -75,7 +75,7 @@ import (
 	"github.com/vardius/gorouter/v4"
 )
 
-const (
+var (
 	basicAuthPrefix = []byte("Basic ")
 	requiredUser     = []byte("gordon")
 	requiredPassword = []byte("secret!")

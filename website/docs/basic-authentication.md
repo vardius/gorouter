@@ -15,26 +15,28 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"crypto/subtle"
 
 	"github.com/vardius/gorouter/v4"
 )
 
+var (
+	requiredUser     = []byte("gordon")
+	requiredPassword = []byte("secret!")
+)
+
 func BasicAuth(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-        requiredUser := "gordon"
-        requiredPassword := "secret!"
-        
-        // Get the Basic Authentication credentials
-        user, password, hasAuth := r.BasicAuth()
-        
-        if hasAuth && user == requiredUser && password == requiredPassword {
-            next.ServeHTTP(w, r)
-        } else {
-            w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
-            http.Error(w,
-                http.StatusText(http.StatusUnauthorized),
-                http.StatusUnauthorized,
-            )
+		// Get the Basic Authentication credentials
+		user, password, hasAuth := r.BasicAuth()
+
+		if !hasAuth || subtle.ConstantTimeCompare(requiredUser, []byte(user)) != 1 || subtle.ConstantTimeCompare(requiredPassword, []byte(password)) != 1 {
+			w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
 	}
 
 	return http.HandlerFunc(fn)
@@ -63,6 +65,7 @@ func main() {
 package main
 
 import (
+	"crypto/subtle"
 	"bytes"
 	"encoding/base64"
 	"fmt"
@@ -72,13 +75,14 @@ import (
 	"github.com/vardius/gorouter/v4"
 )
 
-var basicAuthPrefix = []byte("Basic ")
+var (
+	basicAuthPrefix = []byte("Basic ")
+	requiredUser     = []byte("gordon")
+	requiredPassword = []byte("secret!")
+)
 
 func BasicAuth(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	fn := func(ctx *fasthttp.RequestCtx) {
-        	requiredUser := []byte("gordon")
-        	requiredPassword := []byte("secret!")
-
 		// Get the Basic Authentication credentials
 		auth := ctx.Request.Header.Peek("Authorization")
 		if bytes.HasPrefix(auth, basicAuthPrefix) {
@@ -86,9 +90,7 @@ func BasicAuth(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 			payload, err := base64.StdEncoding.DecodeString(string(auth[len(basicAuthPrefix):]))
 			if err == nil {
 				pair := bytes.SplitN(payload, []byte(":"), 2)
-				if len(pair) == 2 &&
-					bytes.Equal(pair[0], requiredUser) &&
-					bytes.Equal(pair[1], requiredPassword) {
+				if len(pair) == 2 && subtle.ConstantTimeCompare(requiredUser, pair[0]) == 1 && subtle.ConstantTimeCompare(requiredPassword, pair[1]) == 1 {
 					// Delegate request to the given handle
 					next(ctx)
 					return

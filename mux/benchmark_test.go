@@ -37,11 +37,7 @@ func BenchmarkMux(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			_, _, subPath := root.Tree().MatchRoute("pl/blog/comments/123/new")
-
-			if subPath != "" {
-				b.Fatalf("%s != %s (%s)", subPath, "pl/blog/comments/123/new", commentNew.Name())
-			}
+			root.Tree().MatchRoute("pl/blog/comments/123/new")
 		}
 	})
 }

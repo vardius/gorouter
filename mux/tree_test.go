@@ -37,9 +37,9 @@ func TestTreeMatch(t *testing.T) {
 
 	root.WithChildren(root.Tree().Compile())
 
-	_, _, subPath := root.Tree().MatchRoute("pl/blog/comments/123/new")
+	route, _ := root.Tree().MatchRoute("pl/blog/comments/123/new")
 
-	if subPath != "" {
-		t.Fatalf("%s != %s (%s)", subPath, "pl/blog/comments/123/new", commentNew.Name())
+	if route != commentNew.Route() {
+		t.Fatalf("route did not match expected %s (%s)", "pl/blog/comments/123/new", commentNew.Name())
 	}
 }

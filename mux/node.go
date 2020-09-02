@@ -40,7 +40,7 @@ func NewNode(pathPart string, maxParamsSize uint8) Node {
 // RouteAware represents route aware Node
 type RouteAware interface {
 	// MatchRoute matches given path to Route within Node and its Tree
-	MatchRoute(path string) (Route, context.Params, string)
+	MatchRoute(path string) (Route, context.Params)
 
 	// Route provides Node's Route if assigned
 	Route() Route
@@ -94,23 +94,19 @@ type staticNode struct {
 	skipSubPath   bool
 }
 
-func (n *staticNode) MatchRoute(path string) (Route, context.Params, string) {
+func (n *staticNode) MatchRoute(path string) (Route, context.Params) {
 	nameLength := len(n.name)
 	pathLength := len(path)
 
 	if pathLength >= nameLength && n.name == path[:nameLength] {
-		if nameLength+1 >= pathLength {
-			return n.route, make(context.Params, n.maxParamsSize), ""
-		}
-
-		if n.skipSubPath {
-			return n.route, make(context.Params, n.maxParamsSize), path[nameLength+1:]
+		if nameLength+1 >= pathLength || n.skipSubPath {
+			return n.route, make(context.Params, n.maxParamsSize)
 		}
 
 		return n.children.MatchRoute(path[nameLength+1:]) // +1 because we wan to skip slash as well
 	}
 
-	return nil, nil, ""
+	return nil, nil
 }
 
 func (n *staticNode) MatchMiddleware(path string) middleware.Collection {
@@ -118,12 +114,11 @@ func (n *staticNode) MatchMiddleware(path string) middleware.Collection {
 	pathLength := len(path)
 
 	if pathLength >= nameLength && n.name == path[:nameLength] {
-		if nameLength+1 >= pathLength {
+		if nameLength+1 >= pathLength || n.skipSubPath {
 			return n.middleware
 		}
 
 		if treeMiddleware := n.children.MatchMiddleware(path[nameLength+1:]); treeMiddleware != nil { // +1 because we wan to skip slash as well
-
 			return n.middleware.Merge(treeMiddleware)
 		}
 
@@ -181,7 +176,7 @@ type wildcardNode struct {
 	*staticNode
 }
 
-func (n *wildcardNode) MatchRoute(path string) (Route, context.Params, string) {
+func (n *wildcardNode) MatchRoute(path string) (Route, context.Params) {
 	pathPart, subPath := pathutils.GetPart(path)
 	maxParamsSize := n.MaxParamsSize()
 
@@ -192,22 +187,25 @@ func (n *wildcardNode) MatchRoute(path string) (Route, context.Params, string) {
 		route = n.route
 		params = make(context.Params, maxParamsSize)
 	} else {
-		route, params, subPath = n.children.MatchRoute(subPath)
+		route, params = n.children.MatchRoute(subPath)
 		if route == nil {
-			return nil, nil, ""
+			return nil, nil
 		}
 	}
 
 	params.Set(maxParamsSize-1, n.name, pathPart)
 
-	return route, params, subPath
+	return route, params
 }
 
 func (n *wildcardNode) MatchMiddleware(path string) middleware.Collection {
 	_, subPath := pathutils.GetPart(path)
 
-	if treeMiddleware := n.children.MatchMiddleware(subPath); treeMiddleware != nil {
+	if subPath == "" || n.staticNode.skipSubPath {
+		return n.middleware
+	}
 
+	if treeMiddleware := n.children.MatchMiddleware(subPath); treeMiddleware != nil {
 		return n.middleware.Merge(treeMiddleware)
 	}
 
@@ -227,10 +225,10 @@ type regexpNode struct {
 	regexp *regexp.Regexp
 }
 
-func (n *regexpNode) MatchRoute(path string) (Route, context.Params, string) {
+func (n *regexpNode) MatchRoute(path string) (Route, context.Params) {
 	pathPart, subPath := pathutils.GetPart(path)
 	if !n.regexp.MatchString(pathPart) {
-		return nil, nil, ""
+		return nil, nil
 	}
 
 	maxParamsSize := n.MaxParamsSize()
@@ -242,15 +240,15 @@ func (n *regexpNode) MatchRoute(path string) (Route, context.Params, string) {
 		route = n.route
 		params = make(context.Params, maxParamsSize)
 	} else {
-		route, params, subPath = n.children.MatchRoute(subPath)
+		route, params = n.children.MatchRoute(subPath)
 		if route == nil {
-			return nil, nil, ""
+			return nil, nil
 		}
 	}
 
 	params.Set(maxParamsSize-1, n.name, pathPart)
 
-	return route, params, subPath
+	return route, params
 }
 
 func (n *regexpNode) MatchMiddleware(path string) middleware.Collection {
@@ -259,8 +257,11 @@ func (n *regexpNode) MatchMiddleware(path string) middleware.Collection {
 		return nil
 	}
 
-	if treeMiddleware := n.children.MatchMiddleware(subPath); treeMiddleware != nil {
+	if subPath == "" || n.staticNode.skipSubPath {
+		return n.middleware
+	}
 
+	if treeMiddleware := n.children.MatchMiddleware(subPath); treeMiddleware != nil {
 		return n.middleware.Merge(treeMiddleware)
 	}
 

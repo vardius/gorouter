@@ -1,7 +1,7 @@
 package gorouter
 
 import (
-	"fmt"
+	"strings"
 
 	pathutils "github.com/vardius/gorouter/v4/path"
 
@@ -99,12 +99,17 @@ func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
 		fasthttp.MethodOptions,
 		fasthttp.MethodTrace,
 	} {
-		route := newRoute(fasthttp.RequestHandler(func(ctx *fasthttp.RequestCtx) {
-			pathRewrite := fasthttp.NewPathPrefixStripper(len(path))
-			ctx.URI().SetPathBytes(pathRewrite(ctx))
-			h(ctx)
-		}))
-		r.tree = r.tree.WithSubrouter(method+path, route, 0)
+		pathRewrite := fasthttp.NewPathSlashesStripper(strings.Count(path, "/"))
+
+		r.tree = r.tree.WithSubrouter(
+			method+path,
+			newRoute(fasthttp.RequestHandler(func(ctx *fasthttp.RequestCtx) {
+				ctx.URI().SetPathBytes(pathRewrite(ctx))
+
+				h(ctx)
+			})),
+			0,
+		)
 	}
 }
 
@@ -138,8 +143,6 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 	method := string(ctx.Method())
 	path := string(ctx.Path())
 
-	fmt.Println("method", method)
-	fmt.Println("path", path)
 	if root := r.tree.Find(method); root != nil {
 		var h fasthttp.RequestHandler
 
@@ -160,7 +163,7 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 		} else {
 			path = pathutils.TrimSlash(path)
 
-			if route, params, subPath := root.Tree().MatchRoute(path); route != nil {
+			if route, params := root.Tree().MatchRoute(path); route != nil {
 				if r.middlewareCounter > 0 {
 					allMiddleware := r.globalMiddleware
 					if treeMiddleware := root.Tree().MatchMiddleware(path); len(treeMiddleware) > 0 {
@@ -178,10 +181,6 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 
 				if len(params) > 0 {
 					ctx.SetUserValue("params", params)
-				}
-
-				if subPath != "" {
-					ctx.URI().SetPathBytes(fasthttp.NewPathPrefixStripper(len("/" + subPath))(ctx))
 				}
 
 				h(ctx)

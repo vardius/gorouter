@@ -99,23 +99,15 @@ func (r *router) Mount(path string, h http.Handler) {
 		http.MethodOptions,
 		http.MethodTrace,
 	} {
-		route := newRoute(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if p := strings.TrimPrefix(r.URL.Path, path); len(p) < len(r.URL.Path) {
-				if p == "" {
-					p = "/"
-				}
-				r2 := new(http.Request)
-				*r2 = *r
-				r2.URL = new(url.URL)
-				*r2.URL = *r.URL
-				r2.URL.Path = p
-				h.ServeHTTP(w, r2)
-			} else {
-				h.ServeHTTP(w, r)
-			}
-		}))
+		pathRewrite := newPathSlashesStripper(strings.Count(path, "/"))
 
-		r.tree = r.tree.WithSubrouter(method+path, route, 0)
+		r.tree = r.tree.WithSubrouter(
+			method+path,
+			newRoute(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				h.ServeHTTP(w, pathRewrite(r))
+			})),
+			0,
+		)
 	}
 }
 
@@ -171,7 +163,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		} else {
 			path = pathutils.TrimSlash(req.URL.Path)
 
-			if route, params, subPath := root.Tree().MatchRoute(path); route != nil {
+			if route, params := root.Tree().MatchRoute(path); route != nil {
 				if r.middlewareCounter > 0 {
 					allMiddleware := r.globalMiddleware
 					if treeMiddleware := root.Tree().MatchMiddleware(path); len(treeMiddleware) > 0 {
@@ -189,10 +181,6 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 				if len(params) > 0 {
 					req = req.WithContext(context.WithParams(req.Context(), params))
-				}
-
-				if subPath != "" {
-					h = http.StripPrefix(strings.TrimSuffix(req.URL.Path, "/"+subPath), h)
 				}
 
 				h.ServeHTTP(w, req)
@@ -264,4 +252,32 @@ func transformMiddlewareFunc(fs ...MiddlewareFunc) middleware.Collection {
 	}
 
 	return m
+}
+
+func newPathSlashesStripper(stripSlashes int) func(r *http.Request) *http.Request {
+	return func(r *http.Request) *http.Request {
+		r2 := new(http.Request)
+		*r2 = *r
+		r2.URL = new(url.URL)
+		*r2.URL = *r.URL
+
+		p := r.URL.Path
+		for stripSlashes > 0 && len(p) > 0 {
+			n := strings.IndexByte(p[1:], '/')
+			if n < 0 {
+				p = p[:0]
+				break
+			}
+			p = p[n+1:]
+			stripSlashes--
+		}
+
+		if p != "" {
+			r2.URL.Path = p
+		} else {
+			r2.URL.Path = "/"
+		}
+
+		return r2
+	}
 }

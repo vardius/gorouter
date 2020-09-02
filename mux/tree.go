@@ -70,14 +70,14 @@ func (t Tree) Compile() Tree {
 }
 
 // MatchRoute path to first Node
-func (t Tree) MatchRoute(path string) (Route, context.Params, string) {
+func (t Tree) MatchRoute(path string) (Route, context.Params) {
 	for _, child := range t {
-		if route, params, subPath := child.MatchRoute(path); route != nil {
-			return route, params, subPath
+		if route, params := child.MatchRoute(path); route != nil {
+			return route, params
 		}
 	}
 
-	return nil, nil, ""
+	return nil, nil
 }
 
 // MatchMiddleware collects middleware from all nodes that match path

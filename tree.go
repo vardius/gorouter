@@ -26,7 +26,7 @@ func allowed(t mux.Tree, method, path string) (allow string) {
 				continue
 			}
 
-			if route, _, _ := root.Tree().MatchRoute(path); route != nil {
+			if route, _ := root.Tree().MatchRoute(path); route != nil {
 				if len(allow) == 0 {
 					allow = root.Name()
 				} else {

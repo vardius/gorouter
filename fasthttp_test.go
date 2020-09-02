@@ -134,8 +134,6 @@ func TestFastHTTPNotFound(t *testing.T) {
 
 	router.HandleFastHTTP(ctx)
 
-	fmt.Println(string(ctx.Response.Body()))
-
 	if string(ctx.Response.Body()) != "test" {
 		t.Error("Not found handler wasn't invoked")
 	}

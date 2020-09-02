@@ -88,6 +88,13 @@ func (r *fastHTTPRouter) Handle(method, path string, h fasthttp.RequestHandler) 
 }
 
 func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
+	pathRewrite := fasthttp.NewPathSlashesStripper(strings.Count(path, "/"))
+	route := newRoute(fasthttp.RequestHandler(func(ctx *fasthttp.RequestCtx) {
+		ctx.URI().SetPathBytes(pathRewrite(ctx))
+
+		h(ctx)
+	}))
+
 	for _, method := range []string{
 		fasthttp.MethodGet,
 		fasthttp.MethodHead,
@@ -99,17 +106,7 @@ func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
 		fasthttp.MethodOptions,
 		fasthttp.MethodTrace,
 	} {
-		pathRewrite := fasthttp.NewPathSlashesStripper(strings.Count(path, "/"))
-
-		r.tree = r.tree.WithSubrouter(
-			method+path,
-			newRoute(fasthttp.RequestHandler(func(ctx *fasthttp.RequestCtx) {
-				ctx.URI().SetPathBytes(pathRewrite(ctx))
-
-				h(ctx)
-			})),
-			0,
-		)
+		r.tree = r.tree.WithSubrouter(method+path, route, 0)
 	}
 }
 

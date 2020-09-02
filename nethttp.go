@@ -88,6 +88,11 @@ func (r *router) Handle(method, path string, h http.Handler) {
 }
 
 func (r *router) Mount(path string, h http.Handler) {
+	pathRewrite := newPathSlashesStripper(strings.Count(path, "/"))
+	route := newRoute(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTP(w, pathRewrite(r))
+	}))
+
 	for _, method := range []string{
 		http.MethodGet,
 		http.MethodHead,
@@ -99,15 +104,7 @@ func (r *router) Mount(path string, h http.Handler) {
 		http.MethodOptions,
 		http.MethodTrace,
 	} {
-		pathRewrite := newPathSlashesStripper(strings.Count(path, "/"))
-
-		r.tree = r.tree.WithSubrouter(
-			method+path,
-			newRoute(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				h.ServeHTTP(w, pathRewrite(r))
-			})),
-			0,
-		)
+		r.tree = r.tree.WithSubrouter(method+path, route, 0)
 	}
 }
 

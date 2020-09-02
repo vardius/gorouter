@@ -596,3 +596,31 @@ func TestFastHTTPMountSubRouter(t *testing.T) {
 		t.Errorf("Router mount sub router middleware error: %s", string(ctx.Response.Body()))
 	}
 }
+
+func TestFastHTTPMountSubRouter_second(t *testing.T) {
+	t.Parallel()
+
+	mainRouter := NewFastHTTPRouter().(*fastHTTPRouter)
+	subRouter := NewFastHTTPRouter().(*fastHTTPRouter)
+
+	subRouter.GET("/", func(ctx *fasthttp.RequestCtx) {
+		if _, err := fmt.Fprintf(ctx, "/"); err != nil {
+			t.Fatal(err)
+		}
+	})
+	subRouter.GET("/{id}", func(ctx *fasthttp.RequestCtx) {
+		if _, err := fmt.Fprintf(ctx, "/id"); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	mainRouter.Mount("/v1", subRouter.HandleFastHTTP)
+
+	ctx := buildFastHTTPRequestContext(fasthttp.MethodGet, "/v1")
+
+	mainRouter.HandleFastHTTP(ctx)
+
+	if string(ctx.Response.Body()) != "/" {
+		t.Errorf("Router mount sub router error: %s", string(ctx.Response.Body()))
+	}
+}

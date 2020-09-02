@@ -1,6 +1,8 @@
 package gorouter
 
 import (
+	"fmt"
+
 	pathutils "github.com/vardius/gorouter/v4/path"
 
 	"github.com/valyala/fasthttp"
@@ -25,6 +27,7 @@ type fastHTTPRouter struct {
 	fileServer        fasthttp.RequestHandler
 	notFound          fasthttp.RequestHandler
 	notAllowed        fasthttp.RequestHandler
+	cors              fasthttp.RequestHandler
 	middlewareCounter uint
 }
 
@@ -96,8 +99,11 @@ func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
 		fasthttp.MethodOptions,
 		fasthttp.MethodTrace,
 	} {
-		route := newRoute(h)
-
+		route := newRoute(fasthttp.RequestHandler(func(ctx *fasthttp.RequestCtx) {
+			pathRewrite := fasthttp.NewPathPrefixStripper(len(path))
+			ctx.URI().SetPathBytes(pathRewrite(ctx))
+			h(ctx)
+		}))
 		r.tree = r.tree.WithSubrouter(method+path, route, 0)
 	}
 }
@@ -106,6 +112,10 @@ func (r *fastHTTPRouter) Compile() {
 	for i, methodNode := range r.tree {
 		r.tree[i].WithChildren(methodNode.Tree().Compile())
 	}
+}
+
+func (r *fastHTTPRouter) CORS(cors fasthttp.RequestHandler) {
+	r.cors = cors
 }
 
 func (r *fastHTTPRouter) NotFound(notFound fasthttp.RequestHandler) {
@@ -128,6 +138,8 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 	method := string(ctx.Method())
 	path := string(ctx.Path())
 
+	fmt.Println("method", method)
+	fmt.Println("path", path)
 	if root := r.tree.Find(method); root != nil {
 		var h fasthttp.RequestHandler
 
@@ -191,6 +203,7 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 		ctx.Response.Header.Set("Allow", allow)
 
 		if method == fasthttp.MethodOptions {
+			r.serveCors(ctx)
 			return
 		}
 
@@ -201,6 +214,12 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 
 	// Handle 404
 	r.serveNotFound(ctx)
+}
+
+func (r *fastHTTPRouter) serveCors(ctx *fasthttp.RequestCtx) {
+	if r.cors != nil {
+		r.cors(ctx)
+	}
 }
 
 func (r *fastHTTPRouter) serveNotFound(ctx *fasthttp.RequestCtx) {

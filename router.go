@@ -82,6 +82,10 @@ type Router interface {
 	// NotFound replies to the request with the
 	// 405 Error code
 	NotAllowed(http.Handler)
+
+	// CORS handler replies to request with cors header and handles preflight request
+	// it is enhancement to improve middleware usability instead of wrapping every handler
+	CORS(http.Handler)
 }
 
 // FastHTTPRouter is a fasthttp micro framework, HTTP request router, multiplexer, mux
@@ -154,4 +158,8 @@ type FastHTTPRouter interface {
 	// NotFound replies to the request with the
 	// 405 Error code
 	NotAllowed(fasthttp.RequestHandler)
+
+	// CORS handler replies to request with cors header and handles preflight request
+	// it is enhancement to improve middleware usability instead of wrapping every handler
+	CORS(fasthttp.RequestHandler)
 }

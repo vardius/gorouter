@@ -670,3 +670,35 @@ func TestMountSubRouter(t *testing.T) {
 		t.Errorf("Router mount subrouter middleware error: %s", w.Body.String())
 	}
 }
+
+func TestMountSubRouter_second(t *testing.T) {
+	t.Parallel()
+
+	mainRouter := New().(*router)
+	subRouter := New().(*router)
+
+	subRouter.GET("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write([]byte("/")); err != nil {
+			t.Fatal(err)
+		}
+	}))
+	subRouter.GET("/{id}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write([]byte("/id")); err != nil {
+			t.Fatal(err)
+		}
+	}))
+
+	mainRouter.Mount("/v1", subRouter)
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, "/v1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mainRouter.ServeHTTP(w, req)
+
+	if w.Body.String() != "/" {
+		t.Errorf("Router mount subrouter middleware error: %s", w.Body.String())
+	}
+}

@@ -2,6 +2,7 @@ package gorouter
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/vardius/gorouter/v4/context"
@@ -26,6 +27,7 @@ type router struct {
 	fileServer        http.Handler
 	notFound          http.Handler
 	notAllowed        http.Handler
+	cors              http.Handler
 	middlewareCounter uint
 }
 
@@ -97,7 +99,21 @@ func (r *router) Mount(path string, h http.Handler) {
 		http.MethodOptions,
 		http.MethodTrace,
 	} {
-		route := newRoute(h)
+		route := newRoute(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if p := strings.TrimPrefix(r.URL.Path, path); len(p) < len(r.URL.Path) {
+				if p == "" {
+					p = "/"
+				}
+				r2 := new(http.Request)
+				*r2 = *r
+				r2.URL = new(url.URL)
+				*r2.URL = *r.URL
+				r2.URL.Path = p
+				h.ServeHTTP(w, r2)
+			} else {
+				h.ServeHTTP(w, r)
+			}
+		}))
 
 		r.tree = r.tree.WithSubrouter(method+path, route, 0)
 	}
@@ -107,6 +123,10 @@ func (r *router) Compile() {
 	for i, methodNode := range r.tree {
 		r.tree[i].WithChildren(methodNode.Tree().Compile())
 	}
+}
+
+func (r *router) CORS(cors http.Handler) {
+	r.cors = cors
 }
 
 func (r *router) NotFound(notFound http.Handler) {
@@ -194,6 +214,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Allow", allow)
 
 		if req.Method == http.MethodOptions {
+			r.serveCors(w, req)
 			return
 		}
 
@@ -204,6 +225,12 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// Handle 404
 	r.serveNotFound(w, req)
+}
+
+func (r *router) serveCors(w http.ResponseWriter, req *http.Request) {
+	if r.cors != nil {
+		r.cors.ServeHTTP(w, req)
+	}
 }
 
 func (r *router) serveNotFound(w http.ResponseWriter, req *http.Request) {

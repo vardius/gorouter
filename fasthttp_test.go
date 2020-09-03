@@ -2,6 +2,7 @@ package gorouter
 
 import (
 	"fmt"
+	"net/http"
 	"reflect"
 	"strings"
 	"testing"
@@ -620,5 +621,48 @@ func TestFastHTTPMountSubRouter_second(t *testing.T) {
 
 	if string(ctx.Response.Body()) != "/" {
 		t.Errorf("Router mount sub router error: %s", string(ctx.Response.Body()))
+	}
+}
+
+func TestFastHTTPMountSubRouter_third(t *testing.T) {
+	t.Parallel()
+
+	subRouter := NewFastHTTPRouter().(*fastHTTPRouter)
+
+	subRouter.GET("/", func(ctx *fasthttp.RequestCtx) { _, _ = fmt.Fprint(ctx, "GET[/]") })
+	subRouter.GET("/{id}", func(ctx *fasthttp.RequestCtx) { _, _ = fmt.Fprint(ctx, "GET[/{id}]") })
+	subRouter.GET("/me", func(ctx *fasthttp.RequestCtx) { _, _ = fmt.Fprint(ctx, "GET[/me]") })
+	subRouter.USE(http.MethodGet, "/me", func(h fasthttp.RequestHandler) fasthttp.RequestHandler {
+		return func(ctx *fasthttp.RequestCtx) {
+			_, _ = fmt.Fprint(ctx, "USE[/me]")
+			h(ctx)
+		}
+	})
+	subRouter.POST("/google/callback", func(ctx *fasthttp.RequestCtx) { _, _ = fmt.Fprint(ctx, "POST[/google/callback]") })
+	subRouter.POST("/facebook/callback", func(ctx *fasthttp.RequestCtx) { _, _ = fmt.Fprint(ctx, "POST[/facebook/callback]") })
+	subRouter.POST("/dispatch/{command}", func(ctx *fasthttp.RequestCtx) { _, _ = fmt.Fprint(ctx, "POST[/dispatch/{command}]") })
+	subRouter.USE(http.MethodPost, "/dispatch/some-else", func(h fasthttp.RequestHandler) fasthttp.RequestHandler {
+		return func(ctx *fasthttp.RequestCtx) {
+			_, _ = fmt.Fprint(ctx, "USE[/dispatch/some-else]")
+			h(ctx)
+		}
+	})
+
+	mainRouter := NewFastHTTPRouter().(*fastHTTPRouter)
+
+	mainRouter.Mount("/v1", subRouter.HandleFastHTTP)
+
+	ctx := buildFastHTTPRequestContext(fasthttp.MethodPost, "/v1/dispatch/some-else")
+	mainRouter.HandleFastHTTP(ctx)
+
+	if string(ctx.Response.Body()) != "USE[/dispatch/some-else]POST[/dispatch/{command}]" {
+		t.Errorf("subrouter route did not match: %s", ctx.Response.Body())
+	}
+
+	ctx = buildFastHTTPRequestContext(fasthttp.MethodGet, "/v1/me")
+	mainRouter.HandleFastHTTP(ctx)
+
+	if string(ctx.Response.Body()) != "USE[/me]GET[/me]" {
+		t.Errorf("subrouter route did not match: %s", ctx.Response.Body())
 	}
 }

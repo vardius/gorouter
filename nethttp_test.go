@@ -1,6 +1,7 @@
 package gorouter
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -700,5 +701,82 @@ func TestMountSubRouter_second(t *testing.T) {
 
 	if w.Body.String() != "/" {
 		t.Errorf("Router mount subrouter middleware error: %s", w.Body.String())
+	}
+}
+
+func TestMountSubRouter_third(t *testing.T) {
+	t.Parallel()
+
+	subRouter := New().(*router)
+
+	subRouter.GET("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = fmt.Fprint(w, "GET[/]") }))
+	subRouter.GET("/{id}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = fmt.Fprint(w, "GET[/{id}]") }))
+	subRouter.GET("/me", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = fmt.Fprint(w, "GET[/me]") }))
+	subRouter.USE(http.MethodGet, "/me", func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, _ = fmt.Fprint(w, "USE[/me]")
+			h.ServeHTTP(w, r)
+		})
+	})
+	subRouter.POST("/google/callback", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = fmt.Fprint(w, "POST[/google/callback]") }))
+	subRouter.POST("/facebook/callback", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = fmt.Fprint(w, "POST[/facebook/callback]") }))
+	subRouter.POST("/dispatch/{command}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = fmt.Fprint(w, "POST[/dispatch/{command}]") }))
+	subRouter.USE(http.MethodPost, "/dispatch/some-else", func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, _ = fmt.Fprint(w, "USE[/dispatch/some-else]")
+			h.ServeHTTP(w, r)
+		})
+	})
+
+	mainRouter := New().(*router)
+
+	mainRouter.Mount("/v1", subRouter)
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, "/v1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mainRouter.ServeHTTP(w, req)
+
+	if w.Body.String() != "GET[/]" {
+		t.Errorf("subrouter route did not match: %s", w.Body.String())
+	}
+
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest(http.MethodPost, "/v1/dispatch/some-else", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mainRouter.ServeHTTP(w, req)
+
+	if w.Body.String() != "USE[/dispatch/some-else]POST[/dispatch/{command}]" {
+		t.Errorf("subrouter route did not match: %s", w.Body.String())
+	}
+
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest(http.MethodGet, "/v1/me", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mainRouter.ServeHTTP(w, req)
+
+	if w.Body.String() != "USE[/me]GET[/me]" {
+		t.Errorf("subrouter route did not match: %s", w.Body.String())
+	}
+
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest(http.MethodGet, "/v1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mainRouter.ServeHTTP(w, req)
+
+	if w.Body.String() != "GET[/]" {
+		t.Errorf("subrouter route did not match: %s", w.Body.String())
 	}
 }

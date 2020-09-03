@@ -258,17 +258,7 @@ func newPathSlashesStripper(stripSlashes int) func(r *http.Request) *http.Reques
 		r2.URL = new(url.URL)
 		*r2.URL = *r.URL
 
-		p := r.URL.Path
-		for stripSlashes > 0 && len(p) > 0 {
-			n := strings.IndexByte(p[1:], '/')
-			if n < 0 {
-				p = p[:0]
-				break
-			}
-			p = p[n+1:]
-			stripSlashes--
-		}
-
+		p := pathutils.StripLeadingSlashes(r.URL.Path, stripSlashes)
 		if p != "" {
 			r2.URL.Path = p
 		} else {

@@ -86,3 +86,23 @@ func TestGetNameFromPart(t *testing.T) {
 		})
 	}
 }
+
+func TestStripLeadingSlashes(t *testing.T) {
+	tests := []struct {
+		name         string
+		path         string
+		stripSlashes int
+		want         string
+	}{
+		{"slashesCount = 0", "/foo/bar", 0, "/foo/bar"},
+		{"slashesCount = 1", "/foo/bar", 1, "/bar"},
+		{"slashesCount = 2", "/foo/bar", 2, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := StripLeadingSlashes(tt.path, tt.stripSlashes); got != tt.want {
+				t.Errorf("StripLeadingSlashes() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

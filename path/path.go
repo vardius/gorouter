@@ -51,3 +51,16 @@ func GetNameFromPart(pathPart string) (name string, exp string) {
 
 	return
 }
+
+func StripLeadingSlashes(path string, stripSlashes int) string {
+	for stripSlashes > 0 && len(path) > 0 {
+		n := strings.IndexByte(path[1:], '/')
+		if n < 0 {
+			path = path[:0]
+			break
+		}
+		path = path[n+1:]
+		stripSlashes--
+	}
+	return path
+}

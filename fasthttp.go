@@ -14,11 +14,16 @@ import (
 // NewFastHTTPRouter creates new Router instance, returns pointer
 func NewFastHTTPRouter(fs ...FastHTTPMiddlewareFunc) FastHTTPRouter {
 	globalMiddleware := transformFastHTTPMiddlewareFunc(fs...)
-	return &fastHTTPRouter{
+
+	r := &fastHTTPRouter{
 		tree:              mux.NewTree(),
 		globalMiddleware:  globalMiddleware,
 		middlewareCounter: uint(len(globalMiddleware)),
 	}
+
+	r.handler = globalMiddleware.Compose(fasthttp.RequestHandler(r.serveHTTP)).(fasthttp.RequestHandler)
+
+	return r
 }
 
 type fastHTTPRouter struct {
@@ -28,6 +33,7 @@ type fastHTTPRouter struct {
 	notFound          fasthttp.RequestHandler
 	notAllowed        fasthttp.RequestHandler
 	cors              fasthttp.RequestHandler
+	handler           fasthttp.RequestHandler
 	middlewareCounter uint
 }
 
@@ -137,6 +143,10 @@ func (r *fastHTTPRouter) ServeFiles(root string, stripSlashes int) {
 }
 
 func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
+	r.handler(ctx)
+}
+
+func (r *fastHTTPRouter) serveHTTP(ctx *fasthttp.RequestCtx) {
 	method := string(ctx.Method())
 	path := string(ctx.Path())
 
@@ -146,8 +156,7 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 		if path == "/" {
 			if root.Route() != nil && root.Route().Handler() != nil {
 				if r.middlewareCounter > 0 {
-					allMiddleware := r.globalMiddleware.Merge(root.Middleware().Sort())
-					computedHandler := allMiddleware.Compose(root.Route().Handler())
+					computedHandler := root.Middleware().Sort().Compose(root.Route().Handler())
 
 					h = computedHandler.(fasthttp.RequestHandler)
 				} else {
@@ -162,11 +171,11 @@ func (r *fastHTTPRouter) HandleFastHTTP(ctx *fasthttp.RequestCtx) {
 
 			if route, params := root.Tree().MatchRoute(path); route != nil {
 				if r.middlewareCounter > 0 {
-					allMiddleware := r.globalMiddleware
+					var allMiddleware middleware.Collection
 					if treeMiddleware := root.Tree().MatchMiddleware(path); len(treeMiddleware) > 0 {
-						allMiddleware = allMiddleware.Merge(root.Middleware().Merge(treeMiddleware).Sort())
+						allMiddleware = root.Middleware().Merge(treeMiddleware).Sort()
 					} else {
-						allMiddleware = allMiddleware.Merge(root.Middleware().Sort())
+						allMiddleware = root.Middleware().Sort()
 					}
 
 					computedHandler := allMiddleware.Compose(route.Handler())

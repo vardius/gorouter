@@ -32,7 +32,6 @@ type fastHTTPRouter struct {
 	fileServer        fasthttp.RequestHandler
 	notFound          fasthttp.RequestHandler
 	notAllowed        fasthttp.RequestHandler
-	cors              fasthttp.RequestHandler
 	handler           fasthttp.RequestHandler
 	middlewareCounter uint
 }
@@ -122,10 +121,6 @@ func (r *fastHTTPRouter) Compile() {
 	}
 }
 
-func (r *fastHTTPRouter) CORS(cors fasthttp.RequestHandler) {
-	r.cors = cors
-}
-
 func (r *fastHTTPRouter) NotFound(notFound fasthttp.RequestHandler) {
 	r.notFound = notFound
 }
@@ -208,7 +203,6 @@ func (r *fastHTTPRouter) serveHTTP(ctx *fasthttp.RequestCtx) {
 		ctx.Response.Header.Set("Allow", allow)
 
 		if method == fasthttp.MethodOptions {
-			r.serveCors(ctx)
 			return
 		}
 
@@ -219,12 +213,6 @@ func (r *fastHTTPRouter) serveHTTP(ctx *fasthttp.RequestCtx) {
 
 	// Handle 404
 	r.serveNotFound(ctx)
-}
-
-func (r *fastHTTPRouter) serveCors(ctx *fasthttp.RequestCtx) {
-	if r.cors != nil {
-		r.cors(ctx)
-	}
 }
 
 func (r *fastHTTPRouter) serveNotFound(ctx *fasthttp.RequestCtx) {

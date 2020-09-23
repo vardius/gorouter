@@ -31,7 +31,6 @@ type router struct {
 	fileServer        http.Handler
 	notFound          http.Handler
 	notAllowed        http.Handler
-	cors              http.Handler
 	handler           http.Handler
 	middlewareCounter uint
 }
@@ -119,10 +118,6 @@ func (r *router) Compile() {
 	}
 }
 
-func (r *router) CORS(cors http.Handler) {
-	r.cors = cors
-}
-
 func (r *router) NotFound(notFound http.Handler) {
 	r.notFound = notFound
 }
@@ -207,7 +202,6 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Allow", allow)
 
 		if req.Method == http.MethodOptions {
-			r.serveCors(w, req)
 			return
 		}
 
@@ -218,12 +212,6 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// Handle 404
 	r.serveNotFound(w, req)
-}
-
-func (r *router) serveCors(w http.ResponseWriter, req *http.Request) {
-	if r.cors != nil {
-		r.cors.ServeHTTP(w, req)
-	}
 }
 
 func (r *router) serveNotFound(w http.ResponseWriter, req *http.Request) {

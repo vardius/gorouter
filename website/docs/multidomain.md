@@ -107,8 +107,6 @@ func main() {
     router.GET("/", index)
     router.GET("/hello/{name}", hello)
 
-    log.Fatal(fasthttp.ListenAndServe(":8080", router.HandleFastHTTP))
-
 	// Make a new HostSwitch and insert the router (our http handler)
 	// for example.com and port 12345
 	hs := make(HostSwitch)

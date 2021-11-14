@@ -71,16 +71,14 @@ type Router interface {
 	// whose pattern matches the request URL
 	ServeHTTP(http.ResponseWriter, *http.Request)
 
-	// ServeFile replies to the request with the
+	// ServeFiles replies to the request with the
 	// contents of the named file or directory.
 	ServeFiles(fs http.FileSystem, root string, strip bool)
 
-	// NotFound replies to the request with the
-	// 404 Error code
+	// NotFound replies to the request with the 404 Error code
 	NotFound(http.Handler)
 
-	// NotFound replies to the request with the
-	// 405 Error code
+	// NotAllowed replies to the request with the 405 Error code
 	NotAllowed(http.Handler)
 }
 

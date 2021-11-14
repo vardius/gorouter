@@ -47,7 +47,7 @@ type RouteAware interface {
 	// WithRoute assigns Route to given Node
 	WithRoute(r Route)
 
-	// Name provides maximum number of parameters Route can have for given Node
+	// MaxParamsSize provides maximum number of parameters Route can have for given Node
 	MaxParamsSize() uint8
 	// SkipSubPath sets skipSubPath node property to true
 	// will skip children match search and return current node directly

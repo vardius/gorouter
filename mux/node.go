@@ -99,7 +99,7 @@ func (n *staticNode) MatchRoute(path string) (Route, context.Params) {
 	pathLength := len(path)
 
 	if pathLength >= nameLength && n.name == path[:nameLength] {
-		if nameLength+1 >= pathLength || n.skipSubPath {
+		if nameLength == pathLength || n.skipSubPath {
 			return n.route, make(context.Params, n.maxParamsSize)
 		}
 
@@ -114,7 +114,7 @@ func (n *staticNode) MatchMiddleware(path string) middleware.Collection {
 	pathLength := len(path)
 
 	if pathLength >= nameLength && n.name == path[:nameLength] {
-		if nameLength+1 >= pathLength || n.skipSubPath {
+		if nameLength == pathLength || n.skipSubPath {
 			return n.middleware
 		}
 

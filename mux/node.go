@@ -102,8 +102,9 @@ func (n *staticNode) MatchRoute(path string) (Route, context.Params) {
 		if nameLength == pathLength || n.skipSubPath {
 			return n.route, make(context.Params, n.maxParamsSize)
 		}
-
-		return n.children.MatchRoute(path[nameLength+1:]) // +1 because we wan to skip slash as well
+		if path[nameLength:nameLength+1] == "/" { // skip slashes only
+			return n.children.MatchRoute(path[nameLength+1:]) // +1 because we wan to skip slash as well
+		}
 	}
 
 	return nil, nil

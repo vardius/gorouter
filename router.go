@@ -57,6 +57,10 @@ type Router interface {
 	// to whole router branch under given method and patter
 	USE(method, pattern string, fs ...MiddlewareFunc)
 
+	// USEANY adds middleware functions ([]MiddlewareFunc)
+	// to whole router branch for all methods and patter
+	USEANY(pattern string, fs ...MiddlewareFunc)
+
 	// Handle adds http.Handler as router handler
 	// under given method and patter
 	Handle(method, pattern string, handler http.Handler)
@@ -126,6 +130,10 @@ type FastHTTPRouter interface {
 	// USE adds middleware functions ([]MiddlewareFunc)
 	// to whole router branch under given method and patter
 	USE(method, pattern string, fs ...FastHTTPMiddlewareFunc)
+
+	// USEANY adds middleware functions ([]MiddlewareFunc)
+	// to whole router branch for all methods and patter
+	USEANY(pattern string, fs ...FastHTTPMiddlewareFunc)
 
 	// Handle adds fasthttp.RequestHandler as router handler
 	// under given method and patter

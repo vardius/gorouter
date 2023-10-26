@@ -11,6 +11,18 @@ import (
 	"github.com/vardius/gorouter/v4/mux"
 )
 
+var allFasthttpMethods = []string{
+	fasthttp.MethodGet,
+	fasthttp.MethodHead,
+	fasthttp.MethodPost,
+	fasthttp.MethodPut,
+	fasthttp.MethodPatch,
+	fasthttp.MethodDelete,
+	fasthttp.MethodConnect,
+	fasthttp.MethodOptions,
+	fasthttp.MethodTrace,
+}
+
 // NewFastHTTPRouter creates new Router instance, returns pointer
 func NewFastHTTPRouter(fs ...FastHTTPMiddlewareFunc) FastHTTPRouter {
 	globalMiddleware := transformFastHTTPMiddlewareFunc(fs...)
@@ -86,6 +98,19 @@ func (r *fastHTTPRouter) USE(method, path string, fs ...FastHTTPMiddlewareFunc) 
 	r.middlewareCounter += uint(len(m))
 }
 
+func (r *fastHTTPRouter) USEANY(path string, fs ...FastHTTPMiddlewareFunc) {
+	m := transformFastHTTPMiddlewareFunc(fs...)
+	for i, mf := range m {
+		m[i] = middleware.WithPriority(mf, r.middlewareCounter)
+	}
+
+	for _, method := range allFasthttpMethods {
+		r.tree = r.tree.WithMiddleware(method+path, m, 0)
+	}
+
+	r.middlewareCounter += uint(len(m))
+}
+
 func (r *fastHTTPRouter) Handle(method, path string, h fasthttp.RequestHandler) {
 	route := newRoute(h)
 
@@ -100,17 +125,7 @@ func (r *fastHTTPRouter) Mount(path string, h fasthttp.RequestHandler) {
 		h(ctx)
 	}))
 
-	for _, method := range []string{
-		fasthttp.MethodGet,
-		fasthttp.MethodHead,
-		fasthttp.MethodPost,
-		fasthttp.MethodPut,
-		fasthttp.MethodPatch,
-		fasthttp.MethodDelete,
-		fasthttp.MethodConnect,
-		fasthttp.MethodOptions,
-		fasthttp.MethodTrace,
-	} {
+	for _, method := range allFasthttpMethods {
 		r.tree = r.tree.WithSubrouter(method+path, route, 0)
 	}
 }

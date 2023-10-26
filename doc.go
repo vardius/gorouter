@@ -1,13 +1,13 @@
 /*
 Package gorouter provide request router with middleware
 
-Router
+# Router
 
 The router determines how to handle http request.
 GoRouter uses a routing tree. Once one branch of the tree matches, only routes inside that branch are considered,
 not any routes after that branch. When instantiating router, the root node of tree is created.
 
-Route types
+# Route types
 
 - Static `/hello` (will match requests matching given route)
 
@@ -15,14 +15,14 @@ Route types
 
 - Regexp `/{name:[a-z]+}` (will match requests matching given route scheme and its regexp)
 
-Wildcards
+# Wildcards
 
 The values of *named parameter* or *regexp parameters* are accessible via *request context*
 `params, ok := context.Parameters(req.Context())`.
 You can get the value of a parameter either by its index in the slice, or by using the `params.Value(name)` method:
 `:name` or `/{name:[a-z]+}` can be retrieved by `params.Value("name")`.
 
-Defining Routes
+# Defining Routes
 
 A full route definition contain up to three parts:
 
@@ -35,7 +35,7 @@ and can contain named wildcard placeholders *(e.g. {placeholder})* to match dyna
 
 Take the following example:
 
-	import "github.com/vardius/gorouter/v4/context"
+	import "github.com/ceriath/gorouter/v4/context"
 
 	router.GET("/hello/{name:r([a-z]+)go}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	  params, _ := context.Parameters(r.Context())

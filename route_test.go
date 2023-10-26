@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/vardius/gorouter/v4/context"
-	"github.com/vardius/gorouter/v4/middleware"
+	"github.com/ceriath/gorouter/v4/context"
+	"github.com/ceriath/gorouter/v4/middleware"
 )
 
 func TestRouter(t *testing.T) {

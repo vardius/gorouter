@@ -3,9 +3,9 @@ package mux
 import (
 	"regexp"
 
-	"github.com/vardius/gorouter/v4/context"
-	"github.com/vardius/gorouter/v4/middleware"
-	pathutils "github.com/vardius/gorouter/v4/path"
+	"github.com/ceriath/gorouter/v4/context"
+	"github.com/ceriath/gorouter/v4/middleware"
+	pathutils "github.com/ceriath/gorouter/v4/path"
 )
 
 // NewNode provides new mux Node
@@ -99,11 +99,12 @@ func (n *staticNode) MatchRoute(path string) (Route, context.Params) {
 	pathLength := len(path)
 
 	if pathLength >= nameLength && n.name == path[:nameLength] {
-		if nameLength+1 >= pathLength || n.skipSubPath {
+		if nameLength == pathLength || n.skipSubPath {
 			return n.route, make(context.Params, n.maxParamsSize)
 		}
-
-		return n.children.MatchRoute(path[nameLength+1:]) // +1 because we wan to skip slash as well
+		if path[nameLength:nameLength+1] == "/" { // skip slashes only
+			return n.children.MatchRoute(path[nameLength+1:]) // +1 because we wan to skip slash as well
+		}
 	}
 
 	return nil, nil
@@ -114,7 +115,7 @@ func (n *staticNode) MatchMiddleware(path string) middleware.Collection {
 	pathLength := len(path)
 
 	if pathLength >= nameLength && n.name == path[:nameLength] {
-		if nameLength+1 >= pathLength || n.skipSubPath {
+		if nameLength == pathLength || n.skipSubPath {
 			return n.middleware
 		}
 

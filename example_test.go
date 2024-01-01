@@ -7,8 +7,8 @@ import (
 
 	"github.com/valyala/fasthttp"
 
-	"github.com/vardius/gorouter/v4"
-	"github.com/vardius/gorouter/v4/context"
+	"github.com/ceriath/gorouter/v4"
+	"github.com/ceriath/gorouter/v4/context"
 )
 
 func handleNetHTTPRequest(method, path string, handler http.Handler) {

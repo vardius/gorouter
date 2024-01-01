@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vardius/gorouter/v4/context"
+	"github.com/ceriath/gorouter/v4/context"
 )
 
 func TestInterface(t *testing.T) {

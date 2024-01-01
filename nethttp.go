@@ -5,11 +5,23 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/vardius/gorouter/v4/context"
-	"github.com/vardius/gorouter/v4/middleware"
-	"github.com/vardius/gorouter/v4/mux"
-	pathutils "github.com/vardius/gorouter/v4/path"
+	"github.com/ceriath/gorouter/v4/context"
+	"github.com/ceriath/gorouter/v4/middleware"
+	"github.com/ceriath/gorouter/v4/mux"
+	pathutils "github.com/ceriath/gorouter/v4/path"
 )
+
+var allNethttpMethods = []string{
+	http.MethodGet,
+	http.MethodHead,
+	http.MethodPost,
+	http.MethodPut,
+	http.MethodPatch,
+	http.MethodDelete,
+	http.MethodConnect,
+	http.MethodOptions,
+	http.MethodTrace,
+}
 
 // New creates new net/http Router instance, returns pointer
 func New(fs ...MiddlewareFunc) Router {
@@ -85,6 +97,19 @@ func (r *router) USE(method, path string, fs ...MiddlewareFunc) {
 	r.middlewareCounter += uint(len(m))
 }
 
+func (r *router) USEANY(path string, fs ...MiddlewareFunc) {
+	m := transformMiddlewareFunc(fs...)
+	for i, mf := range m {
+		m[i] = middleware.WithPriority(mf, r.middlewareCounter)
+	}
+
+	for _, method := range allNethttpMethods {
+		r.tree = r.tree.WithMiddleware(method+path, m, 0)
+	}
+
+	r.middlewareCounter += uint(len(m))
+}
+
 func (r *router) Handle(method, path string, h http.Handler) {
 	route := newRoute(h)
 
@@ -97,17 +122,7 @@ func (r *router) Mount(path string, h http.Handler) {
 		h.ServeHTTP(w, pathRewrite(r))
 	}))
 
-	for _, method := range []string{
-		http.MethodGet,
-		http.MethodHead,
-		http.MethodPost,
-		http.MethodPut,
-		http.MethodPatch,
-		http.MethodDelete,
-		http.MethodConnect,
-		http.MethodOptions,
-		http.MethodTrace,
-	} {
+	for _, method := range allNethttpMethods {
 		r.tree = r.tree.WithSubrouter(method+path, route, 0)
 	}
 }

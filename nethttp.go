@@ -5,10 +5,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/ceriath/gorouter/v4/context"
-	"github.com/ceriath/gorouter/v4/middleware"
-	"github.com/ceriath/gorouter/v4/mux"
-	pathutils "github.com/ceriath/gorouter/v4/path"
+	"github.com/vardius/gorouter/v4/context"
+	"github.com/vardius/gorouter/v4/middleware"
+	"github.com/vardius/gorouter/v4/mux"
+	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
 var allNethttpMethods = []string{

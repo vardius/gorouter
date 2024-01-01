@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ceriath/gorouter/v4/context"
-	"github.com/ceriath/gorouter/v4/middleware"
-	pathutils "github.com/ceriath/gorouter/v4/path"
+	"github.com/vardius/gorouter/v4/context"
+	"github.com/vardius/gorouter/v4/middleware"
+	pathutils "github.com/vardius/gorouter/v4/path"
 )
 
 // NewTree provides new empty Tree

@@ -18,7 +18,8 @@
       "https",
       "http2",
       "multidomain",
-      "panic"
+      "panic",
+      "apphandler"
     ],
     "Benchmark": ["benchmark"]
   }

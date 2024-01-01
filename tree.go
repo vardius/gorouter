@@ -3,7 +3,7 @@ package gorouter
 import (
 	"net/http"
 
-	"github.com/ceriath/gorouter/v4/mux"
+	"github.com/vardius/gorouter/v4/mux"
 )
 
 func allowed(t mux.Tree, method, path string) (allow string) {

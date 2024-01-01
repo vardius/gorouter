@@ -9,7 +9,7 @@ import (
 
 	"github.com/valyala/fasthttp"
 
-	"github.com/ceriath/gorouter/v4/context"
+	"github.com/vardius/gorouter/v4/context"
 )
 
 func buildFastHTTPRequestContext(method, path string) *fasthttp.RequestCtx {

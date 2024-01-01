@@ -1,4 +1,4 @@
-module github.com/ceriath/gorouter/v4
+module github.com/vardius/gorouter/v4
 
 go 1.20
 

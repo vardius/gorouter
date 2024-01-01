@@ -35,7 +35,7 @@ and can contain named wildcard placeholders *(e.g. {placeholder})* to match dyna
 
 Take the following example:
 
-	import "github.com/ceriath/gorouter/v4/context"
+	import "github.com/vardius/gorouter/v4/context"
 
 	router.GET("/hello/{name:r([a-z]+)go}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	  params, _ := context.Parameters(r.Context())

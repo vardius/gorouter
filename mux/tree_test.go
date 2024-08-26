@@ -43,3 +43,39 @@ func TestTreeMatch(t *testing.T) {
 		t.Fatalf("route did not match expected %s (%s)", "pl/blog/comments/123/new", commentNew.Name())
 	}
 }
+
+func TestTreeFindNode(t *testing.T) {
+	blog := NewNode("blog", 0)
+
+	search := NewNode("search", blog.MaxParamsSize())
+	page := NewNode("page", blog.MaxParamsSize())
+	posts := NewNode("posts", blog.MaxParamsSize())
+
+	blog.WithChildren(blog.Tree().withNode(search).sort())
+	blog.WithChildren(blog.Tree().withNode(page).sort())
+	blog.WithChildren(blog.Tree().withNode(posts).sort())
+
+	blog.WithChildren(blog.Tree().Compile())
+
+	tests := []struct {
+		name     string
+		input    string
+		expected Node
+	}{
+		{"Find existing node 1", "search", search},
+		{"Find existing node 2", "page", page},
+		{"Find existing node 3", "posts", posts},
+		{"Find non-existing node", "comments", nil},
+		{"Find with empty name", "", nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := blog.Tree().Find(tt.input)
+			if result != tt.expected {
+				t.Errorf("expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+

@@ -211,3 +211,94 @@ func TestWildcardNodeMatchRoute(t *testing.T) {
 		})
 	}
 }
+
+func TestRegexpdNodeMatchRoute(t *testing.T) {
+	paramSize := 3
+	productRoute := newMockRoute("testproductroute")
+	itemRoute := newMockRoute("testitemroute")
+	viewRoute := newMockRoute("testviewroute")
+	params := make(context.Params, paramSize)
+
+	product := staticNode{name: "product", route: nil, maxParamsSize: uint8(paramSize)}
+	product.WithRoute(productRoute)
+
+	// Create a regexp node for "{item}" under "product"
+	item := NewNode("{item:item1|item2}", product.MaxParamsSize())
+	item.WithRoute(itemRoute)
+
+	view := NewNode("view", product.MaxParamsSize()+1)
+	view.WithRoute(viewRoute)
+
+	// Build the tree structure
+	product.WithChildren(product.Tree().withNode(item).sort())
+	item.WithChildren(item.Tree().withNode(view).sort())
+	product.WithChildren(product.Tree().Compile())
+
+	// Create a static node for "product" with skip subpath functionality
+	productSkipSubpath := staticNode{name: "product", route: nil, maxParamsSize: uint8(paramSize)}
+	productSkipSubpath.WithRoute(productRoute)
+
+	itemSkipSubpath := NewNode("{item:item1|item2}", productSkipSubpath.MaxParamsSize()) // regexpNode
+	itemSkipSubpath.WithRoute(itemRoute)
+	itemSkipSubpath.SkipSubPath()
+
+	// Build the tree structure
+	productSkipSubpath.WithChildren(productSkipSubpath.Tree().withNode(itemSkipSubpath).sort())
+	productSkipSubpath.WithChildren(productSkipSubpath.Tree().Compile())
+
+	tests := []struct {
+		name           string
+		node           staticNode
+		path           string
+		expectedRoute  Route
+		expectedParams context.Params
+	}{
+		{
+			name:           "Exact Match",
+			node:           product,
+			path:           "product/item1",
+			expectedRoute:  item.Route(),
+			expectedParams: append(params, context.Param{Key: "item", Value: "item1"}),
+		},
+		{
+			name:           "Match with SubPath",
+			node:           product,
+			path:           "product/item1/view",
+			expectedRoute:  view.Route(),
+			expectedParams: append(params, context.Param{Key: "item", Value: "item1"}),
+		},
+		{
+			name:           "Exact Match with Skip SubPath",
+			node:           productSkipSubpath,
+			path:           "product/item2/order",
+			expectedRoute:  item.Route(),
+			expectedParams: append(params, context.Param{Key: "item", Value: "item2"}),
+		},
+		{
+			name:           "No Match with SubPath",
+			node:           product,
+			path:           "product/item1/order",
+			expectedRoute:  nil,
+			expectedParams: nil,
+		},
+		{
+			name:           "No Match",
+			node:           product,
+			path:           "product/item3/view",
+			expectedRoute:  nil,
+			expectedParams: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			route, params := tt.node.MatchRoute(tt.path)
+			if route != tt.expectedRoute {
+				t.Errorf("%s: expected route %v, got %v", tt.name, tt.expectedRoute, route)
+			}
+			if !reflect.DeepEqual(params, tt.expectedParams) {
+				t.Errorf("%s: expected params %v, got %v", tt.name, tt.expectedParams, params)
+			}
+		})
+	}
+}

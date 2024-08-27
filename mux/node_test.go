@@ -1,10 +1,12 @@
 package mux
 
 import (
+	"net/http"
 	"reflect"
 	"testing"
 
 	"github.com/vardius/gorouter/v4/context"
+	"github.com/vardius/gorouter/v4/middleware"
 )
 
 func TestNewNode(t *testing.T) {
@@ -298,6 +300,106 @@ func TestRegexpdNodeMatchRoute(t *testing.T) {
 			}
 			if !reflect.DeepEqual(params, tt.expectedParams) {
 				t.Errorf("%s: expected params %v, got %v", tt.name, tt.expectedParams, params)
+			}
+		})
+	}
+}
+
+func buildMockMiddlewareFunc(body string) middleware.Middleware {
+	fn := func(h middleware.Handler) middleware.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if _, err := w.Write([]byte(body)); err != nil {
+				panic(err)
+			}
+			h.(http.Handler).ServeHTTP(w, r)
+		})
+	}
+
+	return middleware.WrapperFunc(fn)
+}
+
+type middlewareTest struct {
+	name           string
+	node           Node
+	path           string
+	expectedResult middleware.Collection
+}
+
+func TestStaticNodeMatchMiddleware(t *testing.T) {
+	paramSize := 3
+	middleware1 := buildMockMiddlewareFunc("1")
+	middleware2 := buildMockMiddlewareFunc("2")
+	middleware3 := buildMockMiddlewareFunc("3")
+	allMiddleware := middleware.NewCollection(middleware1, middleware2, middleware3)
+
+	node1 := NewNode("test", uint8(paramSize))
+	node1.PrependMiddleware(allMiddleware)
+
+	node2 := NewNode("test", uint8(paramSize))
+	node2.PrependMiddleware(allMiddleware)
+	node2.SkipSubPath()
+
+	node3 := NewNode("test", uint8(paramSize))
+	node3Middleware := middleware.NewCollection(middleware1, middleware2)
+	node3.PrependMiddleware(node3Middleware)
+	subpathNode := NewNode("subpath", node3.MaxParamsSize())
+	subpathMiddleware := middleware.NewCollection(middleware3)
+	subpathNode.PrependMiddleware(subpathMiddleware)
+	node3.WithChildren(node3.Tree().withNode(subpathNode).sort())
+	node3.WithChildren(node3.Tree().Compile())
+
+	tests := []middlewareTest{
+		{
+			name:           "StaticNode Exact match",
+			node:           node1,
+			path:           "test",
+			expectedResult: allMiddleware,
+		},
+		{
+			name:           "StaticNode Subpath match with skipSubPath",
+			node:           node2,
+			path:           "test/subpath",
+			expectedResult: allMiddleware,
+		},
+		{
+			name:           "StaticNode Subpath match without skipSubPath",
+			node:           node3,
+			path:           "test/subpath",
+			expectedResult: allMiddleware,
+		},
+		{
+			name:           "StaticNode Match with only prefix",
+			node:           node3,
+			path:           "testxyz",
+			expectedResult: node3Middleware,
+		},
+		{
+			name:           "StaticNode No match",
+			node:           node1,
+			path:           "nomatch",
+			expectedResult: nil,
+		},
+	}
+
+	runMiddlewareTests(tests, t)
+}
+
+func runMiddlewareTests(tests []middlewareTest, t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.node.MatchMiddleware(tt.path)
+			if len(got) != len(tt.expectedResult) {
+				t.Errorf("%s: middleware length mismatch: got= %v, want %v", tt.name, got, tt.expectedResult)
+			}
+			for k, v := range tt.expectedResult {
+				// reflect.DeepEqual do not work for function values.
+				// hence compare the pointers of functions as a substitute.
+				// function pointers are unique to each function, even if the functions have the same code.
+				expectedPointer := reflect.ValueOf(v).Pointer()
+				gotPointer := reflect.ValueOf(got[k]).Pointer()
+				if expectedPointer != gotPointer {
+					t.Errorf("%s: middleware mismatch: got= %v, want %v", tt.name, v, got[k])
+				}
 			}
 		})
 	}

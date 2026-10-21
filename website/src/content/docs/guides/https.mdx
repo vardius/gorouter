@@ -1,0 +1,35 @@
+---
+title: HTTPS and HTTP/2
+description: Serve over TLS, with HTTP/2 negotiated automatically.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import example from '../../../../../examples/tls/main.go?raw';
+
+A router is an `http.Handler`, so TLS and HTTP/2 are the server's job and need nothing from the router.
+`net/http` negotiates HTTP/2 on TLS connections by itself: serve with `ListenAndServeTLS` and HTTP/2 clients get HTTP/2.
+
+<Code code={example} lang="go" title="examples/tls/main.go" />
+
+## Trying it locally
+
+Create a self-signed certificate with the helper that ships with Go, then start the server:
+
+```sh
+go run "$(go env GOROOT)/src/crypto/tls/generate_cert.go" --host localhost
+go run ./examples/tls
+curl -k --http2 https://localhost:8443/
+```
+
+```txt
+hello over HTTP/2.0
+```
+
+## Behind a proxy
+
+When a proxy or load balancer terminates TLS, the server can still accept HTTP/2 from it without TLS.
+Run the example with `-h2c`: it sets `http.Server.Protocols` to accept HTTP/1 and unencrypted HTTP/2 on the same port.
+
+## fasthttp
+
+fasthttp itself serves HTTP/1.x. Serve it over TLS with `ListenAndServeTLS` on a `fasthttp.Server`, or put it behind a proxy that speaks HTTP/2 to clients.

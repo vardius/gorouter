@@ -1,0 +1,150 @@
+---
+title: Routing
+description: How gorouter matches a request to a route, reads params, and answers when nothing matches.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Patterns
+
+A pattern is a path made of segments separated by slashes. Each segment is one of three kinds:
+
+| Segment | Matches | Example |
+| --- | --- | --- |
+| Literal | Only itself | `/users/new` |
+| Param, `{name}` | Any one segment | `/users/{name}` |
+| Regexp param, `{name:regexp}` | A segment the whole regexp matches | `/users/{id:[0-9]+}` |
+
+```go
+r.GET("/", home)
+r.GET("/users/new", newUserForm)
+r.GET("/users/{id:[0-9]+}", userByID)
+r.GET("/users/{name}", userByName)
+r.GET("/repos/{owner}/{repo}/issues/{number:[0-9]+}", issue)
+```
+
+A few rules keep matching predictable:
+
+- **A regexp matches the whole segment.** `{id:[0-9]+}` matches `42` but not `42abc`: every regexp is anchored as `^(?:regexp)$`.
+- **A regexp stays within one segment.** It can't contain a slash.
+- **A trailing slash is ignored.** `/users` and `/users/` are the same route.
+- **An empty segment never matches.** `/users//42` matches no route on `net/http`. fasthttp collapses `//` before the router sees the path, so there it is `/users/42`.
+- **Patterns match the decoded path.** An escaped slash, `%2F`, separates segments like any other slash.
+- **A segment is either text or one param.** `/files/{name}.txt` is rejected; use `/files/{name:.+\.txt}`.
+
+## Which route wins
+
+When more than one pattern could match a segment, the router tries them in this order:
+
+1. literals;
+2. regexp params, in the order they were registered;
+3. the plain param.
+
+If the preferred branch fails further down the path, the router backtracks and tries the next one. These four routes can live side by side:
+
+```go
+r.GET("/users/new", show)          // GET /users/new
+r.GET("/users/{id:[0-9]+}", show)  // GET /users/42
+r.GET("/users/{name}", show)       // GET /users/gopher
+r.GET("/users/{name}/posts", show) // GET /users/new/posts: "new" is a literal, but only the param route has /posts
+```
+
+## Params
+
+<Tabs syncKey="adapter">
+<TabItem label="net/http">
+
+Param values are set on the request with `Request.SetPathValue`, so handlers read them with `r.PathValue`, as they would with `http.ServeMux`.
+`r.Pattern` holds the pattern of the route that matched, which is handy for logs and metrics.
+
+```go
+r.GET("/repos/{owner}/{repo}", func(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "%s/%s (route %s)", r.PathValue("owner"), r.PathValue("repo"), r.Pattern)
+})
+```
+
+Middleware registered with `Use` runs after the params are set, so it can read them too.
+
+</TabItem>
+<TabItem label="fasthttp">
+
+Read param values with `fastrouter.Param`:
+
+```go
+r.GET("/repos/{owner}/{repo}", func(ctx *fasthttp.RequestCtx) {
+	fmt.Fprintf(ctx, "%s/%s", fastrouter.Param(ctx, "owner"), fastrouter.Param(ctx, "repo"))
+})
+```
+
+<Aside type="caution">
+A fasthttp param value lives in a buffer the router reuses once the request is done, which is why reading it costs nothing.
+It is valid until the handler returns. To keep it longer, for example
+in a goroutine, copy it with `strings.Clone`.
+</Aside>
+
+</TabItem>
+</Tabs>
+
+## Methods
+
+There is a helper for each standard method: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `CONNECT`, `OPTIONS` and `TRACE`. Each takes a handler func.
+`Handle` takes any `http.Handler` and any method, including custom ones:
+
+```go
+r.Handle("PURGE", "/cache/{key}", purgeHandler)
+r.Handle(http.MethodGet, "/debug/vars", expvar.Handler())
+```
+
+A `HEAD` request is routed to `HEAD` handlers only. Register one where you need it.
+
+## When nothing matches
+
+| Request | Response |
+| --- | --- |
+| No route matches the path | `404 Not Found` |
+| Routes match the path, but on other methods | `405 Method Not Allowed`, with an `Allow` header listing them |
+| `OPTIONS` on a path with routes | `200 OK` with an `Allow` header and an empty body, unless you registered an `OPTIONS` handler there |
+| `OPTIONS *` | `200 OK` with an `Allow` header listing every method the router has routes for |
+
+Replace the 404 and 405 handlers with options. The `Allow` header is already set when the 405 handler runs:
+
+```go
+r := gorouter.New(
+	gorouter.WithNotFound(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "no page at "+r.URL.Path, http.StatusNotFound)
+	})),
+	gorouter.WithMethodNotAllowed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "try "+w.Header().Get("Allow"), http.StatusMethodNotAllowed)
+	})),
+)
+```
+
+<Aside>
+On fasthttp, write the 405 response with `ctx.SetStatusCode` and `ctx.SetBodyString` rather than `ctx.Error`:
+`ctx.Error` resets the response, `Allow` header included.
+</Aside>
+
+## Invalid patterns
+
+Registering a route panics with a message that names the problem, so mistakes surface at startup rather than as a mysterious 404. The router panics when a pattern:
+
+- doesn't start with `/`, or has an empty segment;
+- has an unclosed `{`, a param without a name, or an empty regexp;
+- has a regexp that doesn't compile;
+- mixes text and a param in one segment;
+- uses the same param name twice;
+- is already registered for that method, or overlaps a mount.
+
+## Listing routes
+
+`Routes` returns every registered route in registration order, which helps when printing a route table at startup or testing that a route exists:
+
+```go
+for _, route := range r.Routes() {
+	log.Println(route.Method, route.Pattern)
+}
+```
+
+## Concurrency
+
+Register routes and middleware before you start serving. Once serving, a router is safe for any number of concurrent requests.

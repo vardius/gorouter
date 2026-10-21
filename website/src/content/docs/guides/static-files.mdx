@@ -1,0 +1,31 @@
+---
+title: Static files
+description: Serve a directory of files next to your routes.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import example from '../../../../../examples/static-files/main.go?raw';
+
+Mount a file server under a path. The mount strips the path, so the file server looks up `style.css` for a request to `/static/style.css`:
+
+```go
+r.Mount("/static", http.FileServerFS(os.DirFS("public")))
+```
+
+`http.FileServerFS` takes any `fs.FS`: a directory on disk, an `embed.FS` compiled into the binary, or a test `fstest.MapFS`.
+
+## Embedding the files
+
+This example compiles its `public` directory into the binary, so the server is a single file to deploy. It also serves `index.html` at `/`, outside the mount:
+
+<Code code={example} lang="go" title="examples/static-files/main.go" />
+
+## Serving files for unmatched paths
+
+To fall back to files for any path no route matches, the way a single-page app often wants, make the file server the 404 handler:
+
+```go
+r := gorouter.New(gorouter.WithNotFound(http.FileServerFS(files)))
+```
+
+The file server still answers 404 for files that don't exist.

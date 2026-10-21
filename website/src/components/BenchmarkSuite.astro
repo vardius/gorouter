@@ -1,0 +1,62 @@
+---
+// v5's own benchmark suite for one router, as a table.
+import { suite, type Adapter } from '../data/benchmarks';
+
+interface Props {
+	adapter: Adapter;
+}
+
+const rows = suite[Astro.props.adapter];
+---
+
+<div class="suite">
+	<table>
+		<thead>
+			<tr>
+				<th scope="col">Benchmark</th>
+				<th scope="col">Time</th>
+				<th scope="col">Memory</th>
+				<th scope="col">Allocations</th>
+			</tr>
+		</thead>
+		<tbody>
+			{
+				rows.map((r) => (
+					<tr>
+						<th scope="row">
+							<code>{r.benchmark}</code>
+							<span class="suite-what">{r.what}</span>
+						</th>
+						<td>{r.ns.toFixed(1)} ns</td>
+						<td>{r.bytes} B</td>
+						<td>{r.allocs}</td>
+					</tr>
+				))
+			}
+		</tbody>
+	</table>
+</div>
+
+<style>
+	/* The table scrolls inside its own box on narrow screens instead of widening the page. */
+	.suite {
+		overflow-x: auto;
+	}
+
+	table {
+		display: table;
+		width: 100%;
+	}
+
+	td {
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+
+	.suite-what {
+		display: block;
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-xs);
+		font-weight: 400;
+	}
+</style>

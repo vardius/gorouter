@@ -1,0 +1,69 @@
+---
+title: Middleware
+description: Wrap the whole router, the routes below a path, or one method below a path.
+---
+
+import { Aside, Code } from '@astrojs/starlight/components';
+import example from '../../../../examples/middleware/main.go?raw';
+
+Middleware has the shape most Go middleware already has, so existing middleware works as it is:
+
+```go
+type Middleware = func(http.Handler) http.Handler
+```
+
+On fasthttp it is `func(fasthttp.RequestHandler) fasthttp.RequestHandler`.
+
+## Three places to put it
+
+| Where | Call | Wraps |
+| --- | --- | --- |
+| Around the whole router | `gorouter.New(gorouter.WithMiddleware(mw...))` | Every request, including 404, 405 and automatic `OPTIONS` responses |
+| Below a path | `r.Use(pattern, mw...)` | Every route at or below `pattern`, on every method |
+| One method below a path | `r.UseMethod(method, pattern, mw...)` | Routes at or below `pattern` on `method` |
+
+```go
+r := gorouter.New(gorouter.WithMiddleware(logRequests, recoverPanics))
+r.Use("/api", noStore)
+r.UseMethod(http.MethodPost, "/api", requireJSON)
+```
+
+`Use` matches whole segments: `r.Use("/api", mw)` covers `/api` and `/api/users`, never `/apiary`.
+Params work too: `r.Use("/users/{id}", mw)` covers `/users/{id}` and everything below it. Only a param's position counts, not its name, so it also covers `/users/{name}/posts`.
+Pass `"/"` to cover every route.
+
+<Aside type="caution" title="Middleware follows routes, not request paths">
+`Use` picks routes by their pattern, and a request runs the middleware of the route it matches.
+With `r.Use("/admin", auth)` and a route `/{section}/users`, a request for `/admin/users` matches `/{section}/users`, whose pattern doesn't start with `/admin`, so `auth` doesn't run.
+Register the routes you protect under the protected pattern.
+</Aside>
+
+## Order
+
+Middleware runs in the order it was registered: the first one is the outermost. Router-wide middleware runs first, then `Use` and `UseMethod` middleware in registration order, then the handler.
+
+```go
+r := gorouter.New(gorouter.WithMiddleware(a))
+r.Use("/", b)
+r.UseMethod(http.MethodGet, "/", c)
+r.GET("/", h)
+// GET / runs a → b → c → h
+```
+
+`Use` covers routes registered before and after the call, so you can group middleware at the top or the bottom of your setup.
+
+## Cost
+
+Each route's chain is built once, when a route or middleware is registered, never per request.
+On net/http, a route behind three no-op middleware takes 24 ns against 20 ns without, and the chain allocates nothing.
+
+## A complete example
+
+Logging, panic recovery, a header on every API response and a check on API request bodies:
+
+<Code code={example} lang="go" title="examples/middleware/main.go" />
+
+<Aside title="Reading params in middleware">
+Middleware registered with `Use` or `UseMethod` runs after the route matched, so `r.PathValue` and `r.Pattern` are set.
+Router-wide middleware runs before matching, so it doesn't see them on the request it is given.
+</Aside>

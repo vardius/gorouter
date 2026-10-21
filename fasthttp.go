@@ -166,7 +166,7 @@ func (r *fastHTTPRouter) serveHTTP(ctx *fasthttp.RequestCtx) {
 		if path == "/" {
 			if root.Route() != nil && root.Route().Handler() != nil {
 				if r.middlewareCounter > 0 {
-					computedHandler := root.Middleware().Sort().Compose(root.Route().Handler())
+					computedHandler := root.Middleware().Compose(root.Route().Handler())
 
 					h = computedHandler.(fasthttp.RequestHandler)
 				} else {
@@ -185,7 +185,7 @@ func (r *fastHTTPRouter) serveHTTP(ctx *fasthttp.RequestCtx) {
 					if treeMiddleware := root.Tree().MatchMiddleware(path); len(treeMiddleware) > 0 {
 						allMiddleware = root.Middleware().Merge(treeMiddleware).Sort()
 					} else {
-						allMiddleware = root.Middleware().Sort()
+						allMiddleware = root.Middleware()
 					}
 
 					computedHandler := allMiddleware.Compose(route.Handler())

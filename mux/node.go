@@ -26,7 +26,7 @@ func NewNode(pathPart string, maxParamsSize uint8) Node {
 
 	if exp != "" {
 		static.maxParamsSize++
-		node = withRegexp(static, regexp.MustCompile(exp))
+		node = withRegexp(static, exp)
 	} else if name != pathPart {
 		static.maxParamsSize++
 		node = withWildcard(static)
@@ -117,6 +117,10 @@ func (n *staticNode) MatchMiddleware(path string) middleware.Collection {
 	if pathLength >= nameLength && n.name == path[:nameLength] {
 		if nameLength == pathLength || n.skipSubPath {
 			return n.middleware
+		}
+
+		if path[nameLength] != '/' {
+			return nil
 		}
 
 		if treeMiddleware := n.children.MatchMiddleware(path[nameLength+1:]); treeMiddleware != nil { // +1 because we wan to skip slash as well
@@ -213,16 +217,19 @@ func (n *wildcardNode) MatchMiddleware(path string) middleware.Collection {
 	return n.middleware
 }
 
-func withRegexp(parent *staticNode, regexp *regexp.Regexp) *regexpNode {
+func withRegexp(parent *staticNode, exp string) *regexpNode {
 	return &regexpNode{
 		staticNode: parent,
-		regexp:     regexp,
+		exp:        exp,
+		// Anchored so the expression has to match the whole path segment.
+		regexp: regexp.MustCompile("^(?:" + exp + ")$"),
 	}
 }
 
 type regexpNode struct {
 	*staticNode
 
+	exp    string
 	regexp *regexp.Regexp
 }
 

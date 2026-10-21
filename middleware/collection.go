@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"slices"
 	"sort"
 )
 
@@ -12,9 +13,10 @@ func NewCollection(ms ...Middleware) Collection {
 	return ms
 }
 
-// Merge merges another middleware
+// Merge returns a new collection holding c followed by m.
+// It never writes into c's backing array, because node collections are shared by concurrent requests.
 func (c Collection) Merge(m Collection) Collection {
-	return append(c, m...)
+	return slices.Concat(c, m)
 }
 
 // Compose returns middleware composed to single WrapperFunc

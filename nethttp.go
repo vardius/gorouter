@@ -165,7 +165,7 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/" {
 			if root.Route() != nil && root.Route().Handler() != nil {
 				if r.middlewareCounter > 0 {
-					computedHandler := root.Middleware().Sort().Compose(root.Route().Handler())
+					computedHandler := root.Middleware().Compose(root.Route().Handler())
 
 					h = computedHandler.(http.Handler)
 				} else {
@@ -184,7 +184,7 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 					if treeMiddleware := root.Tree().MatchMiddleware(path); len(treeMiddleware) > 0 {
 						allMiddleware = root.Middleware().Merge(treeMiddleware).Sort()
 					} else {
-						allMiddleware = root.Middleware().Sort()
+						allMiddleware = root.Middleware()
 					}
 
 					computedHandler := allMiddleware.Compose(route.Handler())

@@ -368,10 +368,10 @@ func TestStaticNodeMatchMiddleware(t *testing.T) {
 			expectedResult: allMiddleware,
 		},
 		{
-			name:           "StaticNode Match with only prefix",
+			name:           "StaticNode Prefix without segment boundary does not match",
 			node:           node3,
 			path:           "testxyz",
-			expectedResult: node3Middleware,
+			expectedResult: nil,
 		},
 		{
 			name:           "StaticNode No match",

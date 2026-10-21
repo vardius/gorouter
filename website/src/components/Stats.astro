@@ -1,0 +1,72 @@
+---
+// Headline numbers under the hero, read from the same results as the benchmark chart so they can't drift apart.
+import { comparison } from '../data/benchmarks';
+
+const row = (adapter: keyof typeof comparison, scenario: string) => {
+	const r = comparison[adapter].find((r) => r.scenario === scenario);
+	if (!r) throw new Error(`no ${adapter} benchmark named ${scenario}`);
+	return r;
+};
+
+// 405 replies build an Allow header, so they are not part of routing a request.
+const routed = comparison.fasthttp.filter((r) => !r.scenario.startsWith('405'));
+const middleware = row('nethttp', 'Static + 3 middleware');
+const fastStatic = row('fasthttp', 'Static route');
+
+const stats = [
+	{ value: `${Math.max(...routed.map((r) => r.v5.allocs))}`, label: 'allocations to route a fasthttp request, params included' },
+	{ value: `${(middleware.v4.ns / middleware.v5.ns).toFixed(1)}×`, label: 'faster than v4 behind three middleware on net/http' },
+	{ value: `${fastStatic.v5.ns.toFixed(1)} ns`, label: 'to route a static path on fasthttp' },
+	{ value: '100%', label: 'test coverage, plus fuzzing against a reference matcher' },
+];
+---
+
+<ul class="stats not-content">
+	{
+		stats.map((s) => (
+			<li>
+				<span class="value">{s.value}</span>
+				<span class="label">{s.label}</span>
+			</li>
+		))
+	}
+</ul>
+
+<style>
+	.stats {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+		gap: 1px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		border: 1px solid var(--sl-color-hairline-light);
+		border-radius: 0.75rem;
+		overflow: hidden;
+		background: var(--sl-color-hairline-light);
+	}
+
+	li {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		margin: 0;
+		padding: 1.25rem 1.5rem;
+		background: var(--sl-color-bg);
+	}
+
+	.value {
+		font-size: var(--sl-text-3xl);
+		font-weight: 700;
+		line-height: 1.1;
+		letter-spacing: -0.02em;
+		color: var(--sl-color-white);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.label {
+		font-size: var(--sl-text-sm);
+		line-height: 1.4;
+		color: var(--sl-color-gray-3);
+	}
+</style>

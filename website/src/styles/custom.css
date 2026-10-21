@@ -20,24 +20,36 @@
 	--chart-grid: var(--sl-color-gray-6);
 }
 
-/* Hero: text only, so it spans the page instead of leaving Starlight's image column empty. */
-@media (min-width: 50rem) {
-	.hero {
-		grid-template-columns: 1fr;
-	}
+/* Expressive Code keeps wrapped lines a minimum width, which is wider than a 320 px phone with large text. */
+.expressive-code .ec-line .code {
+	min-width: 0;
 }
 
-.hero .tagline {
-	max-width: 38rem;
+/* Landing page: a soft accent glow at the top, behind the hero. */
+.main-frame:has(.hero) {
+	background:
+		radial-gradient(ellipse 70% 32rem at 70% -6rem, color-mix(in srgb, var(--sl-color-accent) 16%, transparent), transparent),
+		radial-gradient(ellipse 50% 24rem at 0% 0%, color-mix(in srgb, var(--sl-color-accent) 8%, transparent), transparent);
 }
 
 /* Landing sections */
 .landing-section {
-	margin-block: 3rem;
+	margin-block: clamp(3.5rem, calc(2rem + 5vw), 6rem);
+}
+
+.eyebrow {
+	margin-bottom: 0.25rem;
+	color: var(--sl-color-accent);
+	font-size: var(--sl-text-sm);
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
 }
 
 .landing-section > h2 {
-	margin-bottom: 0.5rem;
+	margin-top: 0 !important;
+	margin-bottom: 0.75rem;
+	letter-spacing: -0.015em;
 }
 
 .landing-lead {
@@ -45,7 +57,7 @@
 	max-width: 42rem;
 }
 
-/* Before and after, stacked so each keeps its full width. */
+/* Before and after: stacked on narrow screens, side by side once both fit. */
 .compare {
 	display: grid;
 	gap: 1rem;
@@ -56,10 +68,82 @@
 	min-width: 0;
 }
 
-/* One accent for every card, instead of Starlight's rotating colours. */
+@media (min-width: 64rem) {
+	.compare {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	/* Equal heights, so the shorter v5 reads as shorter code rather than a smaller box. */
+	.compare .frame {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+	}
+
+	.compare .frame pre {
+		flex: 1;
+	}
+}
+
+/* Feature cards: a quiet surface with one accent, on the icon. */
 .card {
-	--sl-card-border: var(--sl-color-accent);
+	--sl-card-border: color-mix(in srgb, var(--sl-color-accent) 40%, transparent);
 	--sl-card-bg: var(--sl-color-accent-low);
+	border-color: var(--sl-color-hairline-light);
+	border-radius: 0.75rem;
+	background-color: var(--sl-color-bg-nav);
+	transition: border-color 0.15s;
+}
+
+.card:hover {
+	border-color: color-mix(in srgb, var(--sl-color-accent) 50%, var(--sl-color-hairline-light));
+}
+
+.card .icon {
+	color: var(--sl-color-accent);
+	border-radius: 0.5rem;
+	padding: 0.3em;
+}
+
+.card .body {
+	color: var(--sl-color-gray-2);
+}
+
+/* Closing call to action */
+.cta {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 1rem;
+	margin-block: clamp(3.5rem, calc(2rem + 5vw), 6rem) 1rem;
+	padding: clamp(1.5rem, calc(0.5rem + 4vw), 3rem);
+	border: 1px solid color-mix(in srgb, var(--sl-color-accent) 35%, var(--sl-color-hairline-light));
+	border-radius: 1rem;
+	background:
+		radial-gradient(ellipse 80% 120% at 100% 0%, color-mix(in srgb, var(--sl-color-accent) 18%, transparent), transparent),
+		var(--sl-color-bg-nav);
+}
+
+.cta h2 {
+	margin: 0;
+	font-size: clamp(var(--sl-text-2xl), calc(1rem + 2vw), var(--sl-text-4xl));
+	line-height: 1.15;
+	letter-spacing: -0.015em;
+	color: var(--sl-color-white);
+}
+
+.cta p {
+	margin: 0;
+	max-width: 36rem;
+	color: var(--sl-color-gray-2);
+}
+
+.cta-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 1rem 2rem;
+	margin-top: 0.5rem;
 }
 
 /* Documents imported from the repository bring their own h1; the page title already provides it. */
@@ -67,15 +151,25 @@
 	display: none;
 }
 
+/* Header: the mark sits close to the name. */
+.site-title {
+	gap: 0.5rem;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+}
+
+.site-title img {
+	height: 1.75rem;
+}
+
 /* Narrow phones with large text: a smaller title keeps "gorouter" whole next to the search and menu buttons. */
 @media (max-width: 24rem) {
 	.site-title {
-		gap: 0.5rem;
 		font-size: var(--sl-text-lg);
 	}
 
 	.site-title img {
-		height: 1.75rem;
+		height: 1.5rem;
 	}
 }
 

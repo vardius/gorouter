@@ -3,6 +3,7 @@ title: A fast HTTP router for Go
 description: A fast HTTP router for Go, for net/http and fasthttp. Zero-allocation matching, standard handlers and middleware that costs nothing per request.
 template: splash
 hero:
+  title: A <span class="accent">fast</span> HTTP router for Go
   tagline: Route net/http and fasthttp requests to plain handlers. Matching allocates nothing, params use the standard r.PathValue, and middleware costs nothing per request.
   actions:
     - text: Get started
@@ -14,45 +15,15 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid, Code, LinkCard, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkButton, LinkCard, Tabs, TabItem } from '@astrojs/starlight/components';
 import BenchmarkChart from '../../components/BenchmarkChart.astro';
+import Stats from '../../components/Stats.astro';
+
+<Stats />
 
 <div class="landing-section">
 
-## Five lines to a router
-
-```sh frame="none"
-go get github.com/vardius/gorouter/v5
-```
-
-<Tabs syncKey="adapter">
-<TabItem label="net/http">
-
-```go
-r := gorouter.New()
-r.GET("/hello/{name}", func(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "hello, %s!\n", r.PathValue("name"))
-})
-log.Fatal(http.ListenAndServe(":8080", r))
-```
-
-</TabItem>
-<TabItem label="fasthttp">
-
-```go
-r := fastrouter.New()
-r.GET("/hello/{name}", func(ctx *fasthttp.RequestCtx) {
-	fmt.Fprintf(ctx, "hello, %s!\n", fastrouter.Param(ctx, "name"))
-})
-log.Fatal(fasthttp.ListenAndServe(":8080", r.HandleFastHTTP))
-```
-
-</TabItem>
-</Tabs>
-
-</div>
-
-<div class="landing-section">
+<p class="eyebrow">Features</p>
 
 ## What you get
 
@@ -86,6 +57,8 @@ log.Fatal(fasthttp.ListenAndServe(":8080", r.HandleFastHTTP))
 
 <div class="landing-section">
 
+<p class="eyebrow">Performance</p>
+
 ## Faster than v4 behind middleware and on fasthttp
 
 <p class="landing-lead">
@@ -108,7 +81,9 @@ log.Fatal(fasthttp.ListenAndServe(":8080", r.HandleFastHTTP))
 
 <div class="landing-section">
 
-## Upgrading from v4
+<p class="eyebrow">Upgrading</p>
+
+## Coming from v4
 
 <p class="landing-lead">
 	The patterns stay the same. The API around them is smaller: options instead of setters, the standard
@@ -142,4 +117,13 @@ router.UseMethod(http.MethodGet, "/admin", auth)
 
 <LinkCard title="Migration guide" href="migrating-from-v4/" description="Every v4 call and its v5 form, and the behaviour changes to know about." />
 
+</div>
+
+<div class="cta not-content">
+	<h2>Route your first request in five minutes</h2>
+	<p>Install the module, register a handler, and serve. The guide walks through params, middleware and mounting.</p>
+	<div class="cta-actions">
+		<LinkButton href="getting-started/" icon="right-arrow">Get started</LinkButton>
+		<LinkButton href="routing/" variant="minimal">Read the docs</LinkButton>
+	</div>
 </div>

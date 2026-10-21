@@ -74,31 +74,49 @@ func New(opts ...Option) *Router {
 }
 
 // GET registers h for GET requests to pattern.
-func (r *Router) GET(pattern string, h http.HandlerFunc) { r.handleFunc(http.MethodGet, pattern, h) }
+func (r *Router) GET(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodGet, pattern, h)
+}
 
 // HEAD registers h for HEAD requests to pattern.
-func (r *Router) HEAD(pattern string, h http.HandlerFunc) { r.handleFunc(http.MethodHead, pattern, h) }
+func (r *Router) HEAD(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodHead, pattern, h)
+}
 
 // POST registers h for POST requests to pattern.
-func (r *Router) POST(pattern string, h http.HandlerFunc) { r.handleFunc(http.MethodPost, pattern, h) }
+func (r *Router) POST(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodPost, pattern, h)
+}
 
 // PUT registers h for PUT requests to pattern.
-func (r *Router) PUT(pattern string, h http.HandlerFunc) { r.handleFunc(http.MethodPut, pattern, h) }
+func (r *Router) PUT(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodPut, pattern, h)
+}
 
 // PATCH registers h for PATCH requests to pattern.
-func (r *Router) PATCH(pattern string, h http.HandlerFunc) { r.handleFunc(http.MethodPatch, pattern, h) }
+func (r *Router) PATCH(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodPatch, pattern, h)
+}
 
 // DELETE registers h for DELETE requests to pattern.
-func (r *Router) DELETE(pattern string, h http.HandlerFunc) { r.handleFunc(http.MethodDelete, pattern, h) }
+func (r *Router) DELETE(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodDelete, pattern, h)
+}
 
 // CONNECT registers h for CONNECT requests to pattern.
-func (r *Router) CONNECT(pattern string, h http.HandlerFunc) { r.handleFunc(http.MethodConnect, pattern, h) }
+func (r *Router) CONNECT(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodConnect, pattern, h)
+}
 
 // OPTIONS registers h for OPTIONS requests to pattern, replacing the automatic response there.
-func (r *Router) OPTIONS(pattern string, h http.HandlerFunc) { r.handleFunc(http.MethodOptions, pattern, h) }
+func (r *Router) OPTIONS(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodOptions, pattern, h)
+}
 
 // TRACE registers h for TRACE requests to pattern.
-func (r *Router) TRACE(pattern string, h http.HandlerFunc) { r.handleFunc(http.MethodTrace, pattern, h) }
+func (r *Router) TRACE(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodTrace, pattern, h)
+}
 
 // Handle registers h for method and pattern. Any method works, including custom ones.
 //

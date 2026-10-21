@@ -80,6 +80,25 @@ func TestRouting(t *testing.T) {
 	}
 }
 
+func TestMethodHelpers(t *testing.T) {
+	t.Parallel()
+
+	r := gorouter.New()
+	helpers := map[string]func(string, http.HandlerFunc){
+		"GET": r.GET, "HEAD": r.HEAD, "POST": r.POST, "PUT": r.PUT, "PATCH": r.PATCH,
+		"DELETE": r.DELETE, "CONNECT": r.CONNECT, "OPTIONS": r.OPTIONS, "TRACE": r.TRACE,
+	}
+	for method, register := range helpers {
+		register("/x", text(method))
+	}
+
+	for method := range helpers {
+		if got := serve(r, method, "/x").Body.String(); got != method {
+			t.Errorf("%s /x = %q, want the %s handler", method, got, method)
+		}
+	}
+}
+
 func TestMethodNotAllowed(t *testing.T) {
 	t.Parallel()
 
@@ -258,22 +277,27 @@ func TestMountFileServer(t *testing.T) {
 func TestManyParams(t *testing.T) {
 	t.Parallel()
 
+	// More params than the router keeps on the stack.
 	var pattern, target strings.Builder
-	var names []string
+	var names, want []string
 	for i := range 20 {
-		name := fmt.Sprintf("p%d", i)
-		names = append(names, name)
-		pattern.WriteString("/{" + name + "}")
-		fmt.Fprintf(&target, "/%d", i)
+		names = append(names, fmt.Sprintf("p%d", i))
+		want = append(want, fmt.Sprint(i))
+		pattern.WriteString("/{" + names[i] + "}")
+		target.WriteString("/" + want[i])
 	}
 
 	r := gorouter.New()
 	r.GET(pattern.String(), func(w http.ResponseWriter, req *http.Request) {
-		fmt.Fprint(w, req.PathValue("p0"), req.PathValue("p19"))
+		var got []string
+		for _, name := range names {
+			got = append(got, req.PathValue(name))
+		}
+		fmt.Fprint(w, strings.Join(got, " "))
 	})
 
-	if got := serve(r, "GET", target.String()).Body.String(); got != "019" {
-		t.Errorf("20 params = %q, want %q", got, "019")
+	if got := serve(r, "GET", target.String()).Body.String(); got != strings.Join(want, " ") {
+		t.Errorf("20 params = %q, want %q", got, strings.Join(want, " "))
 	}
 }
 

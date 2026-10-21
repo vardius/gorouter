@@ -41,7 +41,8 @@ func WithNotFound(h fasthttp.RequestHandler) Option {
 	return func(c *config) { c.notFound = h }
 }
 
-// WithMethodNotAllowed replaces the default 405 handler. The Allow header is already set when it runs.
+// WithMethodNotAllowed replaces the default 405 handler. The Allow header is already set when it runs,
+// so write the response without ctx.Error, which resets the headers.
 func WithMethodNotAllowed(h fasthttp.RequestHandler) Option {
 	return func(c *config) { c.notAllowed = h }
 }
@@ -75,16 +76,24 @@ func New(opts ...Option) *Router {
 }
 
 // GET registers h for GET requests to pattern.
-func (r *Router) GET(pattern string, h fasthttp.RequestHandler) { r.Handle(fasthttp.MethodGet, pattern, h) }
+func (r *Router) GET(pattern string, h fasthttp.RequestHandler) {
+	r.Handle(fasthttp.MethodGet, pattern, h)
+}
 
 // HEAD registers h for HEAD requests to pattern.
-func (r *Router) HEAD(pattern string, h fasthttp.RequestHandler) { r.Handle(fasthttp.MethodHead, pattern, h) }
+func (r *Router) HEAD(pattern string, h fasthttp.RequestHandler) {
+	r.Handle(fasthttp.MethodHead, pattern, h)
+}
 
 // POST registers h for POST requests to pattern.
-func (r *Router) POST(pattern string, h fasthttp.RequestHandler) { r.Handle(fasthttp.MethodPost, pattern, h) }
+func (r *Router) POST(pattern string, h fasthttp.RequestHandler) {
+	r.Handle(fasthttp.MethodPost, pattern, h)
+}
 
 // PUT registers h for PUT requests to pattern.
-func (r *Router) PUT(pattern string, h fasthttp.RequestHandler) { r.Handle(fasthttp.MethodPut, pattern, h) }
+func (r *Router) PUT(pattern string, h fasthttp.RequestHandler) {
+	r.Handle(fasthttp.MethodPut, pattern, h)
+}
 
 // PATCH registers h for PATCH requests to pattern.
 func (r *Router) PATCH(pattern string, h fasthttp.RequestHandler) {
@@ -195,9 +204,14 @@ func (r *Router) dispatch(ctx *fasthttp.RequestCtx) {
 	r.notFound(ctx)
 }
 
+// errorHandler writes status and its message. Unlike ctx.Error it keeps the headers already set,
+// such as Allow or ones set by middleware.
 func errorHandler(status int) fasthttp.RequestHandler {
+	msg := fasthttp.StatusMessage(status)
 	return func(ctx *fasthttp.RequestCtx) {
-		ctx.Error(fasthttp.StatusMessage(status), status)
+		ctx.SetStatusCode(status)
+		ctx.SetContentType("text/plain; charset=utf-8")
+		ctx.SetBodyString(msg)
 	}
 }
 

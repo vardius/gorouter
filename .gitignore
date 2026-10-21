@@ -19,3 +19,10 @@
 vendor/
 
 .history/
+
+.DS_Store
+
+# Website
+website/node_modules/
+website/dist/
+website/.astro/

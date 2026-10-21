@@ -1,28 +1,33 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
-name: Go
+name: Test
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [master]
   pull_request:
-    branches: [ "master" ]
+    branches: [master]
+
+permissions:
+  contents: read
 
 jobs:
-
-  build:
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ['1.26.x', '1.27.x']
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.20'
-
-    - name: Build
-      run: go build -v ./...
-
-    - name: Test
-      run: go test -v ./...
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+      - run: go vet ./...
+      - name: Staticcheck
+        run: go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
+      - name: Test
+        run: go test -race -shuffle=on ./...
+      - name: Benchmarks compile and run once
+        run: go test -run '^$' -bench . -benchtime 1x ./...
+      - name: Fuzz
+        run: go test -run '^$' -fuzz FuzzLookup -fuzztime 30s ./internal/tree

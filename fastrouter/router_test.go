@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -74,6 +75,38 @@ func TestRouting(t *testing.T) {
 	}
 }
 
+func TestMethodHelpers(t *testing.T) {
+	t.Parallel()
+
+	r := fastrouter.New()
+	helpers := map[string]func(string, fasthttp.RequestHandler){
+		"GET": r.GET, "HEAD": r.HEAD, "POST": r.POST, "PUT": r.PUT, "PATCH": r.PATCH,
+		"DELETE": r.DELETE, "CONNECT": r.CONNECT, "OPTIONS": r.OPTIONS, "TRACE": r.TRACE,
+	}
+	for method, register := range helpers {
+		register("/x", echo(method))
+	}
+
+	for method := range helpers {
+		if got := string(serve(r, method, "/x").Response.Body()); got != method {
+			t.Errorf("%s /x = %q, want the %s handler", method, got, method)
+		}
+	}
+}
+
+func TestRoutes(t *testing.T) {
+	t.Parallel()
+
+	r := fastrouter.New()
+	r.GET("/a", noop)
+	r.POST("/b/{id}", noop)
+
+	want := []fastrouter.Route{{Method: "GET", Pattern: "/a"}, {Method: "POST", Pattern: "/b/{id}"}}
+	if got := r.Routes(); !slices.Equal(got, want) {
+		t.Errorf("Routes() = %v, want %v", got, want)
+	}
+}
+
 func TestMethodNotAllowedAndOptions(t *testing.T) {
 	t.Parallel()
 
@@ -127,19 +160,25 @@ func TestMiddlewareOrder(t *testing.T) {
 	}
 }
 
-func TestGlobalMiddlewareWrapsNotFound(t *testing.T) {
+func TestGlobalMiddlewareWrapsErrors(t *testing.T) {
 	t.Parallel()
 
-	// ctx.Error resets the response, so this middleware marks it after the router is done.
 	r := fastrouter.New(fastrouter.WithMiddleware(func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
-			next(ctx)
 			ctx.Response.Header.Set("X-Global", "seen")
+			next(ctx)
 		}
 	}))
+	r.GET("/x", echo("get"))
 
-	if ctx := serve(r, "GET", "/nope"); string(ctx.Response.Header.Peek("X-Global")) != "seen" {
-		t.Error("global middleware did not wrap the 404")
+	// The default handlers must keep headers set before them.
+	if ctx := serve(r, "GET", "/nope"); ctx.Response.StatusCode() != 404 || string(ctx.Response.Header.Peek("X-Global")) != "seen" {
+		t.Errorf("404 = %d X-Global %q, want the header kept", ctx.Response.StatusCode(), ctx.Response.Header.Peek("X-Global"))
+	}
+	if ctx := serve(r, "PUT", "/x"); ctx.Response.StatusCode() != 405 ||
+		string(ctx.Response.Header.Peek("X-Global")) != "seen" || string(ctx.Response.Header.Peek("Allow")) != "GET, OPTIONS" {
+		t.Errorf("405 = %d X-Global %q Allow %q, want both headers kept",
+			ctx.Response.StatusCode(), ctx.Response.Header.Peek("X-Global"), ctx.Response.Header.Peek("Allow"))
 	}
 }
 
@@ -167,6 +206,33 @@ func TestMount(t *testing.T) {
 		if got := string(serve(r, "GET", tt.uri).Response.Body()); got != tt.body {
 			t.Errorf("GET %s = %q, want %q", tt.uri, got, tt.body)
 		}
+	}
+}
+
+func TestManyParams(t *testing.T) {
+	t.Parallel()
+
+	// More params than the router keeps on the stack.
+	var pattern, target strings.Builder
+	var names, want []string
+	for i := range 20 {
+		names = append(names, fmt.Sprintf("p%d", i))
+		want = append(want, fmt.Sprint(i))
+		pattern.WriteString("/{" + names[i] + "}")
+		target.WriteString("/" + want[i])
+	}
+
+	r := fastrouter.New()
+	r.GET(pattern.String(), func(ctx *fasthttp.RequestCtx) {
+		var got []string
+		for _, name := range names {
+			got = append(got, fastrouter.Param(ctx, name))
+		}
+		fmt.Fprint(ctx, strings.Join(got, " "))
+	})
+
+	if got := string(serve(r, "GET", target.String()).Response.Body()); got != strings.Join(want, " ") {
+		t.Errorf("20 params = %q, want %q", got, strings.Join(want, " "))
 	}
 }
 

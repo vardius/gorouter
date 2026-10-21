@@ -1,11 +1,11 @@
 module github.com/vardius/gorouter/v4
 
-go 1.20
+go 1.26.0
 
-require github.com/valyala/fasthttp v1.50.0
+require github.com/valyala/fasthttp v1.76.0
 
 require (
-	github.com/andybalholm/brotli v1.0.6 // indirect
-	github.com/klauspost/compress v1.17.2 // indirect
+	github.com/klauspost/compress v1.20.3 // indirect
+	github.com/molecule-man/go-brrr v1.3.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 )

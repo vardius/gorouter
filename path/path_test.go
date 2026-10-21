@@ -69,19 +69,21 @@ func TestGetNameFromPart(t *testing.T) {
 		pathPart string
 	}
 	tests := []struct {
-		name string
-		args args
-		want string
+		name    string
+		args    args
+		want    string
+		wantExp string
 	}{
-		{"x", args{"x"}, "x"},
-		{"{name}", args{"{name}"}, "name"},
-		{"{name:(w+)", args{"{name:(w+)"}, "name"},
+		{"x", args{"x"}, "x", ""},
+		{"{name}", args{"{name}"}, "name", ""},
+		{"{name:(w+)}", args{"{name:(w+)}"}, "name", "(w+)"},
+		{"{t:(?:a|b)}", args{"{t:(?:a|b)}"}, "t", "(?:a|b)"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, _ := GetNameFromPart(tt.args.pathPart)
-			if got != tt.want {
-				t.Errorf("GetNameFromPart() got = %v, want %v", got, tt.want)
+			got, gotExp := GetNameFromPart(tt.args.pathPart)
+			if got != tt.want || gotExp != tt.wantExp {
+				t.Errorf("GetNameFromPart() got = %v, %v, want %v, %v", got, gotExp, tt.want, tt.wantExp)
 			}
 		})
 	}

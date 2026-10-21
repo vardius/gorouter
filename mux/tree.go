@@ -3,6 +3,7 @@ package mux
 import (
 	"bytes"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -30,7 +31,7 @@ func (t Tree) PrettyPrint() string {
 		case *wildcardNode:
 			_, _ = fmt.Fprintf(buff, "\t{%s}\n", node.Name())
 		case *regexpNode:
-			_, _ = fmt.Fprintf(buff, "\t{%s:%s}\n", node.Name(), node.regexp.String())
+			_, _ = fmt.Fprintf(buff, "\t{%s:%s}\n", node.Name(), node.exp)
 		case *subrouterNode:
 			_, _ = fmt.Fprintf(buff, "\t_%s\n", node.Name())
 		}
@@ -51,8 +52,13 @@ func (t Tree) Compile() Tree {
 		if len(child.Tree()) == 1 {
 			switch node := child.(type) {
 			case *staticNode:
+				// A node with its own route or middleware must stay addressable on its own.
+				if node.route != nil || len(node.middleware) > 0 {
+					continue
+				}
 				if staticNode, ok := node.Tree()[0].(*staticNode); ok {
 					node.WithChildren(staticNode.Tree())
+					node.WithRoute(staticNode.Route())
 					node.AppendMiddleware(staticNode.Middleware())
 					node.name = fmt.Sprintf("%s/%s", node.name, staticNode.name)
 
@@ -184,6 +190,16 @@ func (t Tree) WithSubrouter(path string, route Route, maxParamsSize uint8) Tree 
 	}
 
 	if len(parts) == 1 {
+		if _, ok := node.(*subrouterNode); !ok {
+			// A node created earlier by a route or middleware has to become a subrouter too,
+			// unless routes already live under it.
+			if node.Route() != nil || len(node.Tree()) > 0 {
+				panic(fmt.Sprintf("Subrouter %q conflicts with routes registered under it.", parts[0]))
+			}
+			subrouter := withSubrouter(node)
+			newTree[slices.Index(newTree, node)] = subrouter
+			node = subrouter
+		}
 		node.WithRoute(route)
 	} else {
 		node.WithChildren(node.Tree().WithSubrouter(strings.Join(parts[1:], "/"), route, node.MaxParamsSize()))
@@ -233,7 +249,7 @@ func isMoreImportant(left Node, right Node) bool {
 			return true
 		}
 		if rightNode, ok := right.(*regexpNode); ok {
-			return len(leftNode.regexp.String()) < len(rightNode.regexp.String())
+			return len(leftNode.exp) < len(rightNode.exp)
 		}
 		return false
 		// case *wildcardNode:

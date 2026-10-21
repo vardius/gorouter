@@ -7,36 +7,39 @@ import (
 )
 
 func allowed(t mux.Tree, method, path string) (allow string) {
-	if path == "*" {
-		// tree roots should be http method nodes only
-		for _, root := range t {
-			if root.Name() == http.MethodOptions {
-				continue
-			}
-			if len(allow) == 0 {
-				allow = root.Name()
-			} else {
-				allow += ", " + root.Name()
-			}
+	// tree roots should be http method nodes only
+	for _, root := range t {
+		if root.Name() == http.MethodOptions {
+			continue
 		}
-	} else {
-		// tree roots should be http method nodes only
-		for _, root := range t {
-			if root.Name() == method || root.Name() == http.MethodOptions {
-				continue
-			}
 
+		switch {
+		case path == "*":
+			allow = appendMethod(allow, root.Name())
+		case root.Name() == method:
+		case path == "":
+			// The root path "/" is served by the method node itself.
+			if root.Route() != nil {
+				allow = appendMethod(allow, root.Name())
+			}
+		default:
 			if route, _ := root.Tree().MatchRoute(path); route != nil {
-				if len(allow) == 0 {
-					allow = root.Name()
-				} else {
-					allow += ", " + root.Name()
-				}
+				allow = appendMethod(allow, root.Name())
 			}
 		}
 	}
+
 	if len(allow) > 0 {
-		allow += ", " + http.MethodOptions
+		allow = appendMethod(allow, http.MethodOptions)
 	}
+
 	return allow
+}
+
+func appendMethod(allow, method string) string {
+	if allow == "" {
+		return method
+	}
+
+	return allow + ", " + method
 }

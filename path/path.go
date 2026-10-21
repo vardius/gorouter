@@ -35,12 +35,12 @@ func GetNameFromPart(pathPart string) (name string, exp string) {
 	name = pathPart
 
 	if pathPart[0] == '{' {
-		name = pathPart[1 : len(pathPart)-1]
-
-		if parts := strings.Split(name, ":"); len(parts) == 2 {
-			name = parts[0]
-			exp = parts[1]
+		if pathPart[len(pathPart)-1] != '}' {
+			panic("Unclosed wildcard: " + pathPart)
 		}
+
+		// The first colon separates the name, so the expression itself may contain colons.
+		name, exp, _ = strings.Cut(pathPart[1:len(pathPart)-1], ":")
 
 		if name == "" {
 			panic("Empty wildcard name")

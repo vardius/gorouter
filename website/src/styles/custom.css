@@ -1,0 +1,133 @@
+/* Brand: the gopher's green. Dark mode is Starlight's default; light mode overrides it. */
+:root {
+	--sl-color-accent-low: #0f2e20;
+	--sl-color-accent: #22a868;
+	--sl-color-accent-high: #a6ecc6;
+
+	/* Benchmark chart: v5 carries the emphasis, v4 recedes. Validated against the page surface in each mode. */
+	--chart-v4: #77756f;
+	--chart-v5: #22a868;
+	--chart-grid: var(--sl-color-gray-5);
+}
+
+:root[data-theme='light'] {
+	--sl-color-accent-low: #d3f3e1;
+	--sl-color-accent: #0b7a46;
+	--sl-color-accent-high: #06402a;
+
+	--chart-v4: #8f8d86;
+	--chart-v5: #0c8a4f;
+	--chart-grid: var(--sl-color-gray-6);
+}
+
+/* Hero: keep the gopher modest so the title and the primary action lead. */
+.hero > img,
+.hero > .hero-html {
+	max-width: min(14rem, 60vw);
+}
+
+/* On phones the image sits above the title: keep it small so the primary action stays in view. */
+@media (max-width: 50rem) {
+	.hero > img {
+		max-width: 6rem;
+	}
+}
+
+.hero .tagline {
+	max-width: 38rem;
+}
+
+/* Landing sections */
+.landing-section {
+	margin-block: 3rem;
+}
+
+.landing-section > h2 {
+	margin-bottom: 0.5rem;
+}
+
+.landing-lead {
+	color: var(--sl-color-gray-2);
+	max-width: 42rem;
+}
+
+/* Before and after, stacked so each keeps its full width. */
+.compare {
+	display: grid;
+	gap: 1rem;
+}
+
+.compare > * {
+	margin: 0 !important;
+	min-width: 0;
+}
+
+/* One accent for every card, instead of Starlight's rotating colours. */
+.card {
+	--sl-card-border: var(--sl-color-accent);
+	--sl-card-bg: var(--sl-color-accent-low);
+}
+
+.credit {
+	margin-top: 4rem;
+	color: var(--sl-color-gray-3);
+	font-size: var(--sl-text-xs);
+	text-align: center;
+}
+
+/* Documents imported from the repository bring their own h1; the page title already provides it. */
+.imported-doc > h1:first-child {
+	display: none;
+}
+
+/* Narrow phones with large text: a smaller title keeps "gorouter" whole next to the search and menu buttons. */
+@media (max-width: 24rem) {
+	.site-title {
+		gap: 0.5rem;
+		font-size: var(--sl-text-lg);
+	}
+
+	.site-title img {
+		height: 1.75rem;
+	}
+}
+
+/* The migration table maps v4 to v5 row by row. On narrow screens each row becomes a stacked pair. */
+@media (max-width: 40rem) {
+	.imported-doc table,
+	.imported-doc tbody,
+	.imported-doc tr,
+	.imported-doc td {
+		display: block;
+		width: 100%;
+	}
+
+	.imported-doc thead {
+		display: none;
+	}
+
+	.imported-doc tr {
+		padding-block: 0.5rem;
+		border-bottom: 1px solid var(--sl-color-hairline-light);
+	}
+
+	.imported-doc td {
+		border: 0;
+		padding: 0.125rem 0;
+	}
+
+	.imported-doc td::before {
+		display: block;
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-xs);
+		font-weight: 600;
+	}
+
+	.imported-doc td:nth-child(1)::before {
+		content: 'v4';
+	}
+
+	.imported-doc td:nth-child(2)::before {
+		content: 'v5';
+	}
+}

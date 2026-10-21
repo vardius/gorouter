@@ -1,0 +1,149 @@
+---
+title: A fast HTTP router for Go
+description: A fast HTTP router for Go, for net/http and fasthttp. Zero-allocation matching, standard handlers and middleware that costs nothing per request.
+template: splash
+hero:
+  tagline: Route net/http and fasthttp requests to plain handlers. Matching allocates nothing, params use the standard r.PathValue, and middleware costs nothing per request.
+  image:
+    file: ../../assets/gopher-hero.png
+  actions:
+    - text: Get started
+      link: getting-started/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/vardius/gorouter
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid, Code, LinkCard, Tabs, TabItem } from '@astrojs/starlight/components';
+import BenchmarkChart from '../../components/BenchmarkChart.astro';
+
+<div class="landing-section">
+
+## Five lines to a router
+
+```sh frame="none"
+go get github.com/vardius/gorouter/v5
+```
+
+<Tabs syncKey="adapter">
+<TabItem label="net/http">
+
+```go
+r := gorouter.New()
+r.GET("/hello/{name}", func(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "hello, %s!\n", r.PathValue("name"))
+})
+log.Fatal(http.ListenAndServe(":8080", r))
+```
+
+</TabItem>
+<TabItem label="fasthttp">
+
+```go
+r := fastrouter.New()
+r.GET("/hello/{name}", func(ctx *fasthttp.RequestCtx) {
+	fmt.Fprintf(ctx, "hello, %s!\n", fastrouter.Param(ctx, "name"))
+})
+log.Fatal(fasthttp.ListenAndServe(":8080", r.HandleFastHTTP))
+```
+
+</TabItem>
+</Tabs>
+
+</div>
+
+<div class="landing-section">
+
+## What you get
+
+<CardGrid>
+	<Card title="Zero-allocation matching" icon="rocket">
+		Matching, middleware chains and finding no route allocate nothing. On fasthttp, neither do params or mounts.
+	</Card>
+	<Card title="Standard handlers" icon="approve-check">
+		Any `http.Handler`, the usual `func(http.Handler) http.Handler` middleware, and params read with
+		the standard `r.PathValue`.
+	</Card>
+	<Card title="Params and regexps" icon="random">
+		`{id}` matches a segment, `{id:[0-9]+}` only one the regexp matches. Literals win, and a failed
+		branch falls back to the next.
+	</Card>
+	<Card title="Scoped middleware" icon="puzzle">
+		Around the whole router, the routes below a path, or one method below a path. Composed once at
+		registration.
+	</Card>
+	<Card title="Mounting" icon="list-format">
+		Hand a path to a sub-router or a file server. It sees paths relative to the mount, and mount params
+		stay readable.
+	</Card>
+	<Card title="Correct by default" icon="information">
+		405 with an `Allow` header, automatic `OPTIONS`, custom methods, and clear panics for invalid
+		patterns.
+	</Card>
+</CardGrid>
+
+</div>
+
+<div class="landing-section">
+
+## Faster than v4 behind middleware and on fasthttp
+
+<p class="landing-lead">
+	v5 composes middleware once at registration instead of on every request, and matches without
+	allocating. A route behind three middleware went from 170 ns to 24 ns on net/http.
+</p>
+
+<Tabs syncKey="adapter">
+<TabItem label="net/http">
+<BenchmarkChart adapter="nethttp" />
+</TabItem>
+<TabItem label="fasthttp">
+<BenchmarkChart adapter="fasthttp" />
+</TabItem>
+</Tabs>
+
+<LinkCard title="How these were measured" href="benchmarks/" description="Methodology, the full v5 suite, and how to run it yourself." />
+
+</div>
+
+<div class="landing-section">
+
+## Upgrading from v4
+
+<p class="landing-lead">
+	The patterns stay the same. The API around them is smaller: options instead of setters, the standard
+	`r.PathValue` instead of a params type, and a `fastrouter` package for fasthttp.
+</p>
+
+<div class="compare">
+
+```go title="v4"
+router := gorouter.New(logger)
+router.GET("/hello/{name}", http.HandlerFunc(
+	func(w http.ResponseWriter, r *http.Request) {
+		params, _ := context.Parameters(r.Context())
+		fmt.Fprintf(w, "hello, %s!", params.Value("name"))
+	},
+))
+router.USE(http.MethodGet, "/admin", auth)
+```
+
+```go title="v5"
+router := gorouter.New(gorouter.WithMiddleware(logger))
+router.GET("/hello/{name}",
+	func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "hello, %s!", r.PathValue("name"))
+	},
+)
+router.UseMethod(http.MethodGet, "/admin", auth)
+```
+
+</div>
+
+<LinkCard title="Migration guide" href="migrating-from-v4/" description="Every v4 call and its v5 form, and the behaviour changes to know about." />
+
+</div>
+
+<p class="credit">The gopher is based on the Go gopher by Renee French, licensed under Creative Commons Attribution 4.0.</p>

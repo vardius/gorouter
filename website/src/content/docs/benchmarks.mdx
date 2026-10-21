@@ -1,0 +1,65 @@
+---
+title: Benchmarks
+description: How fast gorouter routes a request, how v5 compares with v4, and how to measure it yourself.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+import BenchmarkChart from '../../components/BenchmarkChart.astro';
+import BenchmarkSuite from '../../components/BenchmarkSuite.astro';
+
+These numbers measure the router alone: handlers and middleware do nothing, so what's left is the cost of matching, params and dispatch.
+Your handlers will dominate a real request; the point is that the router adds as little as possible.
+
+## v5 against v4
+
+Both versions ran on the same harness, with the same routes and requests.
+
+<Tabs syncKey="adapter">
+<TabItem label="net/http">
+<BenchmarkChart adapter="nethttp" />
+</TabItem>
+<TabItem label="fasthttp">
+<BenchmarkChart adapter="fasthttp" />
+</TabItem>
+</Tabs>
+
+The biggest gains are behind middleware: v4 composed each route's middleware chain on every request, v5 composes it once at registration.
+On fasthttp, v5 also stopped allocating for params, 404s and literal routes.
+
+<Aside title="Where net/http allocates">
+On `net/http`, a route with a few params allocates twice: that is `Request.SetPathValue` storing the values so `r.PathValue` can read them.
+Storing them that way also makes a one-param route a few nanoseconds slower than v4, the price of reading params with the standard `r.PathValue`.
+The matching itself allocates nothing, and neither do literal routes, middleware chains or finding no route. A 405 allocates its `Allow` header value, and a mount one copy of the request, as `http.StripPrefix` does.
+</Aside>
+
+## v5's own suite
+
+Each row routes one request, except API, which averages a request across a realistic 70-route REST API.
+
+<Tabs syncKey="adapter">
+<TabItem label="net/http">
+<BenchmarkSuite adapter="nethttp" />
+</TabItem>
+<TabItem label="fasthttp">
+<BenchmarkSuite adapter="fasthttp" />
+</TabItem>
+</Tabs>
+
+Up to eight param values fit in a buffer on the stack; a router with a longer route takes a pooled buffer instead, so it still allocates nothing.
+
+## Run them yourself
+
+From a clone of the repository:
+
+```sh
+go test -run '^$' -bench . -benchmem ./...
+```
+
+To compare two versions, run each a few times and compare with [benchstat](https://pkg.go.dev/golang.org/x/perf/cmd/benchstat):
+
+```sh
+go test -run '^$' -bench . -count 10 ./... > new.txt
+benchstat old.txt new.txt
+```
+
+The allocation counts are also enforced by tests: `TestAllocations` in each router package fails if a request allocates more than it should.

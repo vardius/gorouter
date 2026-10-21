@@ -1,0 +1,33 @@
+---
+title: Authentication
+description: Protect a section of your app with middleware.
+---
+
+import { Aside, Code } from '@astrojs/starlight/components';
+import example from '../../../../../examples/basic-auth/main.go?raw';
+
+Authentication is middleware scoped to the routes it protects. `Use` covers a path and everything below it, so one call protects a whole section, including routes registered later:
+
+```go
+r.Use("/admin", requireLogin)
+```
+
+## Basic authentication
+
+This example protects everything below `/admin` with HTTP basic authentication. The credentials come from the environment, and the check compares fixed-size hashes in constant time so it leaks neither their length nor their content:
+
+<Code code={example} lang="go" title="examples/basic-auth/main.go" />
+
+```sh
+ADMIN_USER=admin ADMIN_PASSWORD='change me' go run ./examples/basic-auth
+curl -u admin:'change me' localhost:8080/admin
+```
+
+<Aside type="caution">
+Basic authentication sends the password with every request. Serve it over HTTPS only: see [HTTPS and HTTP/2](../https/).
+</Aside>
+
+## Other schemes
+
+The same shape works for any scheme: check the request, then either call `next` or write a 401 and return.
+For a bearer token or a session cookie, swap the `r.BasicAuth()` check for your own, and pass what you learned to the handler with `r.WithContext`.

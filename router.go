@@ -2,162 +2,249 @@ package gorouter
 
 import (
 	"net/http"
+	"net/url"
+	"slices"
 
-	"github.com/valyala/fasthttp"
+	"github.com/vardius/gorouter/v5/internal/tree"
 )
 
-// MiddlewareFunc is a http middleware function type
-type MiddlewareFunc func(http.Handler) http.Handler
+// stackParams is how many param values a request can carry before matching needs a heap buffer.
+const stackParams = 8
 
-// FastHTTPMiddlewareFunc is a fasthttp middleware function type
-type FastHTTPMiddlewareFunc func(fasthttp.RequestHandler) fasthttp.RequestHandler
+// Middleware wraps a handler. It has the same shape as most net/http middleware.
+type Middleware = func(http.Handler) http.Handler
 
-// Router is a micro framework, HTTP request router, multiplexer, mux
-type Router interface {
-	// PrettyPrint prints the tree text representation to console
-	PrettyPrint() string
-
-	// POST adds http.Handler as router handler
-	// under POST method and given patter
-	POST(pattern string, handler http.Handler)
-
-	// GET adds http.Handler as router handler
-	// under GET method and given patter
-	GET(pattern string, handler http.Handler)
-
-	// PUT adds http.Handler as router handler
-	// under PUT method and given patter
-	PUT(pattern string, handler http.Handler)
-
-	// DELETE adds http.Handler as router handler
-	// under DELETE method and given patter
-	DELETE(pattern string, handler http.Handler)
-
-	// PATCH adds http.Handler as router handler
-	// under PATCH method and given patter
-	PATCH(pattern string, handler http.Handler)
-
-	// OPTIONS adds http.Handler as router handler
-	// under OPTIONS method and given patter
-	OPTIONS(pattern string, handler http.Handler)
-
-	// HEAD adds http.Handler as router handler
-	// under HEAD method and given patter
-	HEAD(pattern string, handler http.Handler)
-
-	// CONNECT adds http.Handler as router handler
-	// under CONNECT method and given patter
-	CONNECT(pattern string, handler http.Handler)
-
-	// TRACE adds http.Handler as router handler
-	// under TRACE method and given patter
-	TRACE(pattern string, handler http.Handler)
-
-	// USE adds middleware functions ([]MiddlewareFunc)
-	// to whole router branch under given method and patter
-	USE(method, pattern string, fs ...MiddlewareFunc)
-
-	// USEANY adds middleware functions ([]MiddlewareFunc)
-	// to whole router branch for all methods and patter
-	USEANY(pattern string, fs ...MiddlewareFunc)
-
-	// Handle adds http.Handler as router handler
-	// under given method and patter
-	Handle(method, pattern string, handler http.Handler)
-
-	// Mount another handler as a subrouter
-	Mount(pattern string, handler http.Handler)
-
-	// Compile optimizes Tree nodes reducing static nodes depth when possible
-	Compile()
-
-	// ServeHTTP dispatches the request to the route handler
-	// whose pattern matches the request URL
-	ServeHTTP(http.ResponseWriter, *http.Request)
-
-	// ServeFiles replies to the request with the
-	// contents of the named file or directory.
-	ServeFiles(fs http.FileSystem, root string, strip bool)
-
-	// NotFound replies to the request with the 404 Error code
-	NotFound(http.Handler)
-
-	// NotAllowed replies to the request with the 405 Error code
-	NotAllowed(http.Handler)
+// Route describes a registered route.
+type Route struct {
+	Method  string
+	Pattern string
 }
 
-// FastHTTPRouter is a fasthttp micro framework, HTTP request router, multiplexer, mux
-type FastHTTPRouter interface {
-	// PrettyPrint prints the tree text representation to console
-	PrettyPrint() string
+// Option configures a Router.
+type Option func(*config)
 
-	// POST adds fasthttp.RequestHandler as router handler
-	// under POST method and given patter
-	POST(pattern string, handler fasthttp.RequestHandler)
+type config struct {
+	middleware []Middleware
+	notFound   http.Handler
+	notAllowed http.Handler
+}
 
-	// GET adds fasthttp.RequestHandler as router handler
-	// under GET method and given patter
-	GET(pattern string, handler fasthttp.RequestHandler)
+// WithMiddleware wraps the whole router, including 404, 405 and automatic OPTIONS responses.
+// The first middleware is the outermost.
+func WithMiddleware(mw ...Middleware) Option {
+	return func(c *config) { c.middleware = append(c.middleware, mw...) }
+}
 
-	// PUT adds fasthttp.RequestHandler as router handler
-	// under PUT method and given patter
-	PUT(pattern string, handler fasthttp.RequestHandler)
+// WithNotFound replaces the default 404 handler.
+func WithNotFound(h http.Handler) Option {
+	return func(c *config) { c.notFound = h }
+}
 
-	// DELETE adds fasthttp.RequestHandler as router handler
-	// under DELETE method and given patter
-	DELETE(pattern string, handler fasthttp.RequestHandler)
+// WithMethodNotAllowed replaces the default 405 handler. The Allow header is already set when it runs.
+func WithMethodNotAllowed(h http.Handler) Option {
+	return func(c *config) { c.notAllowed = h }
+}
 
-	// PATCH adds fasthttp.RequestHandler as router handler
-	// under PATCH method and given patter
-	PATCH(pattern string, handler fasthttp.RequestHandler)
+// Router is a net/http request router. Register routes and middleware first, then serve:
+// registering while serving is not safe.
+type Router struct {
+	tree       tree.Tree[http.Handler]
+	notFound   http.Handler
+	notAllowed http.Handler
+	handler    http.Handler
+}
 
-	// OPTIONS adds fasthttp.RequestHandler as router handler
-	// under OPTIONS method and given patter
-	OPTIONS(pattern string, handler fasthttp.RequestHandler)
+// New returns a Router configured by opts.
+func New(opts ...Option) *Router {
+	c := config{
+		notFound:   http.NotFoundHandler(),
+		notAllowed: http.HandlerFunc(methodNotAllowed),
+	}
+	for _, opt := range opts {
+		opt(&c)
+	}
 
-	// HEAD adds fasthttp.RequestHandler as router handler
-	// under HEAD method and given patter
-	HEAD(pattern string, handler fasthttp.RequestHandler)
+	r := &Router{notFound: c.notFound, notAllowed: c.notAllowed}
+	r.handler = http.HandlerFunc(r.dispatch)
+	for _, mw := range slices.Backward(c.middleware) {
+		r.handler = mw(r.handler)
+	}
 
-	// CONNECT adds fasthttp.RequestHandler as router handler
-	// under CONNECT method and given patter
-	CONNECT(pattern string, handler fasthttp.RequestHandler)
+	return r
+}
 
-	// TRACE adds fasthttp.RequestHandler as router handler
-	// under TRACE method and given patter
-	TRACE(pattern string, handler fasthttp.RequestHandler)
+// GET registers h for GET requests to pattern.
+func (r *Router) GET(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodGet, pattern, h)
+}
 
-	// USE adds middleware functions ([]MiddlewareFunc)
-	// to whole router branch under given method and patter
-	USE(method, pattern string, fs ...FastHTTPMiddlewareFunc)
+// HEAD registers h for HEAD requests to pattern.
+func (r *Router) HEAD(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodHead, pattern, h)
+}
 
-	// USEANY adds middleware functions ([]MiddlewareFunc)
-	// to whole router branch for all methods and patter
-	USEANY(pattern string, fs ...FastHTTPMiddlewareFunc)
+// POST registers h for POST requests to pattern.
+func (r *Router) POST(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodPost, pattern, h)
+}
 
-	// Handle adds fasthttp.RequestHandler as router handler
-	// under given method and patter
-	Handle(method, pattern string, handler fasthttp.RequestHandler)
+// PUT registers h for PUT requests to pattern.
+func (r *Router) PUT(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodPut, pattern, h)
+}
 
-	// Mount another handler as a subrouter
-	Mount(pattern string, handler fasthttp.RequestHandler)
+// PATCH registers h for PATCH requests to pattern.
+func (r *Router) PATCH(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodPatch, pattern, h)
+}
 
-	// Compile optimizes Tree nodes reducing static nodes depth when possible
-	Compile()
+// DELETE registers h for DELETE requests to pattern.
+func (r *Router) DELETE(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodDelete, pattern, h)
+}
 
-	// HandleFastHTTP dispatches the request to the route handler
-	// whose pattern matches the request URL
-	HandleFastHTTP(ctx *fasthttp.RequestCtx)
+// CONNECT registers h for CONNECT requests to pattern.
+func (r *Router) CONNECT(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodConnect, pattern, h)
+}
 
-	// ServeFile replies to the request with the
-	// contents of the named file or directory.
-	ServeFiles(root string, stripSlashes int)
+// OPTIONS registers h for OPTIONS requests to pattern, replacing the automatic response there.
+func (r *Router) OPTIONS(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodOptions, pattern, h)
+}
 
-	// NotFound replies to the request with the
-	// 404 Error code
-	NotFound(fasthttp.RequestHandler)
+// TRACE registers h for TRACE requests to pattern.
+func (r *Router) TRACE(pattern string, h http.HandlerFunc) {
+	r.handleFunc(http.MethodTrace, pattern, h)
+}
 
-	// NotFound replies to the request with the
-	// 405 Error code
-	NotAllowed(fasthttp.RequestHandler)
+// Handle registers h for method and pattern. Any method works, including custom ones.
+//
+// A pattern is a path whose segments are literals, {name} params matching any one segment,
+// or {name:regexp} params matching a segment the whole regexp matches. A trailing slash is ignored.
+// Handle panics if the pattern is invalid or already registered for method.
+func (r *Router) Handle(method, pattern string, h http.Handler) {
+	if h == nil {
+		panic("gorouter: nil handler for " + method + " " + pattern)
+	}
+
+	r.tree.Handle(method, pattern, h)
+}
+
+// Use wraps every route, on every method, whose pattern starts with pattern, segment by segment.
+// Routes registered before and after the call are covered. Middleware runs in registration order.
+func (r *Router) Use(pattern string, mw ...Middleware) {
+	r.tree.Use("", pattern, mw)
+}
+
+// UseMethod is Use restricted to one method.
+func (r *Router) UseMethod(method, pattern string, mw ...Middleware) {
+	r.tree.Use(method, pattern, mw)
+}
+
+// Mount sends every request at or below pattern, on any method, to h with the pattern's segments removed
+// from the URL path. Params in pattern stay readable with PathValue.
+//
+// Use and UseMethod middleware on pattern or above it wraps the mount. Middleware below the mount
+// belongs in h, and registering it here panics.
+func (r *Router) Mount(pattern string, h http.Handler) {
+	if h == nil {
+		panic("gorouter: nil handler for mount at " + pattern)
+	}
+
+	r.tree.Mount(pattern, stripSegments(pattern, h))
+}
+
+// Routes lists the registered routes in registration order. A mount is listed once, with an empty Method.
+func (r *Router) Routes() []Route {
+	var routes []Route
+	for route := range r.tree.Routes() {
+		routes = append(routes, Route{Method: route.Method, Pattern: route.Pattern})
+	}
+
+	return routes
+}
+
+// ServeHTTP dispatches req to the matching route. Param values are set on req, read them with req.PathValue,
+// and req.Pattern is set to the route's pattern.
+func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	r.handler.ServeHTTP(w, req)
+}
+
+func (r *Router) handleFunc(method, pattern string, h http.HandlerFunc) {
+	if h == nil {
+		panic("gorouter: nil handler for " + method + " " + pattern)
+	}
+
+	r.tree.Handle(method, pattern, h)
+}
+
+func (r *Router) dispatch(w http.ResponseWriter, req *http.Request) {
+	// Param values go to a buffer on the stack, or to a pooled one when a route has more params than it holds.
+	var buf [stackParams]string
+	values := buf[:]
+	var pooled *[]string
+	if r.tree.MaxParams() > stackParams {
+		pooled = r.tree.Values()
+		values = *pooled
+	}
+
+	if route := r.tree.Lookup(req.Method, req.URL.Path, values); route != nil {
+		for i, name := range route.Params {
+			req.SetPathValue(name, values[i])
+		}
+		req.Pattern = route.Pattern
+		route.Handler.ServeHTTP(w, req)
+	} else if allow := r.tree.Allowed(req.Method, req.URL.Path, values); allow != "" {
+		w.Header().Set("Allow", allow)
+		if req.Method != http.MethodOptions {
+			r.notAllowed.ServeHTTP(w, req)
+		}
+	} else {
+		r.notFound.ServeHTTP(w, req)
+	}
+
+	if pooled != nil {
+		r.tree.PutValues(pooled)
+	}
+}
+
+func methodNotAllowed(w http.ResponseWriter, _ *http.Request) {
+	http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+}
+
+// strippedRequest lets a mount copy the request and its URL in one allocation.
+type strippedRequest struct {
+	req http.Request
+	url url.URL
+}
+
+// stripSegments serves h with pattern's segments removed from the URL path.
+// h gets a copy of the request, as with http.StripPrefix, so the caller's URL is untouched.
+// The copy shares the caller's path values, so a router in h that sets a param of the same name
+// as one of pattern's overwrites it: the mount's own values are put back once h returns.
+func stripSegments(pattern string, h http.Handler) http.Handler {
+	depth, names := tree.Depth(pattern), tree.ParamNames(pattern)
+
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		s := &strippedRequest{req: *req, url: *req.URL}
+		s.url.Path = tree.StripSegments(req.URL.Path, depth)
+		if req.URL.RawPath != "" {
+			// URL.EscapedPath ignores RawPath once it no longer encodes Path, as when a stripped segment held %2F.
+			s.url.RawPath = tree.StripSegments(req.URL.RawPath, depth)
+		}
+		s.req.URL = &s.url
+
+		var buf [stackParams]string
+		values := buf[:0]
+		for _, name := range names {
+			values = append(values, req.PathValue(name))
+		}
+
+		h.ServeHTTP(w, &s.req)
+
+		for i, name := range names {
+			req.SetPathValue(name, values[i])
+		}
+	})
 }

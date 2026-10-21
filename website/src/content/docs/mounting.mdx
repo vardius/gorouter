@@ -1,0 +1,41 @@
+---
+title: Mounting
+description: Hand everything below a path to a sub-router, a file server or any other handler.
+---
+
+import { Aside, Code } from '@astrojs/starlight/components';
+import example from '../../../../examples/mount/main.go?raw';
+
+`Mount` sends every request at or below a pattern, on any method, to another handler, with the pattern's segments removed from the path.
+
+```go
+r.Mount("/api/v1", v1)                                   // v1 sees /users/7 for /api/v1/users/7
+r.Mount("/orgs/{org}", orgs)                             // r.PathValue("org") still works inside
+r.Mount("/static", http.FileServerFS(os.DirFS("public"))) // any http.Handler works
+```
+
+The mounted handler doesn't need to know where it lives: a sub-router registers its routes from `/`.
+The request is copied before the path is rewritten, as `http.StripPrefix` does, so middleware around the mount still sees the original path.
+
+## Splitting an app into sub-routers
+
+<Code code={example} lang="go" title="examples/mount/main.go" />
+
+| Request | Handled by | Path it sees |
+| --- | --- | --- |
+| `GET /api/v1/status` | `apiV1` | `/status` |
+| `GET /api/v1/users/7` | `apiV1` | `/users/7` |
+| `GET /orgs/vardius/repos/gorouter` | `orgs`, with `org` = `vardius` | `/repos/gorouter` |
+
+## Rules
+
+- A mount owns its path and everything below it, on every method, custom ones included. Registering a route below a mount, or mounting over existing routes, panics.
+- A request below the mount that the sub-router doesn't match gets the sub-router's 404 or 405, not the parent's.
+- Middleware on the parent at the mount path or above wraps the whole mounted handler.
+- Middleware for paths below the mount belongs in the sub-router: `r.Use("/api/v1/admin", mw)` next to `r.Mount("/api/v1", v1)` panics, because it could never run.
+- `Routes()` lists a mount once, with an empty method.
+
+<Aside>
+On fasthttp, mount the sub-router's handler func: `r.Mount("/api/v1", v1.HandleFastHTTP)`.
+Params from the mount path stay readable with `fastrouter.Param`. Once the mounted handler returns, the router puts the original path and params back, so middleware around the mount sees the request it was given.
+</Aside>

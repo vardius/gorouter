@@ -1,0 +1,14 @@
+---
+title: Multiple domains
+description: Serve a different router for each host name.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import example from '../../../../../examples/multidomain/main.go?raw';
+
+Routing by host is a small `http.Handler` in front of your routers: look up the host, then hand the request to that host's router.
+Each router stays independent, with its own routes, middleware and 404.
+
+<Code code={example} lang="go" title="examples/multidomain/main.go" />
+
+The host switch strips the port, so `example.com:8080` finds the `example.com` router. A host it doesn't know gets `421 Misdirected Request`.

@@ -1,0 +1,83 @@
+---
+title: Getting started
+description: Install gorouter, register your first routes and run a server.
+---
+
+import { Code, LinkCard, CardGrid, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+import hello from '../../../../examples/hello/main.go?raw';
+import fast from '../../../../examples/fasthttp/main.go?raw';
+
+gorouter sends each HTTP request to a handler chosen by its method and path.
+It works with the standard `net/http` package and with [fasthttp](https://github.com/valyala/fasthttp), with the same API and the same matching rules for both.
+
+## Install
+
+gorouter needs Go 1.26 or newer.
+
+```sh
+go get github.com/vardius/gorouter/v5
+```
+
+The fasthttp router lives in its own package, `github.com/vardius/gorouter/v5/fastrouter`, so a `net/http` program never links fasthttp.
+
+## Your first server
+
+<Tabs syncKey="adapter">
+<TabItem label="net/http">
+<Code code={hello} lang="go" title="examples/hello/main.go" />
+</TabItem>
+<TabItem label="fasthttp">
+<Code code={fast} lang="go" title="examples/fasthttp/main.go" />
+</TabItem>
+</Tabs>
+
+## Run it
+
+<Steps>
+
+1. From a clone of the repository, start the server:
+
+   ```sh
+   go run ./examples/hello
+   ```
+
+   For the fasthttp version, run `go run ./examples/fasthttp` instead.
+
+2. In another terminal, call a route with a param:
+
+   ```sh
+   curl localhost:8080/hello/gopher
+   ```
+
+   ```txt
+   hello, gopher!
+   ```
+
+3. Try the regexp param. `/users/42` matches `{id:[0-9]+}`; `/users/gopher` doesn't, so it gets a 404:
+
+   ```sh
+   curl -i localhost:8080/users/gopher
+   ```
+
+   ```txt
+   HTTP/1.1 404 Not Found
+   ```
+
+</Steps>
+
+## What just happened
+
+- `gorouter.New()` returns a `*gorouter.Router`. It is an `http.Handler`, so it plugs into `http.Server` like any other.
+- `r.GET` registers a handler func for GET. There is a helper for every standard method, and `r.Handle` takes any `http.Handler` on any method, custom ones included.
+- `{name}` matches any one path segment. Read its value with `r.PathValue("name")`.
+- `{id:[0-9]+}` matches a segment only when the whole segment matches the regexp.
+- A path no route matches gets 404 Not Found. A path that only matches on other methods gets 405 Method Not Allowed, with an `Allow` header listing them.
+
+## Next steps
+
+<CardGrid>
+	<LinkCard title="Routing" href="../routing/" description="Patterns, priority, params, and the 404, 405 and OPTIONS responses." />
+	<LinkCard title="Middleware" href="../middleware/" description="Wrap the whole router, a path, or one method below a path." />
+	<LinkCard title="Mounting" href="../mounting/" description="Split an app into sub-routers and serve files." />
+	<LinkCard title="fasthttp" href="../guides/fasthttp/" description="What differs when you use the fasthttp router." />
+</CardGrid>

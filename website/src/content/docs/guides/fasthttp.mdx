@@ -1,0 +1,64 @@
+---
+title: fasthttp
+description: Use gorouter with fasthttp, and what differs from net/http.
+---
+
+import { Aside, Code } from '@astrojs/starlight/components';
+import example from '../../../../../examples/fasthttp/main.go?raw';
+
+The fasthttp router is in its own package, so `net/http` programs never link fasthttp:
+
+```go
+import "github.com/vardius/gorouter/v5/fastrouter"
+```
+
+It has the same methods, options and matching rules as the `net/http` router. Handlers are `fasthttp.RequestHandler`s, and middleware is `func(fasthttp.RequestHandler) fasthttp.RequestHandler`.
+Pass the router to fasthttp as `r.HandleFastHTTP`.
+
+<Code code={example} lang="go" title="examples/fasthttp/main.go" />
+
+## What differs from net/http
+
+### Params live as long as the handler
+
+`fastrouter.Param(ctx, name)` returns a value held in a buffer the router reuses once the request is done, which is why routing a request with params allocates nothing.
+The value is valid until the handler returns, even if the handler rewrites the path. Copy it with `strings.Clone` to keep it longer:
+
+```go
+r.POST("/jobs/{id}", func(ctx *fasthttp.RequestCtx) {
+	id := strings.Clone(fastrouter.Param(ctx, "id"))
+	go process(id) // outlives the request, so it gets its own copy
+})
+```
+
+The router keeps params in the request's user values and releases them when fasthttp finishes the request. Calling `ctx.ResetUserValues` releases them early, so `Param` returns an empty string after it.
+
+### Keep the Allow header on 405
+
+`ctx.Error` resets the whole response, headers included. In a custom 405 handler, write the response with `ctx.SetStatusCode` and `ctx.SetBodyString` so the `Allow` header the router set survives:
+
+```go
+r := fastrouter.New(fastrouter.WithMethodNotAllowed(func(ctx *fasthttp.RequestCtx) {
+	ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
+	ctx.SetBodyString("method not allowed")
+}))
+```
+
+### Mounting
+
+Mount a sub-router by its handler func:
+
+```go
+r.Mount("/api/v1", v1.HandleFastHTTP)
+r.Mount("/static", fasthttp.FSHandler("./public", 0))
+```
+
+fasthttp has one request object, so the mount rewrites its path for the mounted handler, then puts the original path and params back once that handler returns.
+
+### Paths are cleaned first
+
+fasthttp decodes the path and collapses `//` and `..` before the router sees it, so `/users//7` matches `/users/{id}` on fasthttp, while on `net/http` the empty segment matches nothing.
+
+<Aside>
+fasthttp itself serves HTTP/1.x. If you need HTTP/2 without a proxy in front, the `net/http` router is the better fit.
+</Aside>

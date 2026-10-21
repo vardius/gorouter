@@ -1,0 +1,38 @@
+---
+title: Error handling
+description: Handlers that return errors, and recovering from panics.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import example from '../../../../../examples/app-handler/main.go?raw';
+
+## Handlers that return an error
+
+Writing the error response in every handler gets repetitive. Give handlers an `error` result instead, and turn errors into responses in one place.
+Because `Handle` takes any `http.Handler`, a custom handler type registers like any other:
+
+<Code code={example} lang="go" title="examples/app-handler/main.go" />
+
+The helpers like `GET` take a plain handler func; use `Handle` with the method for custom handler types.
+
+## Recovering from panics
+
+A panic in a handler would otherwise end in a dropped connection. Wrap the whole router so every route is covered:
+
+```go
+func recoverPanics(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				slog.Error("panic", "path", r.URL.Path, "error", err)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
+}
+
+r := gorouter.New(gorouter.WithMiddleware(recoverPanics))
+```
+
+[Middleware](../../middleware/) has a complete example with logging.

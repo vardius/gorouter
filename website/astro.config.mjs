@@ -13,11 +13,7 @@ export default defineConfig({
 			title: 'gorouter',
 			description:
 				'A fast HTTP router for Go, for net/http and fasthttp: zero-allocation matching, standard handlers and scoped middleware.',
-			logo: { src: './src/assets/logo.png', alt: '' },
-			favicon: '/favicon.ico',
-			head: [
-				{ tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/gorouter/apple-touch-icon.png' } },
-			],
+			favicon: '/favicon.svg',
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/vardius/gorouter' }],
 			customCss: ['./src/styles/custom.css'],
 			sidebar: [

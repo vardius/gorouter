@@ -4,8 +4,6 @@ description: A fast HTTP router for Go, for net/http and fasthttp. Zero-allocati
 template: splash
 hero:
   tagline: Route net/http and fasthttp requests to plain handlers. Matching allocates nothing, params use the standard r.PathValue, and middleware costs nothing per request.
-  image:
-    file: ../../assets/gopher-hero.png
   actions:
     - text: Get started
       link: getting-started/
@@ -145,5 +143,3 @@ router.UseMethod(http.MethodGet, "/admin", auth)
 <LinkCard title="Migration guide" href="migrating-from-v4/" description="Every v4 call and its v5 form, and the behaviour changes to know about." />
 
 </div>
-
-<p class="credit">The gopher is based on the Go gopher by Renee French, licensed under Creative Commons Attribution 4.0.</p>

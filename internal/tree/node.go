@@ -68,6 +68,11 @@ func (n *node[H]) isLeaf() bool {
 	return len(n.statics) == 0 && len(n.regexps) == 0 && n.wildcard == nil
 }
 
+// isEmpty reports whether no route lives at or below n.
+func (n *node[H]) isEmpty() bool {
+	return n.route == nil && n.isLeaf()
+}
+
 // descend is called once n has matched a segment: rest is the path after it, more says whether there was one.
 func (n *node[H]) descend(rest string, more bool, values []string) *Route[H] {
 	if n.prefix || !more {

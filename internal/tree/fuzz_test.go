@@ -2,6 +2,7 @@ package tree
 
 import (
 	"fmt"
+	"iter"
 	"math"
 	"slices"
 	"strings"
@@ -18,9 +19,14 @@ type refRoute struct {
 // refLookup is a deliberately naive matcher: it checks every route against the path,
 // then keeps the one the priority rules prefer. FuzzLookup holds the tree to it.
 func refLookup(routes []refRoute, path string) (int, []string) {
+	// Split on every slash, then drop one trailing empty part: the trailing slash, which doesn't count.
+	// Any other empty part is an empty segment, which no route matches.
 	var parts []string
-	if p := trim(path); p != "" {
+	if p := strings.TrimPrefix(path, "/"); p != "" {
 		parts = strings.Split(p, "/")
+		if len(parts) > 1 && parts[len(parts)-1] == "" {
+			parts = parts[:len(parts)-1]
+		}
 	}
 
 	best, bestRank := -1, []int(nil)
@@ -130,7 +136,7 @@ func (g *generator) pattern() (string, bool) {
 }
 
 func (g *generator) path() string {
-	parts := []string{"a", "b", "ab", "c", "1", "12", "x", ""}
+	parts := []string{"a", "b", "ab", "c", "1", "12", "x", "", "/"}
 	var sb strings.Builder
 	for range g.next(5) {
 		sb.WriteString("/" + parts[g.next(len(parts))])
@@ -195,12 +201,10 @@ func registers(tr *Tree[int], pattern string, prefix bool, h int) (ok bool) {
 	return true
 }
 
-func describe(routes []*Route[int]) []string {
+func describe(routes iter.Seq[*Route[int]]) []string {
 	var out []string
-	for _, r := range routes {
-		if r.Method == "GET" {
-			out = append(out, fmt.Sprintf("%d:%s", r.Handler, r.Pattern))
-		}
+	for r := range routes {
+		out = append(out, fmt.Sprintf("%d:%s %s", r.Handler, r.Method, r.Pattern))
 	}
 
 	return out

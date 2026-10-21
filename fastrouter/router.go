@@ -2,6 +2,8 @@ package fastrouter
 
 import (
 	"slices"
+	"strings"
+	"sync"
 	"unsafe"
 
 	"github.com/valyala/fasthttp"
@@ -144,8 +146,12 @@ func (r *Router) UseMethod(method, pattern string, mw ...Middleware) {
 	r.tree.Use(method, pattern, mw)
 }
 
-// Mount sends every request at or below pattern, on every standard method, to h
-// with the pattern's segments removed from the URI path. Params in pattern stay readable with Param.
+// Mount sends every request at or below pattern, on any method, to h with the pattern's segments removed
+// from the URI path. Params in pattern stay readable with Param. Once h returns, the path and params
+// are put back, so middleware around the mount sees the request it was given.
+//
+// Use and UseMethod middleware on pattern or above it wraps the mount. Middleware below the mount
+// belongs in h, and registering it here panics.
 func (r *Router) Mount(pattern string, h fasthttp.RequestHandler) {
 	if h == nil {
 		panic("gorouter: nil handler for mount at " + pattern)
@@ -154,10 +160,10 @@ func (r *Router) Mount(pattern string, h fasthttp.RequestHandler) {
 	r.tree.Mount(pattern, stripSegments(tree.Depth(pattern), h))
 }
 
-// Routes lists the registered routes in registration order. A mount is listed once per method.
+// Routes lists the registered routes in registration order. A mount is listed once, with an empty Method.
 func (r *Router) Routes() []Route {
-	routes := make([]Route, 0, len(r.tree.Routes()))
-	for _, route := range r.tree.Routes() {
+	var routes []Route
+	for route := range r.tree.Routes() {
 		routes = append(routes, Route{Method: route.Method, Pattern: route.Pattern})
 	}
 
@@ -178,30 +184,32 @@ func (r *Router) dispatch(ctx *fasthttp.RequestCtx) {
 		path = "*"
 	}
 
+	// Param values go to a buffer on the stack, or to a pooled one when a route has more params than it holds.
 	var buf [stackParams]string
 	values := buf[:]
-	if n := r.tree.MaxParams(); n > len(buf) {
-		values = make([]string, n)
+	var pooled *[]string
+	if r.tree.MaxParams() > stackParams {
+		pooled = r.tree.Values()
+		values = *pooled
 	}
 
 	if route := r.tree.Lookup(method, path, values); route != nil {
 		if len(route.Params) > 0 {
-			setParams(ctx, route.Params, values)
+			setParams(ctx, path, route.Params, values)
 		}
 		route.Handler(ctx)
-		return
-	}
-
-	if allow := r.tree.Allowed(method, path, values); allow != "" {
+	} else if allow := r.tree.Allowed(method, path, values); allow != "" {
 		ctx.Response.Header.Set(fasthttp.HeaderAllow, allow)
-		if method == fasthttp.MethodOptions {
-			return
+		if method != fasthttp.MethodOptions {
+			r.notAllowed(ctx)
 		}
-		r.notAllowed(ctx)
-		return
+	} else {
+		r.notFound(ctx)
 	}
 
-	r.notFound(ctx)
+	if pooled != nil {
+		r.tree.PutValues(pooled)
+	}
 }
 
 // errorHandler writes status and its message. Unlike ctx.Error it keeps the headers already set,
@@ -215,13 +223,43 @@ func errorHandler(status int) fasthttp.RequestHandler {
 	}
 }
 
-// stripSegments serves h with the first depth segments removed from the URI path.
+// mountPaths holds a mount's copy of the caller's path and the stripped path it hands on.
+type mountPaths struct {
+	caller, stripped []byte
+}
+
+var mountPathsPool = sync.Pool{New: func() any { return new(mountPaths) }}
+
+// stripSegments serves h with the first depth segments removed from the URI path,
+// then puts the caller's path and params back.
 func stripSegments(depth int, h fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
-		// Rewriting the path reuses its buffer, which param values still point into.
-		detachParams(ctx)
-		ctx.URI().SetPath(tree.StripSegments(bytesToString(ctx.Path()), depth))
+		uri := ctx.URI()
+		paths := mountPathsPool.Get().(*mountPaths)
+		paths.caller = append(paths.caller[:0], uri.PathOriginal()...)
+		paths.stripped = appendPath(paths.stripped[:0], tree.StripSegments(bytesToString(ctx.Path()), depth))
+		mark := markParams(ctx)
+
+		uri.SetPathBytes(paths.stripped)
 		h(ctx)
+		uri.SetPathBytes(paths.caller)
+
+		resetParams(ctx, mark)
+		mountPathsPool.Put(paths)
+	}
+}
+
+// appendPath appends path, already decoded, escaped so that SetPath decodes it back to path:
+// it percent-decodes its argument, and path's own % signs must survive that.
+func appendPath(dst []byte, path string) []byte {
+	for {
+		i := strings.IndexByte(path, '%')
+		if i < 0 {
+			return append(dst, path...)
+		}
+		dst = append(dst, path[:i+1]...)
+		dst = append(dst, "25"...)
+		path = path[i+1:]
 	}
 }
 

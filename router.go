@@ -142,20 +142,23 @@ func (r *Router) UseMethod(method, pattern string, mw ...Middleware) {
 	r.tree.Use(method, pattern, mw)
 }
 
-// Mount sends every request at or below pattern, on every standard method, to h
-// with the pattern's segments removed from the URL path. Params in pattern stay readable with PathValue.
+// Mount sends every request at or below pattern, on any method, to h with the pattern's segments removed
+// from the URL path. Params in pattern stay readable with PathValue.
+//
+// Use and UseMethod middleware on pattern or above it wraps the mount. Middleware below the mount
+// belongs in h, and registering it here panics.
 func (r *Router) Mount(pattern string, h http.Handler) {
 	if h == nil {
 		panic("gorouter: nil handler for mount at " + pattern)
 	}
 
-	r.tree.Mount(pattern, stripSegments(tree.Depth(pattern), h))
+	r.tree.Mount(pattern, stripSegments(pattern, h))
 }
 
-// Routes lists the registered routes in registration order. A mount is listed once per method.
+// Routes lists the registered routes in registration order. A mount is listed once, with an empty Method.
 func (r *Router) Routes() []Route {
-	routes := make([]Route, 0, len(r.tree.Routes()))
-	for _, route := range r.tree.Routes() {
+	var routes []Route
+	for route := range r.tree.Routes() {
 		routes = append(routes, Route{Method: route.Method, Pattern: route.Pattern})
 	}
 
@@ -177,10 +180,13 @@ func (r *Router) handleFunc(method, pattern string, h http.HandlerFunc) {
 }
 
 func (r *Router) dispatch(w http.ResponseWriter, req *http.Request) {
+	// Param values go to a buffer on the stack, or to a pooled one when a route has more params than it holds.
 	var buf [stackParams]string
 	values := buf[:]
-	if n := r.tree.MaxParams(); n > len(buf) {
-		values = make([]string, n)
+	var pooled *[]string
+	if r.tree.MaxParams() > stackParams {
+		pooled = r.tree.Values()
+		values = *pooled
 	}
 
 	if route := r.tree.Lookup(req.Method, req.URL.Path, values); route != nil {
@@ -189,19 +195,18 @@ func (r *Router) dispatch(w http.ResponseWriter, req *http.Request) {
 		}
 		req.Pattern = route.Pattern
 		route.Handler.ServeHTTP(w, req)
-		return
-	}
-
-	if allow := r.tree.Allowed(req.Method, req.URL.Path, values); allow != "" {
+	} else if allow := r.tree.Allowed(req.Method, req.URL.Path, values); allow != "" {
 		w.Header().Set("Allow", allow)
-		if req.Method == http.MethodOptions {
-			return
+		if req.Method != http.MethodOptions {
+			r.notAllowed.ServeHTTP(w, req)
 		}
-		r.notAllowed.ServeHTTP(w, req)
-		return
+	} else {
+		r.notFound.ServeHTTP(w, req)
 	}
 
-	r.notFound.ServeHTTP(w, req)
+	if pooled != nil {
+		r.tree.PutValues(pooled)
+	}
 }
 
 func methodNotAllowed(w http.ResponseWriter, _ *http.Request) {
@@ -214,14 +219,32 @@ type strippedRequest struct {
 	url url.URL
 }
 
-// stripSegments serves h with the first depth segments removed from the URL path.
-// The request is copied, as http.StripPrefix does, so the caller's request stays untouched.
-func stripSegments(depth int, h http.Handler) http.Handler {
+// stripSegments serves h with pattern's segments removed from the URL path.
+// h gets a copy of the request, as with http.StripPrefix, so the caller's URL is untouched.
+// The copy shares the caller's path values, so a router in h that sets a param of the same name
+// as one of pattern's overwrites it: the mount's own values are put back once h returns.
+func stripSegments(pattern string, h http.Handler) http.Handler {
+	depth, names := tree.Depth(pattern), tree.ParamNames(pattern)
+
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		s := &strippedRequest{req: *req, url: *req.URL}
 		s.url.Path = tree.StripSegments(req.URL.Path, depth)
-		s.url.RawPath = ""
+		if req.URL.RawPath != "" {
+			// URL.EscapedPath ignores RawPath once it no longer encodes Path, as when a stripped segment held %2F.
+			s.url.RawPath = tree.StripSegments(req.URL.RawPath, depth)
+		}
 		s.req.URL = &s.url
+
+		var buf [stackParams]string
+		values := buf[:0]
+		for _, name := range names {
+			values = append(values, req.PathValue(name))
+		}
+
 		h.ServeHTTP(w, &s.req)
+
+		for i, name := range names {
+			req.SetPathValue(name, values[i])
+		}
 	})
 }

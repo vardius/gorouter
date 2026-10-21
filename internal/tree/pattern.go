@@ -91,13 +91,33 @@ func parseSegment(part string) (segment, error) {
 }
 
 // trim drops one leading and one trailing slash: "/a/b/" becomes "a/b", "/" becomes "".
+// "//" becomes "/", an empty segment, so it matches nothing.
 func trim(path string) string {
-	return strings.TrimSuffix(strings.TrimPrefix(path, "/"), "/")
+	if path != "" && path[0] == '/' {
+		path = path[1:]
+	}
+	if len(path) > 1 && path[len(path)-1] == '/' {
+		path = path[:len(path)-1]
+	}
+
+	return path
 }
 
 // Depth returns the number of segments in pattern. It panics if the pattern is invalid.
 func Depth(pattern string) int {
 	return len(mustParse(pattern))
+}
+
+// ParamNames returns the names of pattern's params, in order. It panics if the pattern is invalid.
+func ParamNames(pattern string) []string {
+	var names []string
+	for _, s := range mustParse(pattern) {
+		if s.kind != static {
+			names = append(names, s.name)
+		}
+	}
+
+	return names
 }
 
 // StripSegments drops the first n segments of a request path,

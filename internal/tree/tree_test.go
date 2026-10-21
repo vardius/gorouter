@@ -2,8 +2,11 @@ package tree
 
 import (
 	"maps"
+	"slices"
 	"strings"
 	"testing"
+
+	"github.com/vardius/gorouter/v5/internal/race"
 )
 
 // lookup is a test helper returning the matched pattern and its params by name.
@@ -71,6 +74,12 @@ func TestLookup(t *testing.T) {
 		{"/v1/anything/below", "/v1", map[string]string{}},
 		{"/v1x", "", nil},
 		{"/users//posts", "", nil},
+		// An empty segment never matches, not even right after the leading slash.
+		{"//", "", nil},
+		{"///", "", nil},
+		{"/users//", "", nil},
+		// OPTIONS * is about the server: it never reaches a route.
+		{"*", "", nil},
 		{"/nope", "", nil},
 	}
 	for _, tt := range tests {
@@ -83,8 +92,76 @@ func TestLookup(t *testing.T) {
 	if pattern, _ := lookup(t, &tr, "POST", "/users"); pattern != "" {
 		t.Errorf("Lookup(POST, /users) = %q, want no route", pattern)
 	}
-	if pattern, _ := lookup(t, &tr, "POST", "/v1/x"); pattern != "/v1" {
-		t.Errorf("Lookup(POST, /v1/x) = %q, want the mount on every method", pattern)
+	for _, method := range []string{"POST", "PROPFIND"} {
+		if pattern, _ := lookup(t, &tr, method, "/v1/x"); pattern != "/v1" {
+			t.Errorf("Lookup(%s, /v1/x) = %q, want the mount on every method", method, pattern)
+		}
+	}
+}
+
+func TestMountCustomMethods(t *testing.T) {
+	t.Parallel()
+
+	var tr Tree[string]
+	tr.Handle("REPORT", "/r", "report")
+	tr.Mount("/dav", "dav")
+	tr.Handle("PROPFIND", "/p", "propfind")
+	tr.Use("MKCOL", "/dav", []func(string) string{func(h string) string { return "mkcol>" + h }})
+
+	tests := []struct {
+		method, path, want string
+	}{
+		{"REPORT", "/dav/x", "dav"},   // a custom method registered before the mount
+		{"PROPFIND", "/dav/x", "dav"}, // one registered after it
+		{"LOCK", "/dav/x", "dav"},     // one with no routes at all
+		{"MKCOL", "/dav/x", "mkcol>dav"},
+		{"LOCK", "/r", ""},
+	}
+	for _, tt := range tests {
+		got := ""
+		if r := tr.Lookup(tt.method, tt.path, nil); r != nil {
+			got = r.Handler
+		}
+		if got != tt.want {
+			t.Errorf("Lookup(%s, %s) = %q, want %q", tt.method, tt.path, got, tt.want)
+		}
+	}
+}
+
+func TestRoutesListsMountOnce(t *testing.T) {
+	t.Parallel()
+
+	var tr Tree[string]
+	tr.Handle("GET", "/a", "")
+	tr.Mount("/v1", "")
+	tr.Handle("PROPFIND", "/b", "")
+
+	var got []string
+	for r := range tr.Routes() {
+		got = append(got, r.Method+" "+r.Pattern)
+	}
+	if want := []string{"GET /a", " /v1", "PROPFIND /b"}; !slices.Equal(got, want) {
+		t.Errorf("Routes() = %q, want %q", got, want)
+	}
+}
+
+func TestValues(t *testing.T) {
+	var tr Tree[string]
+	tr.Handle("GET", "/{a}/{b}/{c}", "")
+
+	v := tr.Values()
+	if len(*v) != 3 {
+		t.Fatalf("Values() holds %d values, want MaxParams 3", len(*v))
+	}
+	if r := tr.Lookup("GET", "/x/y/z", *v); r == nil || (*v)[2] != "z" {
+		t.Fatalf("Lookup with Values() = %v %q", r, *v)
+	}
+	tr.PutValues(v)
+	if race.Enabled {
+		return // sync.Pool drops items at random under -race
+	}
+	if n := testing.AllocsPerRun(100, func() { tr.PutValues(tr.Values()) }); n != 0 {
+		t.Errorf("Values and PutValues allocate %v times, want 0 once pooled", n)
 	}
 }
 
@@ -189,6 +266,22 @@ func TestAllowed(t *testing.T) {
 		{"OPTIONS", "*", "GET, POST, PUT, DELETE, PROPFIND, OPTIONS"},
 		{"GET", "/nope", ""},
 	}
+
+	// UseMethod gives POST a tree, but with no POST routes the server doesn't allow it.
+	var unused Tree[string]
+	unused.Handle("GET", "/a", "")
+	unused.Use("POST", "/a", []func(string) string{func(h string) string { return h }})
+	if got := unused.Allowed("OPTIONS", "*", nil); got != "GET, OPTIONS" {
+		t.Errorf("Allowed(OPTIONS, *) with POST middleware but no POST routes = %q, want GET, OPTIONS", got)
+	}
+
+	// A mount whose first segment is a param would match "*" as a path; OPTIONS * must not reach it.
+	var mounted Tree[string]
+	mounted.Handle("POST", "/login", "")
+	mounted.Mount("/{tenant}", "")
+	if r := mounted.Lookup("OPTIONS", "*", make([]string, 1)); r != nil {
+		t.Errorf("Lookup(OPTIONS, *) = %s, want no route", r.Pattern)
+	}
 	for _, tt := range tests {
 		if got := tr.Allowed(tt.method, tt.path, make([]string, tr.MaxParams())); got != tt.want {
 			t.Errorf("Allowed(%s, %q) = %q, want %q", tt.method, tt.path, got, tt.want)
@@ -226,6 +319,18 @@ func TestRegistrationPanics(t *testing.T) {
 			tr.Handle("GET", "/v1/users", "")
 			tr.Mount("/v1", "")
 		}, "mount at /v1 conflicts with GET routes"},
+		{"middleware below a mount", func(tr *Tree[string]) {
+			tr.Mount("/api/v1", "")
+			tr.Use("", "/api/v1/admin", []func(string) string{func(h string) string { return h }})
+		}, "middleware at /api/v1/admin is below the mount at /api/v1"},
+		{"mount over middleware", func(tr *Tree[string]) {
+			tr.Use("GET", "/{tenant}/admin", []func(string) string{func(h string) string { return h }})
+			tr.Mount("/{t}", "")
+		}, "mount at /{t} hides the middleware used below it"},
+		{"custom route under a mount", func(tr *Tree[string]) {
+			tr.Mount("/dav", "")
+			tr.Handle("PROPFIND", "/dav/x", "")
+		}, "PROPFIND /dav/x conflicts with the mount at /dav"},
 		{"bad middleware pattern", func(tr *Tree[string]) {
 			tr.Use("", "x", []func(string) string{func(h string) string { return h }})
 		}, "must start with /"},
@@ -273,5 +378,34 @@ func TestDepth(t *testing.T) {
 		if got := Depth(pattern); got != want {
 			t.Errorf("Depth(%q) = %d, want %d", pattern, got, want)
 		}
+	}
+}
+
+func TestParamNames(t *testing.T) {
+	t.Parallel()
+
+	if got := ParamNames("/a/{b}/c/{d:[0-9]+}"); !slices.Equal(got, []string{"b", "d"}) {
+		t.Errorf("ParamNames = %q, want [b d]", got)
+	}
+}
+
+func TestEmptyTree(t *testing.T) {
+	t.Parallel()
+
+	var tr Tree[string]
+	tr.Use("", "/", nil) // no middleware: nothing to register
+	if r := tr.Lookup("GET", "/", nil); r != nil {
+		t.Errorf("Lookup on an empty tree = %s, want nil", r.Pattern)
+	}
+
+	tr.Handle("GET", "/a", "")
+	tr.Handle("GET", "/b", "")
+	n := 0
+	for range tr.Routes() {
+		n++
+		break
+	}
+	if n != 1 {
+		t.Errorf("Routes yielded %d routes after break, want 1", n)
 	}
 }

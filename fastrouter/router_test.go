@@ -100,8 +100,9 @@ func TestRoutes(t *testing.T) {
 	r := fastrouter.New()
 	r.GET("/a", noop)
 	r.POST("/b/{id}", noop)
+	r.Mount("/v1", noop)
 
-	want := []fastrouter.Route{{Method: "GET", Pattern: "/a"}, {Method: "POST", Pattern: "/b/{id}"}}
+	want := []fastrouter.Route{{Method: "GET", Pattern: "/a"}, {Method: "POST", Pattern: "/b/{id}"}, {Method: "", Pattern: "/v1"}}
 	if got := r.Routes(); !slices.Equal(got, want) {
 		t.Errorf("Routes() = %v, want %v", got, want)
 	}
@@ -206,6 +207,115 @@ func TestMount(t *testing.T) {
 		if got := string(serve(r, "GET", tt.uri).Response.Body()); got != tt.body {
 			t.Errorf("GET %s = %q, want %q", tt.uri, got, tt.body)
 		}
+	}
+}
+
+func TestMountKeepsParamsReadBeforeIt(t *testing.T) {
+	t.Parallel()
+
+	sub := fastrouter.New()
+	sub.GET("/{doc}/invoices", noop)
+
+	var held string
+	r := fastrouter.New()
+	r.Mount("/t/{tenant}", sub.HandleFastHTTP)
+	r.Use("/t/{tenant}", func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+		return func(ctx *fasthttp.RequestCtx) {
+			tenant := fastrouter.Param(ctx, "tenant") // say, checked against the caller's account
+			next(ctx)
+			held = strings.Clone(tenant)
+		}
+	})
+
+	// The mount rewrites the path to /xxbeta/invoices: the tenant read before it must not change.
+	serve(r, "GET", "/t/acme/xxbeta/invoices")
+	if held != "acme" {
+		t.Errorf("tenant read before the mount = %q once it ran, want acme", held)
+	}
+}
+
+func TestMountDecodesPathOnce(t *testing.T) {
+	t.Parallel()
+
+	sub := fastrouter.New()
+	sub.GET("/users/{name}", echo("user", "name"))
+	sub.GET("/users/{a}/{b}", echo("two", "a", "b"))
+
+	r := fastrouter.New()
+	r.Mount("/api", sub.HandleFastHTTP)
+
+	tests := []struct {
+		uri, body string
+	}{
+		{"/api/users/a%2525b", "user name=a%25b"},
+		{"/api/users/a%252Fb", "user name=a%2Fb"},
+		{"/api/users/100%25", "user name=100%"},
+	}
+	for _, tt := range tests {
+		if got := string(serve(r, "GET", tt.uri).Response.Body()); got != tt.body {
+			t.Errorf("GET %s = %q, want %q", tt.uri, got, tt.body)
+		}
+	}
+}
+
+func TestMountPutsRequestBack(t *testing.T) {
+	t.Parallel()
+
+	sub := fastrouter.New()
+	sub.GET("/{id}/{repo}", echo("sub", "id", "repo"))
+
+	var path, id, repo string
+	r := fastrouter.New(fastrouter.WithMiddleware(func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+		return func(ctx *fasthttp.RequestCtx) {
+			next(ctx)
+			path = string(ctx.Path())
+		}
+	}))
+	r.Mount("/t/{id}", sub.HandleFastHTTP)
+	r.Use("/t/{id}", func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+		return func(ctx *fasthttp.RequestCtx) {
+			next(ctx)
+			id, repo = fastrouter.Param(ctx, "id"), fastrouter.Param(ctx, "repo")
+		}
+	})
+
+	if got := string(serve(r, "GET", "/t/acme/42/gorouter").Response.Body()); got != "sub id=42 repo=gorouter" {
+		t.Errorf("GET /t/acme/42/gorouter = %q, want the mounted route's params", got)
+	}
+	if path != "/t/acme/42/gorouter" || id != "acme" || repo != "" {
+		t.Errorf("once the mount returned: path %q, id %q, repo %q; want the caller's path and the mount's params only",
+			path, id, repo)
+	}
+}
+
+func TestMountCustomMethod(t *testing.T) {
+	t.Parallel()
+
+	sub := fastrouter.New()
+	sub.Handle("PROPFIND", "/{file}", echo("dav", "file"))
+
+	r := fastrouter.New()
+	r.Mount("/dav", sub.HandleFastHTTP)
+
+	if got := string(serve(r, "PROPFIND", "/dav/a.txt").Response.Body()); got != "dav file=a.txt" {
+		t.Errorf("PROPFIND /dav/a.txt = %q, want the mounted route", got)
+	}
+}
+
+func TestOptionsAsteriskSkipsMounts(t *testing.T) {
+	t.Parallel()
+
+	sub := fastrouter.New()
+	sub.GET("/", echo("sub"))
+
+	r := fastrouter.New()
+	r.POST("/login", noop)
+	r.Mount("/{tenant}", sub.HandleFastHTTP)
+
+	// The mount takes every method, so the server as a whole allows them all.
+	want := "GET, HEAD, POST, PUT, PATCH, DELETE, CONNECT, TRACE, OPTIONS"
+	if got := string(serve(r, "OPTIONS", "*").Response.Header.Peek("Allow")); got != want {
+		t.Errorf("OPTIONS * Allow = %q, want %q", got, want)
 	}
 }
 
@@ -339,6 +449,10 @@ func TestRegistrationPanics(t *testing.T) {
 		{"nil handler", func(r *fastrouter.Router) { r.GET("/", nil) }, "nil handler for GET /"},
 		{"nil mount", func(r *fastrouter.Router) { r.Mount("/v1", nil) }, "nil handler for mount at /v1"},
 		{"invalid pattern", func(r *fastrouter.Router) { r.GET("x", echo("")) }, "must start with /"},
+		{"middleware below a mount", func(r *fastrouter.Router) {
+			r.Mount("/v1", noop)
+			r.Use("/v1/admin", tag("admin"))
+		}, "below the mount at /v1"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

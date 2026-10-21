@@ -6,8 +6,14 @@ package tree
 import (
 	"cmp"
 	"fmt"
+	"iter"
 	"slices"
+	"sync"
 )
+
+// anyMethod keys the tree of mounts that serves methods with no routes of their own.
+// Handle rejects an empty method, so no route can take this key.
+const anyMethod = ""
 
 // standardMethods is also the order methods are listed in an Allow header.
 var standardMethods = [...]string{"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS", "TRACE"}
@@ -46,6 +52,7 @@ type Route[H any] struct {
 
 	handler  H
 	segments []segment
+	mount    bool
 }
 
 type middleware[H any] struct {
@@ -71,14 +78,38 @@ func (m middleware[H]) appliesTo(r *Route[H]) bool {
 	return true
 }
 
+// mount is a registered mount, kept so methods that get their first route later get it too.
+type mount[H any] struct {
+	pattern  string
+	segments []segment
+	handler  H
+}
+
+// below reports whether a pattern with segments a reaches past the end of one with segments b,
+// which it starts with.
+func below(a, b []segment) bool {
+	if len(a) <= len(b) {
+		return false
+	}
+	for i, s := range b {
+		if !s.sameNode(a[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // Tree holds one routing tree per method. Register everything before serving: it is not safe for concurrent writes.
 type Tree[H any] struct {
 	roots      [len(standardMethods)]*node[H]
 	custom     map[string]*node[H]
-	methods    []string // methods that have routes: standard ones in standardMethods order, then custom ones as registered
+	methods    []string // methods that have a tree: standard ones in standardMethods order, then custom ones as registered
 	routes     []*Route[H]
 	middleware []middleware[H]
+	mounts     []mount[H]
 	maxParams  int
+	values     sync.Pool // *[]string buffers of maxParams values, for callers whose own buffer is too small
 }
 
 // Handle registers h for method and pattern. It panics if the pattern is invalid or taken.
@@ -90,23 +121,50 @@ func (t *Tree[H]) Handle(method, pattern string, h H) {
 	t.add(method, pattern, h, false)
 }
 
-// Mount registers h for pattern and every path below it, on every standard method.
+// Mount registers h for pattern and every path below it, on every method.
+// Each method with routes gets the mount in its own tree, so the mount takes part in route priority there;
+// methods with no routes reach it through the tree of mounts.
 func (t *Tree[H]) Mount(pattern string, h H) {
+	m := mount[H]{pattern: pattern, segments: mustParse(pattern), handler: h}
+	for _, mw := range t.middleware {
+		if below(mw.segments, m.segments) {
+			panic(fmt.Sprintf("gorouter: mount at %s hides the middleware used below it, which would never run", pattern))
+		}
+	}
+
 	for _, method := range standardMethods {
 		t.add(method, pattern, h, true)
 	}
+	for _, method := range t.methods {
+		if methodIndex(method) < 0 {
+			t.add(method, pattern, h, true)
+		}
+	}
+	t.add(anyMethod, pattern, h, true)
+	t.mounts = append(t.mounts, m)
 }
 
 // Use wraps every route on method (every method when empty) whose pattern starts with pattern.
 // Routes registered before and after the call are both covered.
+// It panics if pattern reaches below a mount: the mounted handler routes those paths, so the middleware would never run.
 func (t *Tree[H]) Use(method, pattern string, wrap []func(H) H) {
 	if len(wrap) == 0 {
 		return
 	}
 
+	segments := mustParse(pattern)
+	for _, m := range t.mounts {
+		if below(segments, m.segments) {
+			panic(fmt.Sprintf("gorouter: middleware at %s is below the mount at %s and would never run: use it in the mounted handler", pattern, m.pattern))
+		}
+	}
+	if method != "" {
+		t.rootFor(method) // gives the method its own copy of each mount, which this middleware can wrap
+	}
+
 	t.middleware = append(t.middleware, middleware[H]{
 		method:   method,
-		segments: mustParse(pattern),
+		segments: segments,
 		wrap:     slices.Clone(wrap),
 	})
 
@@ -119,8 +177,15 @@ func (t *Tree[H]) Use(method, pattern string, wrap []func(H) H) {
 // It writes param values to values, which must hold at least MaxParams strings, in the order of the route's Params.
 func (t *Tree[H]) Lookup(method, path string, values []string) *Route[H] {
 	root := t.root(method)
-	if root == nil {
-		return nil
+	if root == nil || path == "*" {
+		// OPTIONS * asks about the server, not about a resource a route or mount serves.
+		if path == "*" {
+			return nil
+		}
+		// A method with no routes of its own still reaches the mounts.
+		if root = t.custom[anyMethod]; root == nil {
+			return nil
+		}
 	}
 
 	path = trim(path)
@@ -138,7 +203,9 @@ func (t *Tree[H]) Allowed(method, path string, values []string) string {
 		if m == method || m == "OPTIONS" {
 			continue
 		}
-		if path == "*" || t.root(m).descend(trimmed, trimmed != "", values) != nil {
+		// A method can have a tree but no routes, when UseMethod named it before any route did.
+		root := t.root(m)
+		if path == "*" && !root.isEmpty() || path != "*" && root.descend(trimmed, trimmed != "", values) != nil {
 			buf = appendMethod(buf, m)
 		}
 	}
@@ -155,9 +222,35 @@ func (t *Tree[H]) MaxParams() int {
 	return t.maxParams
 }
 
-// Routes returns the registered routes in registration order. The slice is shared: don't modify it.
-func (t *Tree[H]) Routes() []*Route[H] {
-	return t.routes
+// Values returns a buffer of MaxParams values for Lookup, for a caller whose own buffer is too small.
+// Hand it back with PutValues once the values are no longer used.
+func (t *Tree[H]) Values() *[]string {
+	if v, ok := t.values.Get().(*[]string); ok {
+		return v
+	}
+
+	v := make([]string, t.maxParams)
+	return &v
+}
+
+// PutValues returns a buffer from Values.
+func (t *Tree[H]) PutValues(v *[]string) {
+	clear(*v)
+	t.values.Put(v)
+}
+
+// Routes yields the registered routes in registration order. A mount is yielded once, with an empty Method.
+func (t *Tree[H]) Routes() iter.Seq[*Route[H]] {
+	return func(yield func(*Route[H]) bool) {
+		for _, r := range t.routes {
+			if r.mount && r.Method != anyMethod {
+				continue
+			}
+			if !yield(r) {
+				return
+			}
+		}
+	}
 }
 
 func (t *Tree[H]) add(method, pattern string, h H, prefix bool) {
@@ -178,7 +271,7 @@ func (t *Tree[H]) add(method, pattern string, h H, prefix bool) {
 		panic(fmt.Sprintf("gorouter: mount at %s conflicts with %s routes registered below it", pattern, method))
 	}
 
-	r := &Route[H]{Method: method, Pattern: pattern, handler: h, segments: segments}
+	r := &Route[H]{Method: method, Pattern: pattern, handler: h, segments: segments, mount: prefix}
 	for _, s := range segments {
 		if s.kind != static {
 			r.Params = append(r.Params, s.name)
@@ -228,11 +321,19 @@ func (t *Tree[H]) rootFor(method string) *node[H] {
 		}
 		t.custom[method] = n
 	}
+	if method == anyMethod {
+		return n
+	}
 
 	t.methods = append(t.methods, method)
 	slices.SortStableFunc(t.methods, func(a, b string) int {
 		return cmp.Compare(allowRank(a), allowRank(b))
 	})
+
+	// A method's first route gives it its own tree, which needs the mounts registered so far.
+	for _, m := range t.mounts {
+		t.add(method, m.pattern, m.handler, true)
+	}
 
 	return n
 }

@@ -7,7 +7,7 @@
 
 A fast HTTP router for Go, for both `net/http` and `fasthttp`.
 
-- **Zero-allocation matching.** Static routes, middleware chains and 404s allocate nothing; on fasthttp, neither do params.
+- **Zero-allocation routing.** Matching a route, running its middleware and finding no route allocate nothing; on fasthttp, neither do params or mounts.
 - **Standard handlers.** Plain `http.Handler`s and `func(http.Handler) http.Handler` middleware; read params with the standard `r.PathValue`.
 - **Params and regexps.** `/users/{id}`, `/users/{id:[0-9]+}`, with literals winning over params and backtracking when a branch fails further down.
 - **Scoped middleware.** Around the whole router, the routes below a path, or one method below a path. Composed once at registration, never per request.
@@ -84,6 +84,8 @@ r.UseMethod(http.MethodPost, "/api", requireJSON)                     // POST ro
 ```
 
 Middleware runs in registration order, outermost first, and covers routes registered before and after the call.
+`Use` picks routes by pattern, not by request path: a request runs the middleware of the route it matches,
+so `/admin/users` matched by `/{section}/users` doesn't run `basicAuth`.
 
 ## Mounting
 
@@ -93,6 +95,9 @@ r.Mount("/orgs/{org}", orgRouter)                     // r.PathValue("org") stil
 r.Mount("/static", http.FileServerFS(os.DirFS("public")))
 ```
 
+A mount takes every method, custom ones included. Middleware on the mount path or above wraps it;
+middleware for paths below it belongs in the mounted router, and `Use` panics if asked to put it there.
+
 ## Benchmarks
 
 Time and allocations to route one request, on an Apple M4 Max with Go 1.27.0, median of 5 runs.
@@ -101,19 +106,20 @@ Run v5's own suite with `go test -bench . ./...`.
 
 | Scenario | net/http v4 | net/http v5 | fasthttp v4 | fasthttp v5 |
 | --- | ---: | ---: | ---: | ---: |
-| Static route | 20.4 ns · 0 allocs | **19.2 ns · 0 allocs** | 30.4 ns · 1 alloc | **16.1 ns · 0 allocs** |
-| Static, 5 segments | 28.9 ns · 0 allocs | 29.3 ns · 0 allocs | 39.1 ns · 1 alloc | **25.3 ns · 0 allocs** |
-| One param | 87.5 ns · 4 allocs | 93.3 ns · **2 allocs** | 50.0 ns · 3 allocs | **34.2 ns · 0 allocs** |
-| Three params + regexp | 154.2 ns · 4 allocs | **148.7 ns · 2 allocs** | 111.3 ns · 3 allocs | **83.0 ns · 0 allocs** |
-| Static + 3 middleware | 158.2 ns · 6 allocs | **23.9 ns · 0 allocs** | 163.7 ns · 7 allocs | **18.1 ns · 0 allocs** |
-| One param + 3 middleware | 233.6 ns · 10 allocs | **99.4 ns · 2 allocs** | 196.6 ns · 9 allocs | **35.9 ns · 0 allocs** |
-| 404 | 21.2 ns · 0 allocs | **19.2 ns · 0 allocs** | 33.0 ns · 1 alloc | **14.8 ns · 0 allocs** |
-| 405 | 60.6 ns · 3 allocs | **53.3 ns · 2 allocs** | 88.3 ns · 3 allocs | **65.8 ns · 1 alloc** |
+| Static route | 20.0 ns · 0 allocs | 19.9 ns · 0 allocs | 30.0 ns · 1 alloc | **16.9 ns · 0 allocs** |
+| Static, 5 segments | 28.5 ns · 0 allocs | 30.2 ns · 0 allocs | 39.0 ns · 1 alloc | **26.2 ns · 0 allocs** |
+| One param | 87.0 ns · 4 allocs | 93.6 ns · **2 allocs** | 50.1 ns · 3 allocs | **38.5 ns · 0 allocs** |
+| Three params + regexp | 150.1 ns · 4 allocs | 148.5 ns · **2 allocs** | 110.2 ns · 3 allocs | **87.4 ns · 0 allocs** |
+| Static + 3 middleware | 170.4 ns · 6 allocs | **23.8 ns · 0 allocs** | 173.1 ns · 7 allocs | **18.3 ns · 0 allocs** |
+| One param + 3 middleware | 238.4 ns · 10 allocs | **100.8 ns · 2 allocs** | 192.8 ns · 9 allocs | **39.5 ns · 0 allocs** |
+| 404 | 20.0 ns · 0 allocs | 20.3 ns · 0 allocs | 29.7 ns · 1 alloc | **15.3 ns · 0 allocs** |
+| 405 | 60.8 ns · 3 allocs | **55.8 ns · 2 allocs** | 89.0 ns · 3 allocs | **69.5 ns · 1 alloc** |
 
 On `net/http`, the two allocations for params are the ones `Request.SetPathValue` makes to store them for `r.PathValue`;
-matching itself allocates nothing. A 405 allocates its `Allow` header value.
+matching itself allocates nothing. Storing them that way also makes a one-param route a few nanoseconds slower than v4,
+the price of reading params with the standard `r.PathValue`. A 405 allocates its `Allow` header value, and a mount one copy of the request, as `http.StripPrefix` does.
 
-Across a 70-route, GitHub-style API (`BenchmarkAPI`), an average request takes 88.8 ns on `net/http` and 51.2 ns with zero allocations on fasthttp.
+Across a 70-route, GitHub-style API (`BenchmarkAPI`), an average request takes 95.5 ns on `net/http` and 53.1 ns with zero allocations on fasthttp.
 
 ## Upgrading from v4
 

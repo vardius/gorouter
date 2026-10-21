@@ -143,18 +143,29 @@ The fasthttp column is the same with `fastrouter` in place of `gorouter` and `fa
 
 ## 4. Behaviour changes
 
+- **`Use` picks routes by pattern, not by request path. Check this one if you protect routes with it.**
+  v4 chose middleware by walking the request path; v5 attaches it to the routes whose pattern starts with the `Use` pattern,
+  and a request runs the middleware of the route it matches. With `Use("/admin", auth)` and a route `/{section}/users`,
+  a request for `/admin/users` ran `auth` in v4 and doesn't in v5. Register protected routes under the protected pattern,
+  or use the middleware on the wildcard route too.
+- **`Use` below a mount panics.** `Use("/api/v1/admin", mw)` next to `Mount("/api/v1", sub)` can never run, because `sub` routes
+  those paths: use it on `sub` instead.
 - **Regexps match the whole segment.** Before v4.6.0, `{id:[0-9]+}` matched `12abc`; v5 anchors every regexp as `^(?:regexp)$`.
   If you relied on a partial match, write it out, for example `{id:[0-9]+.*}`.
-- **A regexp can't contain a slash.** v4 accepted `{p:a/b}` and never matched it; v5 rejects the pattern.
+- **A regexp can't contain a slash.** v4 accepted `{p:a/b}` but split it at the slash, so `/x/{p:a/b}` matched paths such as `/x/zzz/b}`; v5 rejects the pattern.
 - **Invalid patterns panic at registration with a message naming the problem**: an unclosed `{`, an empty param name,
   a segment that mixes text and a param, or a repeated param name.
 - **Registering a route twice panics.** v4 accepted the second registration without a word.
 - **`Use` scopes by segment.** Before v4.6.0, `USE("GET", "/api", mw)` also wrapped `/apiary`; v5's `Use("/api", mw)` covers `/api` and the routes below it only.
 - **Middleware is composed at registration**, once per route, instead of on every request. It still runs in registration order, outermost first, and still covers routes registered later.
 - **Params on net/http are set with `Request.SetPathValue`**, so `r.PathValue` works in handlers and in middleware registered with `Use`. `Request.Pattern` holds the matched pattern, which logging and metrics middleware can read.
-- **fasthttp param values point into the request's buffer.** They are valid until the handler returns or changes the path. Use `strings.Clone` to keep one longer.
+- **fasthttp param values are valid until the handler returns.** They live in a buffer reused once the request is done. Use `strings.Clone` to keep one longer.
+- **`Mount` takes every method**, custom ones included. v4 answered 405 to a custom method such as `PROPFIND` below a mount.
+- **On fasthttp, `Mount` decodes the path once and puts it back afterwards.** v4 decoded the stripped path a second time, so `/api/users/a%2525b` reached the mounted router as `a%b`, and middleware around the mount saw the stripped path once the mounted handler returned.
+- **fasthttp 405 responses carry the `Allow` header.** v4's default 405 handler called `ctx.Error`, which resets the headers, so the header never reached the client.
+- **`Routes()` replaces `PrettyPrint()`** and lists a mount once, with an empty method, since a mount takes every method.
 
-Unchanged: 404 and 405 responses, the `Allow` header, automatic `OPTIONS` responses, backtracking between literal and param routes,
+Unchanged: 404 and 405 responses, the `Allow` header on `net/http`, automatic `OPTIONS` responses, backtracking between literal and param routes,
 trailing slashes being ignored, middleware passed to `New` wrapping 404 and 405 responses, and `Mount` stripping the mount path.
 
 ## 5. Staying on v4

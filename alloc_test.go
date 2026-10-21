@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/vardius/gorouter/v5"
+	"github.com/vardius/gorouter/v5/internal/race"
 )
 
 // discardWriter is a ResponseWriter that allocates nothing, so only the router's allocations are counted.
@@ -25,6 +26,8 @@ func passThrough(next http.Handler) http.Handler {
 // TestAllocations guards the router's allocations per request. Lower a number when an optimisation lands;
 // never raise one without a reason in the commit.
 func TestAllocations(t *testing.T) {
+	skipUnderRace(t)
+
 	r := gorouter.New(
 		gorouter.WithNotFound(http.HandlerFunc(noop)),
 		gorouter.WithMethodNotAllowed(http.HandlerFunc(noop)),
@@ -69,5 +72,36 @@ func TestAllocations(t *testing.T) {
 				t.Errorf("%s %s allocates %v times per request, want %v", tt.method, tt.target, got, tt.want)
 			}
 		})
+	}
+}
+
+// TestAllocationsWithManyParams checks that a route with more params than fit on the stack
+// costs nothing on requests to other routes.
+func TestAllocationsWithManyParams(t *testing.T) {
+	skipUnderRace(t)
+
+	r := gorouter.New(gorouter.WithNotFound(http.HandlerFunc(noop)))
+	r.GET("/", noop)
+	r.GET("/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}/{i}", noop)
+
+	for _, target := range []string{"/", "/missing"} {
+		w := &discardWriter{header: http.Header{}}
+		template := httptest.NewRequest("GET", target, nil)
+		req := new(http.Request)
+
+		got := testing.AllocsPerRun(1000, func() {
+			*req = *template
+			r.ServeHTTP(w, req)
+		})
+		if got != 0 {
+			t.Errorf("GET %s allocates %v times per request, want 0", target, got)
+		}
+	}
+}
+
+func skipUnderRace(t *testing.T) {
+	t.Helper()
+	if race.Enabled {
+		t.Skip("sync.Pool drops items at random under -race, so allocation counts mean nothing")
 	}
 }

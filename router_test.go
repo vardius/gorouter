@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -262,6 +263,74 @@ func TestMountKeepsCallerRequest(t *testing.T) {
 	}
 }
 
+func TestMountCustomMethod(t *testing.T) {
+	t.Parallel()
+
+	sub := gorouter.New()
+	sub.Handle("PROPFIND", "/{file}", echo("file"))
+
+	r := gorouter.New()
+	r.Mount("/dav", sub)
+
+	if w := serve(r, "PROPFIND", "/dav/notes.txt"); w.Code != http.StatusOK || w.Body.String() != "/{file} file=notes.txt" {
+		t.Errorf("PROPFIND /dav/notes.txt = %d %q, want the mounted route", w.Code, w.Body.String())
+	}
+}
+
+func TestMountKeepsEscapedPath(t *testing.T) {
+	t.Parallel()
+
+	var got string
+	r := gorouter.New()
+	r.Mount("/files", http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) { got = req.URL.EscapedPath() }))
+
+	serve(r, "GET", "/files/a%2Fb")
+	if got != "/a%2Fb" {
+		t.Errorf("mounted handler's escaped path = %q, want /a%%2Fb", got)
+	}
+}
+
+func TestMountPutsParamsBack(t *testing.T) {
+	t.Parallel()
+
+	sub := gorouter.New()
+	sub.GET("/{id}", echo("id"))
+
+	var after string
+	r := gorouter.New()
+	r.Mount("/t/{id}", sub)
+	r.Use("/t/{id}", func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			next.ServeHTTP(w, req)
+			after = req.PathValue("id")
+		})
+	})
+
+	if got := serve(r, "GET", "/t/acme/42").Body.String(); got != "/{id} id=42" {
+		t.Errorf("GET /t/acme/42 = %q, want the mounted route's id", got)
+	}
+	if after != "acme" {
+		t.Errorf("mount's id once the mounted router returned = %q, want acme", after)
+	}
+}
+
+func TestOptionsAsteriskSkipsMounts(t *testing.T) {
+	t.Parallel()
+
+	sub := gorouter.New()
+	sub.GET("/", text("sub"))
+
+	r := gorouter.New()
+	r.POST("/login", text(""))
+	r.Mount("/{tenant}", sub)
+
+	// The mount takes every method, so the server as a whole allows them all.
+	want := "GET, HEAD, POST, PUT, PATCH, DELETE, CONNECT, TRACE, OPTIONS"
+	if w := serve(r, "OPTIONS", "*"); w.Header().Get("Allow") != want {
+		t.Errorf("OPTIONS * Allow = %q, want %q", w.Header().Get("Allow"), want)
+	}
+}
+
 func TestMountFileServer(t *testing.T) {
 	t.Parallel()
 
@@ -307,10 +376,10 @@ func TestRoutes(t *testing.T) {
 	r := gorouter.New()
 	r.GET("/a", text(""))
 	r.POST("/b/{id}", text(""))
+	r.Mount("/v1", gorouter.New())
 
-	want := []gorouter.Route{{Method: "GET", Pattern: "/a"}, {Method: "POST", Pattern: "/b/{id}"}}
-	got := r.Routes()
-	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+	want := []gorouter.Route{{Method: "GET", Pattern: "/a"}, {Method: "POST", Pattern: "/b/{id}"}, {Method: "", Pattern: "/v1"}}
+	if got := r.Routes(); !slices.Equal(got, want) {
 		t.Errorf("Routes() = %v, want %v", got, want)
 	}
 }
@@ -331,6 +400,10 @@ func TestRegistrationPanics(t *testing.T) {
 			r.GET("/a", text(""))
 			r.GET("/a/", text(""))
 		}, "GET /a/ conflicts with GET /a"},
+		{"middleware below a mount", func(r *gorouter.Router) {
+			r.Mount("/v1", gorouter.New())
+			r.Use("/v1/admin", tag("admin"))
+		}, "below the mount at /v1"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

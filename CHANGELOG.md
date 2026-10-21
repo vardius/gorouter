@@ -12,15 +12,18 @@ A rewrite with a smaller API. See [MIGRATION.md](MIGRATION.md) for the before an
 - `Routes()` lists the registered routes.
 - Params on `net/http` are read with the standard `r.PathValue`, and `r.Pattern` holds the matched pattern.
 - `fastrouter.Param(ctx, name)` reads params on fasthttp.
-- Custom methods work everywhere, including the `Allow` header.
+- Custom methods work everywhere, including the `Allow` header and `Mount`, which takes every method.
 - Runnable examples in `examples/`, each with a test.
 
 ### Changed
 
 - Module path is `github.com/vardius/gorouter/v5`; Go 1.26 or newer is required.
 - Matching allocates nothing. Middleware chains are composed once at registration instead of on every request:
-  a route behind three middleware went from 158 ns and 6 allocations to 24 ns and none on `net/http`.
+  a route behind three middleware went from 170 ns and 6 allocations to 24 ns and none on `net/http`.
 - On fasthttp, params are pooled and released with the request: routing allocates nothing.
+  Param values are copies, valid until the handler returns even if it rewrites the path.
+- `Use` picks routes by pattern rather than by request path, and panics for paths below a mount, where it could never run.
+- On fasthttp, `Mount` decodes the path once, not twice, and puts the caller's path and params back when the mounted handler returns.
 - The method helpers (`GET`, `POST`, …) take a handler func; use `Handle` for any other `http.Handler`.
 - Regexp params match the whole segment and can't contain a slash.
 - Invalid patterns and duplicate routes panic at registration with a message naming the problem.

@@ -1,8 +1,9 @@
 // Package gorouter is a fast HTTP request router for net/http.
 //
 // A Router matches a request's method and path against registered patterns and calls the matching handler.
-// Matching a route allocates nothing; the only per-request allocations are the ones net/http makes
-// to store param values for r.PathValue.
+// Matching a route and running its middleware allocate nothing. What a request can allocate is net/http's:
+// storing param values for r.PathValue, copying the request for a mount as http.StripPrefix does,
+// the Allow header of a 405, and whatever the 404 and 405 handlers write.
 //
 //	r := gorouter.New()
 //	r.GET("/hello/{name}", func(w http.ResponseWriter, r *http.Request) {
@@ -10,7 +11,9 @@
 //	})
 //	log.Fatal(http.ListenAndServe(":8080", r))
 //
-// For fasthttp, use the router in the fastrouter subpackage. It has the same API and the same matching rules.
+// For fasthttp, use the router in the fastrouter subpackage. It has the same API and the same matching rules,
+// applied to the path fasthttp hands over, which it has already cleaned up: it collapses // and resolves ..,
+// so /users//7 matches /users/{id} there, while on net/http the empty segment matches nothing.
 //
 // # Patterns
 //
@@ -21,7 +24,8 @@
 //   - a regexp param, {name:regexp}, which matches a segment the whole regexp matches, such as {id:[0-9]+}.
 //
 // A trailing slash is ignored, so /users and /users/ are the same route, and an empty segment never matches.
-// A regexp can't contain a slash: it always matches within one segment.
+// A regexp can't contain a slash: it always matches within one segment. Patterns match the decoded path,
+// so an escaped slash, %2F, separates segments like any other slash.
 //
 // When several patterns match, literals win over regexp params, regexp params are tried in the order
 // they were registered, and a plain param comes last. If the preferred branch fails further down the path,
@@ -39,10 +43,16 @@
 // the 404, 405 and OPTIONS responses. Middleware is composed when it is registered, never per request,
 // and runs in registration order: the first one registered is the outermost.
 //
+// Use picks routes by their pattern, not by the request path: a request runs the middleware of the route
+// it matches. After Use("/admin", auth), a request for /admin/users that matches the route /{section}/users
+// doesn't run auth, because that route's pattern doesn't start with /admin.
+//
 // # Mounting
 //
-// Mount hands every request at or below a pattern to another http.Handler, with the pattern's segments
-// removed from the path. Mount another Router to split an API into parts, or an http.FileServer to serve files.
+// Mount hands every request at or below a pattern, on any method, to another http.Handler, with the pattern's
+// segments removed from the path. Mount another Router to split an API into parts, or an http.FileServer
+// to serve files. Middleware used on the mount's pattern or above it wraps the mount; middleware for paths
+// below it belongs in the mounted handler, and Use panics if asked to put it there.
 //
 // # 404, 405 and OPTIONS
 //

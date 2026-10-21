@@ -6,6 +6,7 @@ import (
 	"github.com/valyala/fasthttp"
 
 	"github.com/vardius/gorouter/v5/fastrouter"
+	"github.com/vardius/gorouter/v5/internal/race"
 )
 
 func noop(*fasthttp.RequestCtx) {}
@@ -18,6 +19,8 @@ func passThrough(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 // TestAllocations guards the router's allocations per request. Lower a number when an optimisation lands;
 // never raise one without a reason in the commit.
 func TestAllocations(t *testing.T) {
+	skipUnderRace(t)
+
 	r := fastrouter.New(fastrouter.WithNotFound(noop), fastrouter.WithMethodNotAllowed(noop))
 	r.GET("/", noop)
 	r.GET("/a/b/c/d/e", noop)
@@ -41,10 +44,9 @@ func TestAllocations(t *testing.T) {
 		{"1 param", "GET", "/users/42", 0},
 		{"3 params with a regexp", "GET", "/repos/vardius/gorouter/issues/7", 0},
 		{"mount", "GET", "/v1/status", 0},
+		{"mount with a param", "GET", "/t/acme/status", 0},
 		// The Allow value.
 		{"405", "POST", "/users/42", 1},
-		// The tenant value is copied out of the path buffer before the mount rewrites it.
-		{"mount with a param", "GET", "/t/acme/status", 1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -60,5 +62,36 @@ func TestAllocations(t *testing.T) {
 				t.Errorf("%s %s allocates %v times per request, want %v", tt.method, tt.uri, got, tt.want)
 			}
 		})
+	}
+}
+
+// TestAllocationsWithManyParams checks that a route with more params than fit on the stack
+// costs nothing, on its own requests or anyone else's.
+func TestAllocationsWithManyParams(t *testing.T) {
+	skipUnderRace(t)
+
+	r := fastrouter.New(fastrouter.WithNotFound(noop))
+	r.GET("/", noop)
+	r.GET("/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}/{i}", noop)
+
+	for _, uri := range []string{"/", "/missing", "/1/2/3/4/5/6/7/8/9"} {
+		ctx := new(fasthttp.RequestCtx)
+		ctx.Request.Header.SetMethod("GET")
+		ctx.Request.SetRequestURI(uri)
+
+		got := testing.AllocsPerRun(1000, func() {
+			r.HandleFastHTTP(ctx)
+			ctx.ResetUserValues()
+		})
+		if got != 0 {
+			t.Errorf("GET %s allocates %v times per request, want 0", uri, got)
+		}
+	}
+}
+
+func skipUnderRace(t *testing.T) {
+	t.Helper()
+	if race.Enabled {
+		t.Skip("sync.Pool drops items at random under -race, so allocation counts mean nothing")
 	}
 }

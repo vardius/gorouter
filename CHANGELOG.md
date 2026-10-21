@@ -1,6 +1,6 @@
 # Changelog
 
-## v5.0.0 (unreleased)
+## v5.0.0 (2026-10-21)
 
 A rewrite with a smaller API. See [MIGRATION.md](MIGRATION.md) for the before and after of every call.
 
@@ -34,7 +34,7 @@ A rewrite with a smaller API. See [MIGRATION.md](MIGRATION.md) for the before an
 - `Router` and `FastHTTPRouter` interfaces, in favour of the concrete `*gorouter.Router` and `*fastrouter.Router`.
 - `NewFastHTTPRouter`, `USE`, `USEANY`, `NotFound`, `NotAllowed`, `ServeFiles`, `Compile` and `PrettyPrint`.
 
-## v4.6.0 (unreleased, `v4` branch)
+## v4.6.0 (2026-10-21, `v4` branch)
 
 - Fixed a data race where concurrent requests could run each other's middleware.
 - `Compile` no longer drops routes or middleware on nodes it merges.

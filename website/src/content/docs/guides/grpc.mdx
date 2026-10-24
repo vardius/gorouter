@@ -1,0 +1,90 @@
+---
+title: gRPC and Connect
+description: Serve gRPC services and HTTP routes from one router, on one port.
+---
+
+import { Aside, Code } from '@astrojs/starlight/components';
+import example from '../../../../../examples/grpc/main.go?raw';
+
+A gRPC call is a POST to `/package.Service/Method` over HTTP/2.
+[Connect](https://connectrpc.com) handlers are plain `http.Handler`s, so the router serves a gRPC service next to its other routes, on the same port.
+
+Route each service with a param for the method:
+
+```go
+r.Handle(http.MethodPost, "/grpc.health.v1.Health/{method}", handler)
+```
+
+`grpchealth.NewHandler`, like the `New…Handler` functions Connect generates, returns the service's path, here `/grpc.health.v1.Health/`, together with the handler, so `path+"{method}"` is the pattern.
+
+<Code code={example} lang="go" title="examples/grpc/main.go" />
+
+<Aside type="caution" title="Don't mount a service">
+`Mount` removes the mount path from the URL before it calls the handler, and the handler picks the method from the full path.
+Behind `r.Mount("/grpc.health.v1.Health", handler)` it sees `/Check`, finds no such method, and every call fails with `Unimplemented`.
+</Aside>
+
+Connect clients built with `connect.WithHTTPGet()` send methods marked `NO_SIDE_EFFECTS` as GET requests.
+If a service has such methods, register its pattern for GET as well:
+
+```go
+r.Handle(http.MethodGet, path+"{method}", handler)
+```
+
+## HTTP/2
+
+gRPC needs HTTP/2. Setting `http.Server.Protocols` replaces the server's defaults, so list every protocol it serves.
+The example allows HTTP/1, HTTP/2 over TLS and unencrypted HTTP/2, so the same server works with `ListenAndServe` behind a proxy that terminates TLS, and with `ListenAndServeTLS`.
+See [HTTPS and HTTP/2](../https/) for serving over TLS.
+
+Connect handlers also accept the Connect protocol and gRPC-Web, which run over HTTP/1.1 as well.
+
+## Limits
+
+- **Message size.** Connect doesn't limit message size by default. Set `connect.WithReadMaxBytes` on every handler, as the example does. The limit applies after decompression, so a small gzipped request can't make the server allocate gigabytes.
+- **Timeouts.** The server's `ReadTimeout`, `WriteTimeout` and `IdleTimeout` cap slow requests, slow responses and idle connections, but over HTTP/1.1 a stream that sends nothing outlives them. So the example also gives every call to the service a deadline, with [middleware](../../middleware/) on the service's path. Pick it to fit the longest stream you serve: the health service's `Watch` stream ends when it runs out.
+- **Unencrypted HTTP/2.** Without TLS, keep the port reachable only from the proxy in front of it.
+
+## Trying it locally
+
+The example is a module of its own, so its gRPC dependencies stay out of the router's `go.mod`. Run it from its folder:
+
+```sh
+cd examples/grpc
+go run .
+```
+
+In another terminal, call the health check with the Connect protocol over HTTP/1.1:
+
+```sh
+curl -H 'Content-Type: application/json' -d '{}' http://localhost:8080/grpc.health.v1.Health/Check
+```
+
+```txt
+{"status":"SERVING_STATUS_SERVING"}
+```
+
+The plain HTTP route answers on the same port:
+
+```sh
+curl http://localhost:8080/status
+```
+
+```txt
+ok
+```
+
+## grpc-go servers
+
+A `*grpc.Server` is an `http.Handler` too, and is routed the same way:
+
+```go
+r.Handle(http.MethodPost, "/grpc.health.v1.Health/{method}", grpcServer)
+```
+
+grpc-go marks `ServeHTTP` as experimental, and documents that its performance and features may differ from grpc-go's own HTTP/2 server.
+For a service that only speaks gRPC, `grpcServer.Serve` on its own port avoids both.
+
+## fasthttp
+
+fasthttp serves HTTP/1.x only, so gRPC needs the `net/http` router.

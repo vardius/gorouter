@@ -32,6 +32,7 @@ export default defineConfig({
 						'guides/authentication',
 						'guides/error-handling',
 						'guides/https',
+						'guides/grpc',
 						'guides/multiple-domains',
 						'guides/fasthttp',
 					],

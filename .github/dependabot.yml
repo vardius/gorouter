@@ -4,6 +4,16 @@ updates:
     directory: /
     schedule:
       interval: weekly
+  - package-ecosystem: gomod
+    directory: /examples/grpc
+    schedule:
+      interval: weekly
+    # The router itself is replaced with the local copy, so its version here means nothing.
+    ignore:
+      - dependency-name: github.com/vardius/gorouter/v5
+    groups:
+      grpc-example:
+        patterns: ['*']
   - package-ecosystem: github-actions
     directory: /
     schedule:

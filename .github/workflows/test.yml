@@ -15,18 +15,29 @@ jobs:
     strategy:
       matrix:
         go: ['1.26.x', '1.27.x']
+    env:
+      STATICCHECK: honnef.co/go/tools/cmd/staticcheck@v0.8.2
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
           go-version: ${{ matrix.go }}
+          # Both modules' dependencies: the router's and examples/grpc's.
+          cache-dependency-path: '**/go.sum'
       - name: Check formatting
         run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
       - run: go vet ./...
       - name: Staticcheck
-        run: go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
+        run: go run "$STATICCHECK" ./...
       - name: Test
         run: go test -race -shuffle=on ./...
+      # examples/grpc is its own module, so its gRPC dependencies stay out of the router's go.mod and ./... skips it.
+      - name: gRPC example
+        working-directory: examples/grpc
+        run: |
+          go vet ./...
+          go run "$STATICCHECK" ./...
+          go test -race -shuffle=on ./...
       # The race detector makes sync.Pool drop items, so the allocation guards skip under it: run them here.
       - name: Allocation guards
         run: go test -run Allocations -count 1 ./...

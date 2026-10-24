@@ -25,7 +25,10 @@ go vet ./...
 go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
 go test -race -shuffle=on ./...
 go test -run '^$' -fuzz FuzzLookup -fuzztime 30s ./internal/tree
+(cd examples/grpc && go vet ./... && go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./... && go test -race -shuffle=on ./...)
 ```
+
+`examples/grpc` is a module of its own, so its gRPC dependencies stay out of the router's `go.mod`, and `./...` at the root skips it.
 
 ### Layout
 

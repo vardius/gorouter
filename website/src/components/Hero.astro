@@ -1,7 +1,10 @@
 ---
 // Replaces Starlight's hero: the pitch and its actions on one side, the code they lead to on the other.
 import { Code, LinkButton, TabItem, Tabs } from '@astrojs/starlight/components';
+import Default from '@astrojs/starlight/components/Hero.astro';
 
+// Starlight's 404 page is a splash page too: give it the default hero, whose links don't depend on the URL.
+const isLanding = Astro.locals.starlightRoute.id === '';
 const { data } = Astro.locals.starlightRoute.entry;
 const { title = data.title, tagline, actions = [] } = data.hero || {};
 const install = 'go get github.com/vardius/gorouter/v5';
@@ -27,53 +30,59 @@ func main() {
 }`;
 ---
 
-<div class="hero">
-	<div class="pitch">
-		<a class="release" href="migrating-from-v4/">
-			<span class="release-tag">v5</span>
-			<span>See what changed</span>
-			<span aria-hidden="true">→</span>
-		</a>
-		<h1 id="_top" data-page-title set:html={title} />
-		{tagline && <p class="tagline" set:html={tagline} />}
-		{
-			actions.length > 0 && (
-				<div class="actions">
-					{actions.map(({ attrs: { class: className, ...attrs } = {}, icon, link: href, text, variant }) => (
-						<LinkButton {href} {variant} icon={icon?.name} class:list={[className]} {...attrs}>
-							{text}
-							{icon?.html && <Fragment set:html={icon.html} />}
-						</LinkButton>
-					))}
+{
+	isLanding ? (
+		<div class="hero">
+			<div class="pitch">
+				<a class="release" href="migrating-from-v4/">
+					<span class="release-tag">v5</span>
+					<span>See what changed</span>
+					<span aria-hidden="true">→</span>
+				</a>
+				<h1 id="_top" data-page-title set:html={title} />
+				{tagline && <p class="tagline" set:html={tagline} />}
+				{
+					actions.length > 0 && (
+						<div class="actions">
+							{actions.map(({ attrs: { class: className, ...attrs } = {}, icon, link: href, text, variant }) => (
+								<LinkButton {href} {variant} icon={icon?.name} class:list={[className]} {...attrs}>
+									{text}
+									{icon?.html && <Fragment set:html={icon.html} />}
+								</LinkButton>
+							))}
+						</div>
+					)
+				}
+				<div class="install">
+					<code>{install.split(/(?<=\/)/).map((part, i) => (i > 0 ? [<wbr />, part] : part))}</code>
+					<button type="button" class="copy" data-copy={install} aria-label="Copy the install command">
+						<svg class="icon-copy" viewBox="0 0 24 24" aria-hidden="true">
+							<rect x="9" y="9" width="11" height="11" rx="2" />
+							<path d="M5 15V6a2 2 0 0 1 2-2h9" />
+						</svg>
+						<svg class="icon-done" viewBox="0 0 24 24" aria-hidden="true">
+							<path d="m5 12 5 5 9-10" />
+						</svg>
+					</button>
+					<span class="sr-only" role="status"></span>
 				</div>
-			)
-		}
-		<div class="install">
-			<code>{install.split(/(?<=\/)/).map((part, i) => (i > 0 ? [<wbr />, part] : part))}</code>
-			<button type="button" class="copy" data-copy={install} aria-label="Copy the install command">
-				<svg class="icon-copy" viewBox="0 0 24 24" aria-hidden="true">
-					<rect x="9" y="9" width="11" height="11" rx="2" />
-					<path d="M5 15V6a2 2 0 0 1 2-2h9" />
-				</svg>
-				<svg class="icon-done" viewBox="0 0 24 24" aria-hidden="true">
-					<path d="m5 12 5 5 9-10" />
-				</svg>
-			</button>
-			<span class="sr-only" role="status"></span>
-		</div>
-	</div>
+			</div>
 
-	<div class="sample">
-		<Tabs syncKey="adapter">
-			<TabItem label="net/http">
-				<Code code={nethttp} lang="go" title="main.go" />
-			</TabItem>
-			<TabItem label="fasthttp">
-				<Code code={fasthttp} lang="go" title="main.go" />
-			</TabItem>
-		</Tabs>
-	</div>
-</div>
+			<div class="sample">
+				<Tabs syncKey="adapter">
+					<TabItem label="net/http">
+						<Code code={nethttp} lang="go" title="main.go" />
+					</TabItem>
+					<TabItem label="fasthttp">
+						<Code code={fasthttp} lang="go" title="main.go" />
+					</TabItem>
+				</Tabs>
+			</div>
+		</div>
+	) : (
+		<Default />
+	)
+}
 
 <script>
 	for (const button of document.querySelectorAll<HTMLButtonElement>('.install .copy')) {

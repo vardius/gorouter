@@ -61,10 +61,10 @@ import Stats from '../../components/Stats.astro';
 
 ## Faster than v4 behind middleware and on fasthttp
 
-<p class="landing-lead">
+<div class="landing-lead">
 	v5 composes middleware once at registration instead of on every request, and matches without
 	allocating. A route behind three middleware went from 170 ns to 24 ns on net/http.
-</p>
+</div>
 
 <Tabs syncKey="adapter">
 <TabItem label="net/http">
@@ -85,10 +85,10 @@ import Stats from '../../components/Stats.astro';
 
 ## Coming from v4
 
-<p class="landing-lead">
+<div class="landing-lead">
 	The patterns stay the same. The API around them is smaller: options instead of setters, the standard
 	`r.PathValue` instead of a params type, and a `fastrouter` package for fasthttp.
-</p>
+</div>
 
 <div class="compare">
 
